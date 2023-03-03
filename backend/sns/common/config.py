@@ -14,7 +14,7 @@ class Settings(BaseSettings):
     DB_HOST: str = "127.0.0.1"
     DB_PORT: int = "3306"
     DB_NAME: str = "SNS"
-    DATABASE_URI: str = (
+    SQLAlCHEMY_DATABASE_URI: str = (
         "mysql+pymysql://{username}:{pw}@{host}:{port}/{name}?charset=utf8mb4"
     )
 
