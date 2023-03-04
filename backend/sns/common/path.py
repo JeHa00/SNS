@@ -1,3 +1,5 @@
 from pathlib import Path
 
-BASE_DIR = Path(__file__).resolve().parents[2]
+from typing import Final
+
+BASE_DIR: Final = Path(__file__).resolve().parents[2]
