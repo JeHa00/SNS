@@ -48,7 +48,8 @@ class SQLAlchemy:
         요청마다 DB 세션 유지하는 함수
         """
         if self._session is None:
-            self.init_app()
+            # self.init_app()
+            raise Exception("must bt called 'init_app'")
         try:
             db_session = self._session()
             yield db_session

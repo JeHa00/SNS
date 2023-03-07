@@ -3,12 +3,13 @@ from fastapi import APIRouter
 from starlette.middleware.cors import CORSMiddleware
 
 from sns.common.config import settings
-from sns.users.controller import router as users_router
-# from sns.posts.controller import router as posts_router
-# from sns.comments.controller import router as comments_router
-# from sns.notification.controller import router as notification_router
+from sns.users.controller import router as users
 
-app = FastAPI(title=settings.PROJECT_NAME, openapi_url=f"{settings.API_V1_STR}")
+# from sns.posts.controller import router as posts
+# from sns.comments.controller import router as comments
+# from sns.notification.controller import router as noti
+
+app = FastAPI(title=settings.PJT_NAME, openapi_url=f"{settings.API_V1_STR}")
 
 if settings.BACKEND_CORS_ORIGINS:
     app.add_middleware(
@@ -21,7 +22,7 @@ if settings.BACKEND_CORS_ORIGINS:
 
 
 api_router = APIRouter()
-app.include_router(users_router, prefix=settings.API_V1_STR)
-# app.include_router(posts_router, prefix=settings.API_V1_STR)
-# app.include_router(comments_router, prefix=settings.API_V1_STR)
-# app.include_router(notification_router, prefix=settings.API_V1_STR)
+app.include_router(users, tags=["Users"], prefix=settings.API_V1_STR)
+# app.include_router(posts, tags=['Posts'], prefix=settings.API_V1_STR)
+# app.include_router(comments, tags=['Comments'], prefix=settings.API_V1_STR)
+# app.include_router(noti, tags=['Notification'], prefix=settings.API_V1_STR)
