@@ -9,11 +9,11 @@ class Settings(BaseSettings):
     PJT_NAME: str = "SNS"
     API_V1_STR: str = "/api/v1"
 
-    DB_USERNAME: str = "root"
-    DB_PASSWORD: SecretStr = "a1s2s3d4"
-    DB_HOST: str = "127.0.0.1"
+    DB_USERNAME: str = "pjt"
+    DB_PASSWORD: SecretStr = "a1s2d3f4"
+    DB_HOST: str = "db.mysql"
     DB_PORT: int = "3306"
-    DB_NAME: str = "SNS"
+    DB_NAME: str = "sns"
     SQLAlCHEMY_DATABASE_URI: str = (
         "mysql+pymysql://{username}:{pw}@{host}:{port}/{name}?charset=utf8mb4"
     )
