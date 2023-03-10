@@ -11,8 +11,10 @@ class SQLAlchemy:
     def __init__(self, app: FastAPI = None, **kwargs):
         self._engine = None
         self._session = None
+        self._app = None
         if app is not None:
-            self.init_app(app=app, **kwargs)
+            self._app = app
+            self.init_app(app=self._app, **kwargs)
 
     def init_app(self, app: FastAPI, **kwargs):
         """
@@ -33,12 +35,12 @@ class SQLAlchemy:
         )
 
         @app.on_event("startup")
-        def startup(self):
+        def startup():
             self._engine.connect()
             logging.info("DB connected")
 
         @app.on_event("shutdown")
-        def shutdown(self):
+        def shutdown():
             self._session.close_all()
             self._engine.dispose()
             logging.info("DB disconnected")
@@ -48,8 +50,7 @@ class SQLAlchemy:
         요청마다 DB 세션 유지하는 함수
         """
         if self._session is None:
-            # self.init_app()
-            raise Exception("must bt called 'init_app'")
+            self.init_app(self._app)
         try:
             db_session = self._session()
             yield db_session
