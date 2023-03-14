@@ -24,6 +24,12 @@ class Settings(BaseSettings):
 
     BACKEND_CORS_ORIGINS: List[AnyHttpUrl] = []
 
+    SMTP_SERVER: str = "smtp.gmail.com"
+    SMTP_TLS: str = True
+    SMTP_PORT: int = 587 if SMTP_TLS else 465
+    EMAIL_ADDR = "only.for.pjt@gmail.com"
+    EMAIL_PASSWORD = "wngvlgolokntjpas"
+
     class config:
         env_file = BASE_DIR / "env"
 

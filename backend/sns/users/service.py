@@ -1,13 +1,19 @@
 from datetime import datetime, timedelta
 from typing import Optional
+import smtplib
+
+from jinja2 import Environment, FileSystemLoader
+from email.message import EmailMessage
 
 from sqlalchemy.orm import Session
 from passlib.context import CryptContext
 from jose import jwt
 
 from sns.common.config import settings
+from sns.common.path import EMAIL_TEMPLATE_DIR
 from sns.users.model import User
 from sns.users.schema import UserCreate
+
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
@@ -36,7 +42,42 @@ def create_access_token(data: dict, expires: Optional[timedelta] = None):
     return encoded_jwt
 
 
-# 이메일 인증
+# email 관련
+def send_email(message: EmailMessage, context: dict, template_name: str):
+    """email message를 받아 해당 정보로 발송한다.
+
+    Args:
+        message (EmailMessage): email이 발신자, 수신자, 제목 정보
+        context (dict): template_name을 가진 email template을 렌더링하기 위해 전달되는 값
+        template_name (str): 무슨 email template을 사용할지를 결정한다.
+    """
+    env = Environment(loader=FileSystemLoader(EMAIL_TEMPLATE_DIR))
+    template = env.get_template(f"{template_name}.html")
+    message.set_content(template.render(**context), subtype="html")
+    with smtplib.SMTP(settings.SMTP_SERVER, settings.SMTP_PORT) as smtp:
+        smtp.starttls()
+        smtp.login(settings.EMAIL_ADDR, settings.EMAIL_PASSWORD)
+        smtp.send_message(message)
+
+
+def send_new_account_email(email_to: str, password: str):
+    """새로운 계정 생성 이메일 메세지를 생성하여 send_email에 전달한다.
+
+    Args:
+        email_to (str): 새로 등록한 유저의 이메일
+        password (str): 새로 등록한 유저의 패스워드
+    """
+    message = EmailMessage()
+    message.add_header("Subject", f"{settings.PJT_NAME} - New account for user")
+    message.add_header("From", settings.EMAIL_ADDR)
+    message.add_header("To", email_to)
+    context = {
+        "project_name": settings.PJT_NAME,
+        "password": password,
+        "email": email_to,
+    }
+    data = {"message": message, "context": context, "template_name": "new_account"}
+    send_email(**data)
 
 
 # password 관련
