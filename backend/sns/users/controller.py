@@ -2,11 +2,18 @@ from datetime import timedelta
 
 from fastapi import APIRouter, Depends, status, HTTPException
 from sqlalchemy.orm import Session
+from starlette.background import BackgroundTasks
 
 from sns.common.session import db
 from sns.common.config import settings
 from sns.users.schema import Token, UserBase, UserCreate, UserUpdate, UserRead
-from sns.users.service import create_user, get_user, create_access_token
+from sns.users.service import (
+    create_user,
+    get_user,
+    create_access_token,
+    send_new_account_email,
+)
+
 
 router = APIRouter()
 
@@ -14,6 +21,7 @@ router = APIRouter()
 @router.post("/signup", response_model=Token, status_code=status.HTTP_201_CREATED)
 def signup(
     signup_info: UserCreate,
+    background_tasks: BackgroundTasks,
     db: Session = Depends(db.get_db),
 ):
     """email과 password로 user 등록하기
@@ -25,7 +33,6 @@ def signup(
     Returns: \\
         - 새로 생성한 User 객체를 반환한다.
     """
-    # 가입 이메일과 비밀번호를 다 입력했는지
     if (
         not signup_info.email
         or not signup_info.password
@@ -33,21 +40,20 @@ def signup(
     ):
         raise HTTPException(status_code=400, detail="가입 정보를 다 입력하지 않았습니다.")
 
-    # 기존에 등록한 이메일이 존재하는지
     if get_user(db, email=signup_info.email):
         raise HTTPException(status_code=400, detail="존재하는 email입니다.")
 
-    # password가 일치한지
     if signup_info.password != signup_info.password_confirm:
         raise HTTPException(status_code=400, detail="비밀번호 정보가 일치하지 않습니다.")
 
     # 입력된 이메일로 확인 이메일 보내기
+    data = {"email_to": signup_info.email, "password": signup_info.password}
+    background_tasks.add_task(send_new_account_email, **data)
 
     # 해당 응답결과에 따라서 이메일 인증 완료 후, 가입 진행
     # 일정 시간이 지나면 회원 가입 진행 중단
 
     # 이메일 인증 완료 후, 비밀번호는 해쉬화하기 -> service.py
-
     new_user = create_user(signup_info)
     return new_user
 
@@ -78,7 +84,7 @@ def login(login_info: UserBase, db: Session = Depends(db.get_db)) -> dict:
     access_token = create_access_token(
         data={"user_email": user.email}, expires_delta=token_expires
     )
-    return {"access_token": access_token, "token_type": "bearer"}
+    return {"access_token": access_token, "token_type": "Bearer"}
 
 
 @router.post("/logout", status_code=status.HTTP_204_NO_CONTENT)
