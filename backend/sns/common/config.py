@@ -1,7 +1,6 @@
 from pydantic import BaseSettings, SecretStr, AnyHttpUrl
 from typing import List
 import secrets
-
 from sns.common.path import BASE_DIR
 
 

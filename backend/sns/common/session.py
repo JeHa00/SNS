@@ -1,7 +1,6 @@
 from fastapi import FastAPI
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
-from sqlalchemy.ext.declarative import declarative_base
 import logging
 
 from sns.common.config import settings
@@ -67,4 +66,3 @@ class SQLAlchemy:
 
 
 db = SQLAlchemy()
-Base = declarative_base()
