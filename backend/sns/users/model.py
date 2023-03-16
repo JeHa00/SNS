@@ -10,4 +10,4 @@ class User(Base, BaseMixin):
     profile_image_name = Column(String(50), nullable=True)
     profile_image_path = Column(String(200), nullable=True)
     verified = Column(Boolean, nullable=False, default=False)
-    verification_code = Column(String(10), nullable=True, unique=True)
+    verification_code = Column(String(20), nullable=True, unique=True)
