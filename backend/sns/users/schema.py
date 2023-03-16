@@ -1,5 +1,5 @@
 from typing import Optional
-from pydantic import BaseModel, EmailStr
+from pydantic import BaseModel, EmailStr, constr
 
 
 class Token(BaseModel):
@@ -9,21 +9,27 @@ class Token(BaseModel):
 
 class UserBase(BaseModel):
     email: EmailStr
-    password: str
+    password: constr(min_length=8)
+
+    class Config:
+        orm_mode = True
 
 
 class UserProfileInfo(BaseModel):
     profile_text: Optional[str] = None
     profile_image_name: Optional[str] = None
     profile_image_path: Optional[str] = None
+    verified: Optional[str] = None
+    verification_code: Optional[str] = None
 
 
 class UserCreate(UserBase):
-    password_confirm: str
+    password_confirm: constr(min_length=8)
+    verified: bool = False
 
 
 class UserUpdate(UserProfileInfo):
-    password: str
+    password: constr(min_length=8)
 
 
 class UserRead(UserProfileInfo):

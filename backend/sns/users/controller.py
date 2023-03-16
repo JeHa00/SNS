@@ -1,30 +1,36 @@
 from datetime import timedelta
+import secrets
 
 from fastapi import APIRouter, Depends, status, HTTPException
+from fastapi.responses import JSONResponse
 from sqlalchemy.orm import Session
 from starlette.background import BackgroundTasks
 
 from sns.common.session import db
 from sns.common.config import settings
+from sns.users.model import User
 from sns.users.schema import Token, UserBase, UserCreate, UserUpdate, UserRead
 from sns.users.service import (
-    create_user,
+    create,
+    update,
+    delete,
     get_user,
     create_access_token,
     send_new_account_email,
+    is_verified,
 )
 
 
 router = APIRouter()
 
 
-@router.post("/signup", response_model=Token, status_code=status.HTTP_201_CREATED)
+@router.post("/signup", response_model=UserBase, status_code=status.HTTP_201_CREATED)
 def signup(
     signup_info: UserCreate,
     background_tasks: BackgroundTasks,
     db: Session = Depends(db.get_db),
 ):
-    """email과 password로 user 등록하기
+    """email과 password로 새 user를 등록한다.
 
     Args: \\
         - **signup_info (schema.UserCreate)** : user로 등록할 email과 password 정보 \\
@@ -40,22 +46,63 @@ def signup(
     ):
         raise HTTPException(status_code=400, detail="가입 정보를 다 입력하지 않았습니다.")
 
-    if get_user(db, email=signup_info.email):
-        raise HTTPException(status_code=400, detail="존재하는 email입니다.")
-
     if signup_info.password != signup_info.password_confirm:
         raise HTTPException(status_code=400, detail="비밀번호 정보가 일치하지 않습니다.")
 
-    # 입력된 이메일로 확인 이메일 보내기
-    data = {"email_to": signup_info.email, "password": signup_info.password}
-    background_tasks.add_task(send_new_account_email, **data)
+    user = get_user(db, email=signup_info.email)
+    if user:
+        if not is_verified(user):
+            raise HTTPException(status_code=400, detail="인증 완료되지 못한 이메일입니다.")
 
-    # 해당 응답결과에 따라서 이메일 인증 완료 후, 가입 진행
-    # 일정 시간이 지나면 회원 가입 진행 중단
+        if is_verified(user):
+            raise HTTPException(status_code=400, detail="이미 등록된 이메일입니다.")
 
-    # 이메일 인증 완료 후, 비밀번호는 해쉬화하기 -> service.py
-    new_user = create_user(signup_info)
+    # 비활성화 유저 생성
+    new_user = create(db, signup_info)
+
+    # 이메일 인증 메일 발송하기
+    try:
+        code = secrets.token_urlsafe(10)
+        new_user = get_user(db, email=signup_info.email)
+        update(db, user=new_user, user_info={"verification_code": code})
+        db.commit()
+        url = f"http://0.0.0.0:8000{settings.API_V1_STR}/verification-email/{code}"
+        data = {
+            "email_to": signup_info.email,
+            "password": signup_info.password,
+            "url": url,
+        }
+        background_tasks.add_task(send_new_account_email, **data)
+    except Exception:
+        delete(db, new_user)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="이메일 발송 과정에서 에러가 발생했습니다.",
+        )
     return new_user
+
+
+@router.post("/verification-email/{code}", status_code=status.HTTP_200_OK)
+def verify_email(code: str, db: Session = Depends(db.get_db)) -> JSONResponse:
+    """code 정보를 받아 user를 조회하여 해당 user의 인증 상태를 True로 바꾼다.
+
+    Args: \\
+        - **code (str)** : url에 담겨진 code 정보 \\
+        - **db (Session, optional)** : db session
+
+    Raises: \\
+       - **HTTPException** : code 정보를 가진 user가 없을 경우 403 error를 발생한다.
+
+    Returns: \\
+        - **JSONResponse** : 계정 인증 완료
+    """
+    user = db.query(User).filter(User.verification_code == code).first()
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN, detail="등록되지 않은 인증 링크입니다."
+        )
+    update(db, user=user, user_info={"verified": True})
+    return JSONResponse(status_code=200, content="계정 인증을 성공적으로 완료했습니다.")
 
 
 @router.post("/login", response_model=Token, status_code=status.HTTP_200_OK)

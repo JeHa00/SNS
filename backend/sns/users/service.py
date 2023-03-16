@@ -1,12 +1,13 @@
 from datetime import datetime, timedelta
-from typing import Optional
+from typing import Optional, Union
 import smtplib
 
 from jinja2 import Environment, FileSystemLoader
+from fastapi.encoders import jsonable_encoder
 from email.message import EmailMessage
-
-from sqlalchemy.orm import Session
 from passlib.context import CryptContext
+from sqlalchemy.orm import Session
+from pydantic import BaseModel
 from jose import jwt
 
 from sns.common.config import settings
@@ -19,7 +20,7 @@ pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 
 # access_token 생성
-def create_access_token(data: dict, expires: Optional[timedelta] = None):
+def create_access_token(data: dict, expires: Optional[timedelta] = None) -> str:
     """주어진 데이터를 바탕으로 access token을 생성한다.
 
     Args:
@@ -43,7 +44,7 @@ def create_access_token(data: dict, expires: Optional[timedelta] = None):
 
 
 # email 관련
-def send_email(message: EmailMessage, context: dict, template_name: str):
+def send_email(message: EmailMessage, context: dict, template_name: str) -> None:
     """email message를 받아 해당 정보로 발송한다.
 
     Args:
@@ -60,12 +61,13 @@ def send_email(message: EmailMessage, context: dict, template_name: str):
         smtp.send_message(message)
 
 
-def send_new_account_email(email_to: str, password: str):
+def send_new_account_email(email_to: str, password: str, url: str) -> None:
     """새로운 계정 생성 이메일 메세지를 생성하여 send_email에 전달한다.
 
     Args:
         email_to (str): 새로 등록한 유저의 이메일
         password (str): 새로 등록한 유저의 패스워드
+        url (str): 발송된 이메일에 첨부된 이메일 인증 url
     """
     message = EmailMessage()
     message.add_header("Subject", f"{settings.PJT_NAME} - New account for user")
@@ -75,6 +77,7 @@ def send_new_account_email(email_to: str, password: str):
         "project_name": settings.PJT_NAME,
         "password": password,
         "email": email_to,
+        "link": url,
     }
     data = {"message": message, "context": context, "template_name": "new_account"}
     send_email(**data)
@@ -107,7 +110,7 @@ def get_password_hash(password: str) -> str:
 
 
 # user 생성 로직
-def get_user(db: Session, **kwargs) -> User:
+def get_user(db: Session, **kwargs) -> Union[User, bool]:
     """이메일이 이미 등록되어있는지 또는 해당 이메일을 가진 유저의 비밀번호가 인자로 받은 비밀번호와 일치하는지 판단
 
     Args:
@@ -129,7 +132,7 @@ def get_user(db: Session, **kwargs) -> User:
         return user
 
 
-def create_user(user_info: UserCreate, db: Session) -> User:
+def create(db: Session, user_info: UserCreate) -> User:
     """받은 정보로 새 유저를 등록한다.
 
     Args:
@@ -141,7 +144,8 @@ def create_user(user_info: UserCreate, db: Session) -> User:
     """
     db_obj = User(
         email=user_info.email,
-        hashed_password=get_password_hash(user_info.password),
+        password=get_password_hash(user_info.password),
+        verified=False,
     )
     db.add(db_obj)
     db.commit()
@@ -149,12 +153,43 @@ def create_user(user_info: UserCreate, db: Session) -> User:
     return db_obj
 
 
+def update(db: Session, user: User, user_info: Union[BaseModel, dict]) -> User:
+    obj_data = jsonable_encoder(user)
+    if isinstance(user_info, dict):
+        update_data = user_info
+    else:
+        update_data = user_info.dict(exclude_unset=True)
+    for field in obj_data:
+        if field in update_data:
+            setattr(user, field, update_data[field])
+    db.add(user)
+    db.commit()
+    db.refresh(user)
+    return user
+
+
+# user 삭제 로직
+def delete(db: Session, user_info: Union[BaseModel, int]) -> User:
+    if isinstance(user_info, int):
+        user = db.query(User).filter(User.id == id).first()
+    else:
+        user = user_info
+    db.delete(user)
+    db.commit()
+    return user
+
+
 # Token으로부터 user 정보 얻기
+def get_current_user_from_token():
+    pass
+
+
+# verified 값 조회
+def is_verified(user: User) -> bool:
+    return user.verified
+
 
 # user 1명 조회 로직
 
+
 # user 다수 조회 로직
-
-# user 업데이트 로직
-
-# user 삭제 로직
