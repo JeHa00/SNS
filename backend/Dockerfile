@@ -13,13 +13,14 @@ RUN apt-get update && apt-get install --no-install-recommends -y curl && \
     poetry config virtualenvs.create false
 
 # install python packages
-COPY . ./backend
-WORKDIR $APP_HOME/backend
-RUN poetry install
+COPY pyproject.toml poetry.lock $APP_HOME/
+RUN poetry install --without=dev --no-root
+
+# install app
+COPY . $APP_HOME
+RUN poetry install --only-root
 
 # run app
-WORKDIR $APP_HOME/backend/sns
-
-# run app
+WORKDIR $APP_HOME/sns
 CMD ["uvicorn", "main:app", "--reload", "--host", "0.0.0.0", "--port", "8000"]
 
