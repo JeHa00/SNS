@@ -1,5 +1,10 @@
 from typing import Optional
-from pydantic import BaseModel, EmailStr, constr
+from pydantic import BaseModel, EmailStr, Field
+
+
+class Msg(BaseModel):
+    status: str
+    msg: str
 
 
 class Token(BaseModel):
@@ -7,30 +12,32 @@ class Token(BaseModel):
     token_type: str
 
 
+class TokenData(BaseModel):
+    email: str | None = None
+
+
 class UserBase(BaseModel):
     email: EmailStr
-    password: constr(min_length=8)
+    password: str = Field(min_length=8)
+    verified: bool = False
 
     class Config:
         orm_mode = True
 
 
-class UserProfileInfo(BaseModel):
+class UserProfile(BaseModel):
+    name: str
     profile_text: Optional[str] = None
-    profile_image_name: Optional[str] = None
-    profile_image_path: Optional[str] = None
-    verified: Optional[str] = None
-    verification_code: Optional[str] = None
 
 
 class UserCreate(UserBase):
-    password_confirm: constr(min_length=8)
+    password_confirm: str = Field(min_length=8)
     verified: bool = False
 
 
-class UserUpdate(UserProfileInfo):
-    password: constr(min_length=8)
+class UserUpdate(UserProfile):
+    password: str = Field(min_length=8)
 
 
-class UserRead(UserProfileInfo):
-    email: EmailStr
+class UserRead(UserProfile, UserBase):
+    pass
