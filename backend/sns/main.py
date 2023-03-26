@@ -1,5 +1,4 @@
 from fastapi import FastAPI
-from fastapi import APIRouter
 from starlette.middleware.cors import CORSMiddleware
 
 from sns.common.config import settings
@@ -23,7 +22,6 @@ if settings.BACKEND_CORS_ORIGINS:
     )
 
 
-api_router = APIRouter()
 app.include_router(users, tags=["Users"], prefix=settings.API_V1_STR)
 # app.include_router(posts, tags=['Posts'], prefix=settings.API_V1_STR)
 # app.include_router(comments, tags=['Comments'], prefix=settings.API_V1_STR)
