@@ -1,5 +1,4 @@
 import secrets
-from typing import Any, Annotated
 
 from fastapi import APIRouter, Depends, status, HTTPException
 from starlette.background import BackgroundTasks
@@ -178,7 +177,7 @@ def change_password(
     new_password: str,
     current_user: UserBase = Depends(get_current_user_verified),
     db: Session = Depends(db.get_db),
-) -> Any:
+):
     """비밀번호를 변경합니다.
        기존 패스워드 정보가 현재 유저의 패스워드 정보와 일치하면 새로운 패스워드로 변경합니다.
        일치하지 않으면 변경하지 않습니다.
@@ -211,7 +210,7 @@ def change_password(
 )
 def read_user(
     user_id: int,
-    current_user: Annotated[UserBase, Depends(get_current_user)],
+    current_user: UserBase = Depends(get_current_user),
     db: Session = Depends(db.get_db),
 ):
     """user_id가 current_user와의 일치 유무에 따라 다른 user 정보를 반환한다.
