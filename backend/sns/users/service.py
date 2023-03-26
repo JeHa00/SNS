@@ -1,5 +1,4 @@
 from datetime import datetime, timedelta
-from typing import Annotated
 import smtplib
 import secrets
 
@@ -69,9 +68,7 @@ def get_current_user(
     return user
 
 
-def get_current_user_verified(
-    current_user: Annotated[UserBase, Depends(get_current_user)]
-):
+def get_current_user_verified(current_user: UserBase = Depends(get_current_user)):
     """인증된 현재 유저 정보를 반환한다.
 
     Args:
