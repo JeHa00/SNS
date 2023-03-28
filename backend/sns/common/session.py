@@ -1,6 +1,6 @@
 from fastapi import FastAPI
 from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker
+from sqlalchemy.orm import sessionmaker, close_all_sessions
 import logging
 
 from sns.common.config import settings
@@ -20,7 +20,7 @@ class SQLAlchemy:
         db 초기화 함수
         """
         self._engine = create_engine(
-            settings.SQLAlCHEMY_DATABASE_URI.format(
+            settings.SQLALCHEMY_DATABASE_URI.format(
                 username=settings.DB_USERNAME,
                 pw=settings.DB_PASSWORD.get_secret_value(),
                 host=settings.DB_HOST,
@@ -40,7 +40,7 @@ class SQLAlchemy:
 
         @app.on_event("shutdown")
         def shutdown():
-            self._session.close_all()
+            close_all_sessions()
             self._engine.dispose()
             logging.info("DB disconnected")
 
