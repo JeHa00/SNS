@@ -1,6 +1,7 @@
 from fastapi import FastAPI
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker, close_all_sessions
+
 import logging
 
 from sns.common.config import settings
