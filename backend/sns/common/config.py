@@ -1,6 +1,7 @@
 from pydantic import BaseSettings, SecretStr, AnyHttpUrl
 from typing import List
 import secrets
+
 from sns.common.path import BASE_DIR
 
 
@@ -28,6 +29,19 @@ class Settings(BaseSettings):
     SMTP_PORT: int = 587 if SMTP_TLS else 465
     EMAIL_ADDR = "only.for.pjt@gmail.com"
     EMAIL_PASSWORD = "wngvlgolokntjpas"
+
+    def get_test_db_url(self):
+        db_username: str = "root"
+        db_host: str = "0.0.0.0"
+        db_name: str = "test"
+
+        return self.SQLALCHEMY_DATABASE_URI.format(
+            username=db_username,
+            pw=self.DB_PASSWORD.get_secret_value(),
+            host=db_host,
+            port=self.DB_PORT,
+            name=db_name,
+        )
 
     class config:
         env_file = BASE_DIR / "env"
