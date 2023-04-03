@@ -15,7 +15,7 @@ from sns.common.config import settings
 from sns.common.session import db
 from sns.common.path import EMAIL_TEMPLATE_DIR
 from sns.users.model import User
-from sns.users.schema import UserCreate, TokenData, Token, UserBase
+from sns.users.schema import UserCreate, Token, UserBase
 
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
@@ -32,17 +32,17 @@ def create_access_token(data: dict, expires: timedelta | None = None) -> str:
     Returns:
         Token: 생성된 jwt을 반환한다.
     """
+    to_encode = data.copy()
     if expires:
         expire = datetime.utcnow() + expires
     else:
         expire = datetime.utcnow() + timedelta(
             minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES
         )
-    to_encode = {"exp": expire, "sub": str(data)}
+    to_encode.update({"exp": expire})
     encoded_jwt = jwt.encode(
         to_encode, settings.SECRET_KEY, algorithm=settings.SECRET_ALGORITHM
     )
-
     return encoded_jwt
 
 
@@ -59,10 +59,9 @@ def get_current_user(
         email: str = payload.get("sub")
         if email is None:
             raise credentials_exception
-        token_data = TokenData(email=email)
     except JWTError:
         raise credentials_exception
-    user = get_user(db, email=token_data.email)
+    user = get_user(db, email=email)
     if user is None:
         raise credentials_exception
     return user
@@ -80,7 +79,6 @@ def get_current_user_verified(current_user: UserBase = Depends(get_current_user)
     Returns:
         인증된 유저 정보를 반환
     """
-    print(current_user)
     if not is_verified(current_user):
         raise HTTPException(status_code=400, detail="인증되지 않은 유저입니다.")
     return current_user
