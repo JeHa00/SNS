@@ -80,6 +80,7 @@ def get_current_user_verified(current_user: UserBase = Depends(get_current_user)
     Returns:
         인증된 유저 정보를 반환
     """
+    print(current_user)
     if not is_verified(current_user):
         raise HTTPException(status_code=400, detail="인증되지 않은 유저입니다.")
     return current_user
