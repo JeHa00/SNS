@@ -25,12 +25,16 @@ from sns.users.service import (
 
 def test_create_access_token(client, db_session):
     data = {"sub": random_email()}
+    to_encode = data.copy()
+    
     expire = datetime.utcnow() + timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
     data.update({"exp": expire})
+    
     encoded_jwt = jwt.encode(
         data, settings.SECRET_KEY, algorithm=settings.SECRET_ALGORITHM
     )
-    token = create_access_token(data)
+    token = create_access_token(to_encode)
+    
     assert encoded_jwt == token
 
 
