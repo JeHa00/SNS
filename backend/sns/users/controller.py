@@ -1,6 +1,6 @@
 import secrets
 
-from fastapi import APIRouter, Depends, status, HTTPException
+from fastapi import APIRouter, Depends, status, HTTPException, Body
 from starlette.background import BackgroundTasks
 from sqlalchemy.orm import Session
 
@@ -22,7 +22,6 @@ from sns.users.service import (
     send_new_account_email,
     create_access_token,
     get_password_hash,
-    get_current_user,
     verify_password,
     is_verified,
     get_user,
@@ -35,7 +34,7 @@ from sns.users.service import (
 router = APIRouter()
 
 
-@router.post("/signup", response_model=UserBase, status_code=status.HTTP_201_CREATED)
+@router.post("/signup", response_model=Msg, status_code=status.HTTP_201_CREATED)
 def signup(
     signup_info: UserCreate,
     background_tasks: BackgroundTasks,
@@ -87,7 +86,7 @@ def signup(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="이메일 발송 과정에서 에러가 발생했습니다. 다시 회원가입 정보를 입력하세요",
         )
-    return new_user
+    return {"status": "success", "msg": "이메일 전송이 완료되었습니다."}
 
 
 @router.patch(
@@ -112,16 +111,19 @@ def verify_email(code: str, db: Session = Depends(db.get_db)):
 
 
 @router.post("/login", response_model=Token, status_code=status.HTTP_200_OK)
-def login(login_info: UserBase, db: Session = Depends(db.get_db)):
+def login(email: str = Body(...), 
+          password: str = Body(...), 
+          db: Session = Depends(db.get_db)):
     """login 정보를 입력하면 access token을 발행한다.
 
     Args: \\
-        - login_info (schema.UserBase): 로그인 시 입력한 email과 password를 의미한다.
+        - email: 로그인 시 입력한 email    
+        - password: 로그인 시 입력한 password  
 
     Returns: \\
         - dict: 입력한 정보가 정확하면 access token을 발행한다.
     """
-    user = get_user(db, email=login_info.email, password=login_info.password)
+    user = get_user(db, email=email, password=password)
     if not user:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
@@ -134,31 +136,31 @@ def login(login_info: UserBase, db: Session = Depends(db.get_db)):
             status_code=status.HTTP_403_FORBIDDEN,
             detail="먼저 이메일 인증을 완료하세요.",
         )
-    access_token = create_access_token(data={"sub": login_info.email})
+    access_token = create_access_token(data={"sub": email})
     return {"access_token": access_token, "token_type": "Bearer"}
 
 
-@router.patch("/password-reset", response_model=Msg, status_code=status.HTTP_200_OK)
+@router.post("/password-reset", response_model=Msg, status_code=status.HTTP_200_OK)
 def reset_password(
-    user_info: UserBase,
-    background_tasks: BackgroundTasks,
+    email: str = Body(...),
+    background_tasks: BackgroundTasks = BackgroundTasks(),
     db: Session = Depends(db.get_db),
 ):
-    """비밀번호를 초기화합니다.
+    """로그인 시 비밀번호를 잊었을 때, 입력한 이메일 주소로 임시 비밀번호를 보낸다.
 
     Args: \\
-        - user_info (schema.UserBase): 임시 비밀번호를 발급 받을 이메일
+        - email: 로그인 시 입력한 이메일 주소  
 
     Returns: \\
         - Msg: 비밀번호 초기화 이메일 송신 완료 메세지
     """
-    user = get_user(db, email=user_info.email)
+    user = get_user(db, email=email)
     if user:
         if is_verified(user):
             try:
                 temporary_password = secrets.token_urlsafe(8)
                 update(db, user, {"password": get_password_hash(temporary_password)})
-                data = {"email_to": user_info.email, "password": temporary_password}
+                data = {"email_to": email, "password": temporary_password}
                 background_tasks.add_task(send_reset_password_email, **data)
                 return {"status": "success", "msg": "비밀번호 초기화를 위한 이메일 송신이 완료되었습니다."}
             except Exception:
@@ -175,13 +177,13 @@ def change_password(
     current_user: UserBase = Depends(get_current_user_verified),
     db: Session = Depends(db.get_db),
 ):
-    """비밀번호를 변경합니다.
-       기존 패스워드 정보가 현재 유저의 패스워드 정보와 일치하면 새로운 패스워드로 변경합니다.
-       일치하지 않으면 변경하지 않습니다.
+    """임시 비밀번호로 로그인 후, 다른 패스워드로 변경한다.
+       기존 패스워드 정보가 현재 유저의 패스워드 정보와 일치하면 새로운 패스워드로 변경한다.
+       일치하지 않으면 변경하지 않는다.  
 
     Args: \\
         password_info (UserPasswordUpdate): 현재 패스워드와 새 패스워드 정보
-        current_user (UserBase, optional): 현재 유저 정보
+        current_user (UserBase): 현재 유저 정보
 
     Returns: \\
         Msg: 실행 완료 메세지
@@ -191,7 +193,9 @@ def change_password(
         password_info.new_password,
     )
 
-    if verify_password(current_password, current_user.password):
+    user = get_user(db, email=current_user.email)
+
+    if verify_password(current_password, user.password):
         try:
             user = get_user(db, email=current_user.email)
             update(db, user, {"password": get_password_hash(new_password)})
@@ -209,14 +213,14 @@ def change_password(
 )
 def read_user(
     user_id: int,
-    current_user: UserBase = Depends(get_current_user),
+    current_user: UserBase = Depends(get_current_user_verified),
     db: Session = Depends(db.get_db),
 ):
     """user_id가 current_user와의 일치 유무에 따라 다른 user 정보를 반환한다.
 
     Args: \\
         - user_id (int): db에 저장된 user id
-        - current_user (UserBase, optional): 현재 유저 정보
+        - current_user (UserBase): 현재 유저 정보
 
     Returns: \\
         - 유저 정보
@@ -235,7 +239,7 @@ def read_user(
         raise HTTPException(status_code=400, detail="등록되지 않은 유저입니다.")
 
 
-@router.patch("/users/{user_id}", response_model=Msg, status_code=status.HTTP_200_OK)
+@router.patch("/users/{user_id}", response_model=UserRead, status_code=status.HTTP_200_OK)
 def update_user(
     user_id: int,
     info_to_be_updated: UserUpdate,
@@ -256,8 +260,8 @@ def update_user(
     if selected_user.email == current_user.email:
         try:
             user_to_update = get_user(db, email=current_user.email)
-            update(db, user_to_update, info_to_be_updated)
-            return {"status": "success", "msg": "계정 정보가 변경되었습니다."}
+            user = update(db, user_to_update, info_to_be_updated)
+            return user
         except Exception:
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -297,5 +301,5 @@ def delete_user(
             )
     else:
         raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED, detail="수정할 권한이 없습니다."
+            status_code=status.HTTP_401_UNAUTHORIZED, detail="삭제할 권한이 없습니다."
         )

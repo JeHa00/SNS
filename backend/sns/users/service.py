@@ -15,7 +15,7 @@ from sns.common.config import settings
 from sns.common.session import db
 from sns.common.path import EMAIL_TEMPLATE_DIR
 from sns.users.model import User
-from sns.users.schema import UserCreate, Token, UserBase
+from sns.users.schema import UserCreate, Token
 
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
@@ -67,11 +67,11 @@ def get_current_user(
     return user
 
 
-def get_current_user_verified(current_user: UserBase = Depends(get_current_user)):
+def get_current_user_verified(current_user: User = Depends(get_current_user)):
     """인증된 현재 유저 정보를 반환한다.
 
     Args:
-        current_user (Annotated[UserBase, Depends): 현재 유저 정보
+        current_user (Depends): 현재 유저 정보
 
     Raises:
         HTTPException: 인증되지 않을 경우 발생
@@ -257,7 +257,7 @@ def delete(db: Session, user_info: User | int) -> User:
     return user
 
 
-def is_verified(user: UserBase | User) -> bool:
+def is_verified(user: User) -> bool:
     """user의 이메일 인증 여부를 확인한다.
 
     Args:
