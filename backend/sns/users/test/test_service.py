@@ -1,3 +1,5 @@
+from typing import Dict
+
 import pytest
 from pydantic import ValidationError
 from datetime import datetime, timedelta
@@ -5,6 +7,8 @@ from jose import jwt
 
 from fastapi.encoders import jsonable_encoder
 from fastapi.exceptions import HTTPException
+from fastapi.testclient import TestClient
+from sqlalchemy.orm import Session
 
 from sns.users.test.utils import random_lower_string, random_email
 from sns.users.schema import UserCreate, UserUpdate
@@ -23,7 +27,7 @@ from sns.users.service import (
 )
 
 
-def test_create_access_token(client, db_session):
+def test_create_access_token(client: TestClient, db_session: Session):
     data = {"sub": random_email()}
     to_encode = data.copy()
     
@@ -38,7 +42,7 @@ def test_create_access_token(client, db_session):
     assert encoded_jwt == token
 
 
-def test_create_user(client, db_session):
+def test_create_user(client: TestClient, db_session: Session):
     email = random_email()
     password = random_lower_string(k=8)
     user_in = UserCreate(
@@ -68,7 +72,7 @@ def test_create_user(client, db_session):
         )
 
 
-def test_get_current_user(fake_user, db_session):
+def test_get_current_user(fake_user: Dict, db_session: Session):
     user = fake_user.get("user")
     data = {"sub": user.email}
     token = create_access_token(data)
@@ -84,7 +88,7 @@ def test_get_current_user(fake_user, db_session):
     assert user_01 == user_02
 
 
-def test_get_current_user_verified(fake_user, db_session):
+def test_get_current_user_verified(fake_user: Dict, db_session: Session):
     user = fake_user.get("user")
     info_to_be_updated = UserUpdate(verified=True, profile_text=None)
     update(db_session, user, info_to_be_updated)
@@ -92,13 +96,13 @@ def test_get_current_user_verified(fake_user, db_session):
     assert verified_user == user
 
 
-def test_get_current_user_not_verified(fake_user, db_session):
+def test_get_current_user_not_verified(fake_user: Dict, db_session: Session):
     user = fake_user.get("user")
     with pytest.raises(HTTPException):
         get_current_user_verified(user)
 
 
-def test_get_user(client, db_session):
+def test_get_user(client: TestClient, db_session: Session):
     email = random_email()
     password = random_lower_string(k=8)
     user_info = UserCreate(email=email, password=password, password_confirm=password)
@@ -113,7 +117,7 @@ def test_get_user(client, db_session):
     assert user_by_only_email == user_by_email_and_password
 
 
-def test_update_user_on_being_verified(fake_user, db_session):
+def test_update_user_on_being_verified(fake_user: Dict, db_session: Session):
     user_01 = fake_user.get("user")
     old_verified = is_verified(user_01)
 
@@ -128,7 +132,7 @@ def test_update_user_on_being_verified(fake_user, db_session):
     assert old_verified != is_verified(user_02)
 
 
-def test_update_user_on_password(fake_user, db_session):
+def test_update_user_on_password(fake_user: Dict, db_session: Session):
     user_01 = fake_user.get("user")
     old_password = user_01.password
 
@@ -143,7 +147,7 @@ def test_update_user_on_password(fake_user, db_session):
     assert old_password != new_password
 
 
-def test_update_user_on_profile_text(fake_user, db_session):
+def test_update_user_on_profile_text(fake_user: Dict, db_session: Session):
     user_01 = fake_user.get("user")
     old_profile_text = user_01.profile_text
 
@@ -158,7 +162,7 @@ def test_update_user_on_profile_text(fake_user, db_session):
     assert old_profile_text != new_profile_text
 
 
-def test_delete_user(fake_user, db_session):
+def test_delete_user(fake_user: Dict, db_session: Session):
     user = fake_user.get("user")
     delete(db_session, user)
     user = get_user(db_session, email=user.email)

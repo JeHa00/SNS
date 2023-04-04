@@ -1,18 +1,22 @@
+from random import randint
+from typing import Dict
 import pytest
 import secrets
-from random import randint
 
-from fastapi import status
+from fastapi.testclient import TestClient
+from sqlalchemy.orm import Session
+
 from fastapi.encoders import jsonable_encoder
+from fastapi import status
 
 from sns.common.config import settings
-from sns.users.test.utils import random_email, random_lower_string
-from sns.users.schema import UserCreate, UserUpdate, UserPasswordUpdate
 from sns.users.service import create_access_token, create, update, get_user
+from sns.users.schema import UserCreate, UserUpdate, UserPasswordUpdate
+from sns.users.test.utils import random_email, random_lower_string
 
 
 @pytest.mark.signup
-def test_signup_if_password_is_not_same_as_password_confirm(client):
+def test_signup_if_password_is_not_same_as_password_confirm(client: TestClient):
     # 서로 다른 password 생성
     password = random_lower_string(k=8)
     password_confirm = random_lower_string(k=8)
@@ -36,7 +40,7 @@ def test_signup_if_password_is_not_same_as_password_confirm(client):
 
 
 @pytest.mark.signup
-def test_signup_if_email_is_not_verified(client, db_session):
+def test_signup_if_email_is_not_verified(client: TestClient, db_session: Session):
     # fake_user 생성
     password = random_lower_string(k=8)
     user_info = UserCreate(
@@ -55,7 +59,7 @@ def test_signup_if_email_is_not_verified(client, db_session):
 
 
 @pytest.mark.signup
-def test_signup_if_email_is_already_verified(client, db_session):
+def test_signup_if_email_is_already_verified(client: TestClient, db_session: Session):
     # fake_user 생성
     email = random_email()
     password = random_lower_string(k=8)
@@ -77,7 +81,7 @@ def test_signup_if_email_is_already_verified(client, db_session):
 
 
 @pytest.mark.verify_email
-def test_verify_email_if_code_is_not_registered(client):
+def test_verify_email_if_code_is_not_registered(client: TestClient):
     code = secrets.token_urlsafe(10)  # 인증 코드 생성
 
     # 이메일 인증 및 결과
@@ -89,7 +93,7 @@ def test_verify_email_if_code_is_not_registered(client):
 
 
 @pytest.mark.verify_email
-def test_verify_email_if_code_is_registered(client, db_session, fake_user):
+def test_verify_email_if_code_is_registered(client: TestClient, db_session: Session, fake_user: Dict):
     code = secrets.token_urlsafe(10)  # 인증 코드 생성
     update(
         db_session, user=fake_user.get("user"), user_info={"verification_code": code}
@@ -106,7 +110,7 @@ def test_verify_email_if_code_is_registered(client, db_session, fake_user):
 
 
 @pytest.mark.login
-def test_login_if_user_is_not_verified(client, fake_user):
+def test_login_if_user_is_not_verified(client: TestClient, fake_user: Dict):
     # fake_user 정보
     user = fake_user.get("user")
     user_info = fake_user.get("user_info")
@@ -123,7 +127,7 @@ def test_login_if_user_is_not_verified(client, fake_user):
 
 
 @pytest.mark.login
-def test_login_if_login_info_is_wrong(client, fake_user):
+def test_login_if_login_info_is_wrong(client: TestClient, fake_user: Dict):
     # fake_user 정보
     user = fake_user.get("user")
 
@@ -139,7 +143,7 @@ def test_login_if_login_info_is_wrong(client, fake_user):
 
 
 @pytest.mark.login
-def test_login_if_user_registered(client, db_session, fake_user):
+def test_login_if_user_registered(client: TestClient, db_session: Session, fake_user: Dict):
     # fake_user 정보
     user = fake_user.get("user")
     user_info = fake_user.get("user_info")
@@ -163,7 +167,7 @@ def test_login_if_user_registered(client, db_session, fake_user):
 
 
 @pytest.mark.reset_password
-def test_reset_password_if_not_verified_email(client, fake_user):
+def test_reset_password_if_not_verified_email(client: TestClient, fake_user: Dict):
     # fake_user 정보
     user = fake_user.get("user")
 
@@ -178,7 +182,7 @@ def test_reset_password_if_not_verified_email(client, fake_user):
 
 
 @pytest.mark.reset_password
-def test_reset_password_if_not_user(client):
+def test_reset_password_if_not_user(client: TestClient):
     # 등록되지 않은 이메일 정보
     not_registered_email = random_email()
 
@@ -191,7 +195,7 @@ def test_reset_password_if_not_user(client):
 
 
 @pytest.mark.reset_password
-def test_reset_password_if_registered(client, db_session, fake_user):
+def test_reset_password_if_registered(client: TestClient, db_session: Session, fake_user: Dict):
     # fake_user 정보
     user = fake_user.get("user")
 
@@ -213,7 +217,7 @@ def test_reset_password_if_registered(client, db_session, fake_user):
 
 @pytest.mark.change_password
 def test_change_password_if_password_is_not_same_as_password_confirm(
-    client, get_user_token_headers_and_user_info
+   client: TestClient, get_user_token_headers_and_user_info: Dict
 ):
     # current_user 정보
     headers = get_user_token_headers_and_user_info.get("headers")
@@ -238,7 +242,7 @@ def test_change_password_if_password_is_not_same_as_password_confirm(
 
 @pytest.mark.change_password
 def test_change_password_if_password_is_same_as_password_confirm(
-    client, get_user_token_headers_and_user_info
+   client: TestClient, get_user_token_headers_and_user_info: Dict
 ):
     # current_user 정보
     headers = get_user_token_headers_and_user_info.get("headers")
@@ -264,7 +268,7 @@ def test_change_password_if_password_is_same_as_password_confirm(
 
 
 @pytest.mark.read_user
-def test_read_user_if_not_registered(client, get_user_token_headers_and_user_info):
+def test_read_user_if_not_registered(client: TestClient, get_user_token_headers_and_user_info: Dict):
     headers = get_user_token_headers_and_user_info.get("headers")  # current_user 정보
 
     # 유저 조회 및 결과
@@ -278,7 +282,7 @@ def test_read_user_if_not_registered(client, get_user_token_headers_and_user_inf
 
 @pytest.mark.read_user
 def test_read_user_if_user_is_not_same_as_current_user(
-    client, get_user_token_headers_and_user_info, fake_user
+   client: TestClient, get_user_token_headers_and_user_info: Dict, fake_user: Dict
 ):
     # current_user 정보
     headers = get_user_token_headers_and_user_info.get("headers")
@@ -297,7 +301,7 @@ def test_read_user_if_user_is_not_same_as_current_user(
 
 @pytest.mark.read_user
 def test_read_user_if_user_is_same_as_current_user(
-    client, db_session, get_user_token_headers_and_user_info
+   client: TestClient, db_session: Session, get_user_token_headers_and_user_info: Dict
 ):
     # current_user 정보
     headers = get_user_token_headers_and_user_info.get("headers")
@@ -314,7 +318,7 @@ def test_read_user_if_user_is_same_as_current_user(
 
 @pytest.mark.update_user
 def test_update_user_on_profile_text_if_not_authorized(
-    client, get_user_token_headers_and_user_info, fake_user
+   client: TestClient, get_user_token_headers_and_user_info: Dict, fake_user: Dict
 ):
     # current_user 정보
     headers = get_user_token_headers_and_user_info.get("headers")
@@ -344,7 +348,7 @@ def test_update_user_on_profile_text_if_not_authorized(
 
 @pytest.mark.update_user
 def test_update_user_on_profile_text_if_authorized(
-    client, db_session, get_user_token_headers_and_user_info
+   client: TestClient, db_session: Session, get_user_token_headers_and_user_info: Dict
 ):
     # current_user 정보
     headers = get_user_token_headers_and_user_info.get("headers")
@@ -365,7 +369,7 @@ def test_update_user_on_profile_text_if_authorized(
 
 @pytest.mark.delete_user
 def test_delete_user_if_not_authorized(
-    client, get_user_token_headers_and_user_info, fake_user
+   client: TestClient, get_user_token_headers_and_user_info: Dict, fake_user: Dict
 ):
     # current_user 정보
     headers = get_user_token_headers_and_user_info.get("headers")
@@ -383,7 +387,7 @@ def test_delete_user_if_not_authorized(
 
 @pytest.mark.delete_user
 def test_delete_user_if_authorized(
-    client, db_session, get_user_token_headers_and_user_info
+   client: TestClient, db_session: Session, get_user_token_headers_and_user_info: Dict
 ):
     # current_user 정보
     headers = get_user_token_headers_and_user_info.get("headers")

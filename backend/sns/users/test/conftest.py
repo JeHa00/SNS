@@ -1,6 +1,9 @@
 from typing import Dict
 import pytest
 
+from fastapi.testclient import TestClient
+from sqlalchemy.orm import Session
+
 from sns.users.test.utils import random_lower_string, random_email
 from sns.users.schema import UserCreate, UserUpdate
 from sns.users.service import create, update
@@ -9,7 +12,7 @@ from sns.common.conftest import app, db_session, client
 
 
 @pytest.fixture(scope="function")
-def fake_user(client, db_session):
+def fake_user(client: TestClient, db_session: Session):
     password = random_lower_string(k=8)
     user_info = UserCreate(
         email=random_email(), password=password, password_confirm=password
@@ -19,7 +22,7 @@ def fake_user(client, db_session):
 
 
 @pytest.fixture(scope="function")
-def get_user_token_headers_and_user_info(client, db_session) -> Dict[str, str]:
+def get_user_token_headers_and_user_info(client: TestClient, db_session: Session) -> Dict:
     # fake_user 생성
     email = random_email()
     password = random_lower_string(k=8)
