@@ -14,3 +14,4 @@ class User(Base, BaseMixin):
     profile_image_path = Column(String(200), nullable=True)
     verified = Column(Boolean, default=False)
     verification_code = Column(String(20), nullable=True, unique=True)
+    posts = relationship("Post", back_populates="writer")
