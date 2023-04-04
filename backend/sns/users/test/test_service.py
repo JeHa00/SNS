@@ -86,7 +86,7 @@ def test_get_current_user(fake_user, db_session):
 
 def test_get_current_user_verified(fake_user, db_session):
     user = fake_user.get("user")
-    info_to_be_updated = UserUpdate(verified=True)
+    info_to_be_updated = UserUpdate(verified=True, profile_text=None)
     update(db_session, user, info_to_be_updated)
     verified_user = get_current_user_verified(user)
     assert verified_user == user
@@ -117,7 +117,7 @@ def test_update_user_on_being_verified(fake_user, db_session):
     user_01 = fake_user.get("user")
     old_verified = is_verified(user_01)
 
-    info_to_be_updated = UserUpdate(verified=True)
+    info_to_be_updated = UserUpdate(verified=True, profile_text=None)
     update(db_session, user_01, info_to_be_updated)
     user_02 = get_user(db_session, email=user_01.email)
 
@@ -147,7 +147,7 @@ def test_update_user_on_profile_text(fake_user, db_session):
     user_01 = fake_user.get("user")
     old_profile_text = user_01.profile_text
 
-    info_to_be_updated = UserUpdate(profile_text=f"{random_lower_string(k=10)}")
+    info_to_be_updated = UserUpdate(verified=True, profile_text=f"{random_lower_string(k=10)}")
     update(db_session, user_01, info_to_be_updated)
 
     user_02 = get_user(db_session, email=user_01.email)

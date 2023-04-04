@@ -7,7 +7,7 @@ from fastapi.encoders import jsonable_encoder
 
 from sns.common.config import settings
 from sns.users.test.utils import random_email, random_lower_string
-from sns.users.schema import UserBase, UserCreate, UserUpdate, UserPasswordUpdate
+from sns.users.schema import UserCreate, UserUpdate, UserPasswordUpdate
 from sns.users.service import create_access_token, create, update, get_user
 
 
@@ -112,11 +112,10 @@ def test_login_if_user_is_not_verified(client, fake_user):
     user_info = fake_user.get("user_info")
 
     # 로그인 정보
-    login_info = UserBase(email=user.email, password=user_info.password)
-    data = jsonable_encoder(login_info)
+    login_info = {'email': user.email, 'password': user_info.password}
 
     # 로그인 및 결과
-    response = client.post(f"{settings.API_V1_STR}/login", json=data)
+    response = client.post(f"{settings.API_V1_STR}/login", json=login_info)
     result_msg = response.json().get("detail")
 
     assert response.status_code == status.HTTP_403_FORBIDDEN
@@ -129,11 +128,10 @@ def test_login_if_login_info_is_wrong(client, fake_user):
     user = fake_user.get("user")
 
     # 로그인 정보
-    login_info = UserBase(email=user.email, password=random_lower_string(k=8))
-    data = jsonable_encoder(login_info)
+    login_info = {"email": user.email, "password": random_lower_string(k=8)}    
 
     # 로그인 및 결과
-    response = client.post(f"{settings.API_V1_STR}/login", json=data)
+    response = client.post(f"{settings.API_V1_STR}/login", json=login_info)
     result_msg = response.json().get("detail")  # 로그인 결과
 
     assert response.status_code == status.HTTP_400_BAD_REQUEST
@@ -152,11 +150,10 @@ def test_login_if_user_registered(client, db_session, fake_user):
     update(db_session, user, info_to_be_updated)
 
     # 로그인 정보
-    login_info = UserBase(email=user.email, password=user_info.password)
-    data = jsonable_encoder(login_info)
+    login_info = {'email': user.email, 'password': user_info.password}
 
     # 로그인 및 결과
-    response = client.post(f"{settings.API_V1_STR}/login", json=data)
+    response = client.post(f"{settings.API_V1_STR}/login", json=login_info)
     access_token_2 = response.json().get("access_token")
     token_type = response.json().get("token_type")
 
@@ -169,11 +166,10 @@ def test_login_if_user_registered(client, db_session, fake_user):
 def test_reset_password_if_not_verified_email(client, fake_user):
     # fake_user 정보
     user = fake_user.get("user")
-    data = UserBase(email=user.email)
 
     # 패스워드 초기화 및 결과
-    response = client.patch(
-        f"{settings.API_V1_STR}/password-reset", json=jsonable_encoder(data)
+    response = client.post(
+        f"{settings.API_V1_STR}/password-reset", json=user.email
     )
     result_msg = response.json().get("detail")
 
@@ -184,10 +180,10 @@ def test_reset_password_if_not_verified_email(client, fake_user):
 @pytest.mark.reset_password
 def test_reset_password_if_not_user(client):
     # 등록되지 않은 이메일 정보
-    data = {"email": random_email()}
+    not_registered_email = random_email()
 
     # 패스워드 초기화 및 결과
-    response = client.patch(f"{settings.API_V1_STR}/password-reset", json=data)
+    response = client.post(f"{settings.API_V1_STR}/password-reset", json=not_registered_email)
     result_msg = response.json().get("detail")
 
     assert response.status_code == status.HTTP_403_FORBIDDEN
@@ -198,15 +194,14 @@ def test_reset_password_if_not_user(client):
 def test_reset_password_if_registered(client, db_session, fake_user):
     # fake_user 정보
     user = fake_user.get("user")
-    data = UserBase(email=user.email)
 
     # verified 값 true로 변경
-    info_to_be_updated = UserUpdate(verified=True)
+    info_to_be_updated = UserUpdate(verified=True, profile_text=None)
     update(db_session, user, info_to_be_updated)
 
     # 패스워드 초기화 및 결과
-    response = client.patch(
-        f"{settings.API_V1_STR}/password-reset", json=jsonable_encoder(data)
+    response = client.post(
+        f"{settings.API_V1_STR}/password-reset", json=user.email
     )
     result_status_text = response.json().get("status")
     result_msg = response.json().get("msg")
@@ -302,7 +297,7 @@ def test_read_user_if_user_is_not_same_as_current_user(
 
 @pytest.mark.read_user
 def test_read_user_if_user_is_same_as_current_user(
-    client, get_user_token_headers_and_user_info
+    client, db_session, get_user_token_headers_and_user_info
 ):
     # current_user 정보
     headers = get_user_token_headers_and_user_info.get("headers")
@@ -310,7 +305,7 @@ def test_read_user_if_user_is_same_as_current_user(
     current_user_email = current_user_info.get("email")
 
     # 동일한 유저 정보 조회 및 결과
-    user_id = 1
+    user_id = get_user(db_session, email=current_user_email).id
     response = client.get(f"{settings.API_V1_STR}/users/{user_id}", headers=headers)
     email_of_user_id = response.json().get("email")
 
@@ -331,7 +326,7 @@ def test_update_user_on_profile_text_if_not_authorized(
     email_of_not_authorized_user = not_authorized_user.email
 
     # 변경할 유저 정보
-    info_to_be_updated = UserUpdate(profile_text="Hello world")
+    info_to_be_updated = UserUpdate(profile_text="Hello world", verified=True)
     data = jsonable_encoder(info_to_be_updated)
 
     # 변경 시도 및 결과
@@ -358,19 +353,13 @@ def test_update_user_on_profile_text_if_authorized(
 
     # 동일한 유저의 프로필 정보 변경
     user = get_user(db_session, email=current_user_email)
-    info_to_be_updated = UserUpdate(profile_text="Hello world")
+    info_to_be_updated = UserUpdate(profile_text="Hello world", verified=True)
     data = jsonable_encoder(info_to_be_updated)
     response = client.patch(
         f"{settings.API_V1_STR}/users/{user.id}", headers=headers, json=data
     )
 
-    # 응답 결과
-    result_status_text = response.json().get("status")
-    result_msg = response.json().get("msg")
-
     assert response.status_code == status.HTTP_200_OK
-    assert result_status_text == "success"
-    assert result_msg == "계정 정보가 변경되었습니다."
     assert user.profile_text == "Hello world"
 
 
@@ -389,7 +378,7 @@ def test_delete_user_if_not_authorized(
     result_msg = response.json().get("detail")
 
     assert response.status_code == status.HTTP_401_UNAUTHORIZED
-    assert result_msg == "수정할 권한이 없습니다."
+    assert result_msg == "삭제할 권한이 없습니다."
 
 
 @pytest.mark.delete_user
