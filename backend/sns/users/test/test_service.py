@@ -162,8 +162,15 @@ def test_update_user_on_profile_text(fake_user: Dict, db_session: Session):
     assert old_profile_text != new_profile_text
 
 
-def test_delete_user(fake_user: Dict, db_session: Session):
+def test_delete_user_by_int(fake_user: Dict, db_session: Session):
     user = fake_user.get("user")
     delete(db_session, user)
     user = get_user(db_session, email=user.email)
-    assert not user
+    assert user == None
+
+
+def test_delete_user_by_model_object(fake_user: Dict, db_session: Session):
+    user = fake_user.get("user")
+    delete(db_session, user)
+    user = get_user(db_session, email=user.email)
+    assert user == None
