@@ -238,7 +238,7 @@ def update(db: Session, user: User, user_info: User | dict) -> User:
     return user
 
 
-def delete(db: Session, user_info: User | int) -> User:
+def delete(db: Session, user_info: User | int):
     """전달받은 해당 user를 삭제한다.
 
     Args:
@@ -254,7 +254,6 @@ def delete(db: Session, user_info: User | int) -> User:
         user = user_info
     db.delete(user)
     db.commit()
-    return user
 
 
 def is_verified(user: User) -> bool:
