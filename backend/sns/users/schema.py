@@ -17,15 +17,13 @@ class TokenPayload(BaseModel):
 
 class UserBase(BaseModel):
     email: EmailStr | None
-    password: str | None = Field(min_length=8)
-    verified: bool = False
+    verified: bool = True
 
     class Config:
         orm_mode = True
 
 
 class UserCreate(UserBase):
-    email: EmailStr
     password: str = Field(min_length=8)
     password_confirm: str = Field(min_length=8)
     verified: bool = False
@@ -33,12 +31,12 @@ class UserCreate(UserBase):
 
 class UserRead(UserBase):
     name: str
-    profile_text: str | None = None
+    profile_text: str | None
 
 
 class UserUpdate(BaseModel):
-    verified: bool | None = False
-    profile_text: str | None = None
+    verified: bool = False
+    profile_text: str | None
 
 
 class UserPasswordUpdate(BaseModel):
