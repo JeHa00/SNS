@@ -27,7 +27,7 @@ from sns.users.service import (
     get_user,
     create,
     update,
-    delete,
+    remove,
 )
 
 
@@ -292,7 +292,7 @@ def delete_user(
     if selected_user.email == current_user.email:
         try:
             user_to_delete = get_user(db, email=current_user.email)
-            delete(db, user_to_delete)
+            remove(db, user_to_delete)
             return {"status": "success", "msg": "계정이 삭제되었습니다."}
         except Exception:
             raise HTTPException(

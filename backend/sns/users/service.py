@@ -238,7 +238,7 @@ def update(db: Session, user: User, user_info: User | dict) -> User:
     return user
 
 
-def delete(db: Session, user_info: User | int):
+def remove(db: Session, user_info: User | int):
     """전달받은 해당 user를 삭제한다.
 
     Args:
@@ -249,12 +249,15 @@ def delete(db: Session, user_info: User | int):
         User: 삭제된 user 정보를 반환한다.
     """
     if isinstance(user_info, int):
-        user = db.query(User).filter(User.id == id).first()
+        user = db.query(User).filter(User.id == user_info).first()
     else:
         user = user_info
-    db.delete(user)
-    db.commit()
-
+    try:
+        db.delete(user)
+        db.commit()
+        return {"status": "success"}
+    except:
+        return {"status": "failure"}
 
 def is_verified(user: User) -> bool:
     """user의 이메일 인증 여부를 확인한다.

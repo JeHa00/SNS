@@ -23,7 +23,7 @@ from sns.users.service import (
     get_user,
     create,
     update,
-    delete,
+    remove
 )
 
 
@@ -163,14 +163,21 @@ def test_update_user_on_profile_text(fake_user: Dict, db_session: Session):
 
 
 def test_delete_user_by_int(fake_user: Dict, db_session: Session):
-    user = fake_user.get("user")
-    delete(db_session, user)
-    user = get_user(db_session, email=user.email)
-    assert user == None
-
+    user_01 = fake_user.get("user")
+    email = user_01.email
+    result = remove(db_session, user_info=user_01.id)
+    user_02 = get_user(db_session, email=email)
+    
+    assert user_02 == None
+    assert user_01 != user_02
+    assert result == {"status": "success"}
 
 def test_delete_user_by_model_object(fake_user: Dict, db_session: Session):
-    user = fake_user.get("user")
-    delete(db_session, user)
-    user = get_user(db_session, email=user.email)
-    assert user == None
+    user_01 = fake_user.get("user")
+    email = user_01.email
+    result = remove(db_session, user_info=user_01)
+    user_02 = get_user(db_session, email=email)
+    
+    assert user_02 == None
+    assert user_01 != user_02
+    assert result == {"status": "success"}
