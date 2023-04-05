@@ -47,18 +47,50 @@ def test_read_post_not_existed(
 
 
 @pytest.mark.read_posts
-def test_read_posts_if_not_registered():
-    pass
+def test_read_posts_if_not_registered(client: TestClient):
+    # 가짜 유저 id
+    user_id = 1
+
+    # 글 조회 및 결과
+    response = client.get(f"{settings.API_V1_STR}/users/{user_id}/posts")
+    result_msg = response.json().get("detail")
+
+    assert response.status_code == 403
+    assert result_msg == "등록되지 않은 유저입니다."
 
 
 @pytest.mark.read_posts
-def test_read_posts_if_not_existed():
-    pass 
+def test_read_posts_if_post_not_exist(
+    client: TestClient, 
+    fake_user: Dict):
+    
+    # 유저 정보
+    user = fake_user.get("user")
+    
+    # 글 조회 및 결과
+    response = client.get(f"{settings.API_V1_STR}/users/{user.id}/posts")
+    result_msg = response.json().get("detail")
+
+    assert response.status_code == 404 
+    assert result_msg == "생성된 글이 없습니다."
 
 
 @pytest.mark.read_posts
-def test_read_posts_if_post_is_more_than_one():
-    pass
+def test_read_posts_if_post_exist(
+    client: TestClient, 
+    fake_user: Dict, 
+    fake_multi_posts: None):
+    
+    # 유저 정보
+    user = fake_user.get("user")
+
+    # 글 조회 및 결과
+    response = client.get(f"{settings.API_V1_STR}/users/{user.id}/posts")
+    result = response.json()
+
+    assert response.status_code == 200
+    assert response != None
+    assert len(result) == 100
 
 
 @pytest.mark.delete_post
