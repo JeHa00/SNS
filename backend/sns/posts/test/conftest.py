@@ -25,7 +25,7 @@ def fake_post(client: TestClient, db_session: Session, fake_user: Dict) -> Post:
 
 
 @pytest.fixture(scope="function")
-def fake_multi_posts(client: TestClient, db_session: Session, fake_user: Dict) -> List[Post]:
+def fake_multi_posts(client: TestClient, db_session: Session, fake_user: Dict) -> None:
     post_total_count_to_make = 100
 
     while post_total_count_to_make > 0:
