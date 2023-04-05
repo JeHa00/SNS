@@ -13,7 +13,7 @@ from sns.posts.service import (
     get_multi_posts, 
     create, 
     update, 
-    delete
+    remove
 )
 
 def test_create(client: TestClient, db_session: Session, fake_user: Dict):
@@ -52,7 +52,7 @@ def test_get_post(client: TestClient, db_session: Session, fake_post: Post, fake
 def test_get_multi_posts(client: TestClient, db_session: Session, fake_multi_posts: List[Post], fake_user: Dict):
     writer = fake_user.get("user")
     posts = get_multi_posts(db_session, writer.id)
-
+    
     assert posts
     assert len(posts) == 100
     for post in posts:
@@ -115,7 +115,7 @@ def test_update_multi_posts_by_model_object(client: TestClient, db_session: Sess
 
 def test_delete_only_one_by_int(client: TestClient, db_session: Session, fake_post: Post):
     post_id = fake_post.id
-    delete(db_session, post_info=post_id)
+    remove(db_session, post_info=post_id)
     post = get_post(db_session, post_id=post_id)
     
     assert post == None
@@ -123,7 +123,7 @@ def test_delete_only_one_by_int(client: TestClient, db_session: Session, fake_po
 
 def test_delete_only_one_by_model_object(client: TestClient, db_session: Session, fake_post: Post):
     post_id = fake_post.id
-    delete(db_session, post_info=fake_post)
+    remove(db_session, post_info=fake_post)
     post = get_post(db_session, post_id=post_id)
     
     assert post == None    
@@ -135,7 +135,7 @@ def test_delete_multi_posts_by_int(client: TestClient, db_session: Session, fake
     posts = get_multi_posts(db_session, writer_id=user.id)
 
     for post in posts:
-        delete(db_session, post_info=post.id)
+        remove(db_session, post_info=post.id)
     
     posts = get_multi_posts(db_session, writer_id=user.id)
     
@@ -148,7 +148,7 @@ def test_delete_multi_posts_by_model_object(client: TestClient, db_session: Sess
     posts = get_multi_posts(db_session, writer_id=user.id)
 
     for post in posts:
-        delete(db_session, post_info=post)
+        remove(db_session, post_info=post)
     
     posts = get_multi_posts(db_session, writer_id=user.id)
     

@@ -48,7 +48,7 @@ def update(db: Session, post_info: Post | int, data_to_be_updated: PostUpdate) -
     return post
 
 
-def delete(db: Session, post_info: Post | int) -> bool:
+def remove(db: Session, post_info: Post | int) -> bool:
     if isinstance(post_info, int):
         post = db.query(Post).filter(Post.id == post_info).first()
     else:
