@@ -26,13 +26,16 @@ def read_post(
     post_id: int,
     db: Session = Depends(db.get_db)
 ) -> model.Post:
-    """post_id와 일치하는 post.id를 가진 post 정보를 읽어온다.
+    """**post_id와 일치하는 post.id를 가진 post 정보를 읽어온다.**
 
-    Args:
-        post_id (int): 읽어올 post의 id
+    **Args:**  
+        - post_id (int): 읽어올 post의 id
+    
+    **Raises:**       
+        - HTTPException(404 NOT FOUND): post_id에 해당되는 post를 찾을 수 없을 때 발생하는 에러 
 
-    Returns:
-        Post: post_id에 해당되는 post 반환  
+    **Returns:**  
+        - Post: post_id에 해당되는 post 반환  
     """
     post = get_post(db, post_id=post_id)    
     
@@ -47,13 +50,17 @@ def read_posts(
     user_id: int,
     db: Session = Depends(db.get_db)
 ):
-    """user_id에 일치하는 user가 작성한 post들을 조회
+    """**user_id에 일치하는 user가 작성한 post들을 조회**
 
-    Args:    
-        user_id (int): user의 id
+    **Args:**    
+        - user_id (int): user의 id
 
-    Returns:  
-        List[Post]: 여러 post가 list 배열에 담겨져 반환  
+    **Raises:**  
+        - HTTPException(404 NOT FOUND): 작성자가 user_id인 post를 조회한 결과, 작성된 글이 없을 때 발생하는 에러     
+        - HTTPException(403 FORBIDDEN): user_id를 가진 user를 찾지 못하여 등록된 회원이 아님을 보여주는 에러   
+
+    **Returns:**    
+        - List[Post]: 여러 post가 list 배열에 담겨져 반환  
     """
     selected_user = db.query(User).filter(User.id == user_id).first()
     if selected_user:
@@ -73,15 +80,19 @@ def create_post(
     current_user: User = Depends(get_current_user_verified),
     db: Session = Depends(db.get_db)
 ):
-    """user_id가 현재 로그인된 user와 동일할 때 post를 생성한다.
+    """**user_id가 현재 로그인된 user와 동일할 때 post를 생성한다.**
 
-    Args:
-        user_id (int): 글을 작성할 user의 id
-        data_to_be_created (PostCreate): 생성할 post의 content 정보
-        current_user (User, optional): 현재 로그인된 user 정보
+    **Args:**  
+        - user_id (int): 글을 작성할 user의 id  
+        - data_to_be_created (PostCreate): 생성할 post의 content 정보  
+        - current_user (User, optional): 현재 로그인된 user 정보  
 
-    Returns:
-       Post: 생성된 post 정보 반환
+    **Raises:**  
+        - HTTPException(401 UNAUTHORIZED): user_id가 현재 로그인된 유저의 id와 값이 달라서 작성할 권한이 없음을 보여주는 에러    
+        - HTTPException(403 FORBIDDEN): user_id를 가진 user를 찾지 못하여 등록된 회원이 아님을 보여주는 에러     
+
+    **Returns:**  
+       - Post: 생성된 post 정보 반환  
     """
     selected_user = db.query(User).filter(User.id == user_id).first()
     if selected_user:
@@ -104,22 +115,21 @@ def update_post(
     current_user: User = Depends(get_current_user_verified),
     db: Session = Depends(db.get_db)
 ):
-    """user_id가 현재 user id와 동일하여 수정 권한이 있을 때 post_id에 해당되는 post를 수정한다.
+    """**user_id가 현재 user id와 동일하여 수정 권한이 있을 때 post_id에 해당되는 post를 수정한다.**  
 
-    Args:
-        user_id (int): 수정할 user의 id
-        post_id (int): 수정될 post의 id
-        data_to_be_updated (PostUpdate): _description_
-        current_user (User, optional): _description_. Defaults to Depends(get_current_user_verified).
-        db (Session, optional): _description_. Defaults to Depends(db.get_db).
+    **Args:**  
+        - user_id (int): 수정할 user의 id  
+        - post_id (int): 수정될 post의 id  
+        - data_to_be_updated (PostUpdate): 업데이트할 정보
+        - current_user (User, optional): 현재 유저 정보    
 
-    Raises:
-        HTTPException: _description_
-        HTTPException: _description_
-        HTTPException: _description_
+    **Raises:**   
+        - HTTPException(404 NOT FOUND): user_id가 현재 로그인된 유저의 id와 같아 권한이 있지만, 수정할 글이 없음을 보여주는 에러  
+        - HTTPException(401 UNAUTHORIZED): user_id가 현재 로그인된 유저의 id와 값이 달라서 작성할 권한이 없음을 보여주는 에러      
+        - HTTPException(403 FORBIDDEN): user_id를 가진 user를 찾지 못하여 등록된 회원이 아님을 보여주는 에러   
 
-    Returns:
-        Post: 수정된 post 정보 반환
+    **Returns:**  
+        - Post: 수정된 post 정보 반환  
     """
     selected_user = db.query(User).filter(User.id == user_id).first()
     if selected_user:
@@ -145,15 +155,18 @@ def delete_post(
     current_user: User = Depends(get_current_user_verified),
     db: Session = Depends(db.get_db)
 ):
-    """user_id가 current_user의 id와 동일할 때, 해당 post_id를 가진 post를 삭제한다.
+    """**user_id가 current_user의 id와 동일할 때, 해당 post_id를 가진 post를 삭제한다.**
 
-    Args:  
-        user_id (int): 삭제시킬 user의 id  
-        post_id (int): 삭제될 post의 id  
-        current_user (User): 현재 로그인된 user 정보
+    **Args:**      
+        - user_id (int): 삭제시킬 user의 id    
+        - post_id (int): 삭제될 post의 id    
+        - current_user (User): 현재 로그인된 user 정보  
   
-    Returns:  
-        schema.Msg: 삭제 성공 메세지를 반환  
+    **Raises:**      
+        - HTTPException: post_id에 해당되는 post를 찾을 수 없을 때 발생되는 에러(404 NOT FOUND)  
+
+    **Returns:**  
+        - schema.Msg: 삭제 성공 메세지를 반환    
     """    
     if user_id == current_user.id:
         remove(db, post_info=post_id)
