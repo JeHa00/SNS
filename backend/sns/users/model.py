@@ -3,6 +3,7 @@ from sqlalchemy.orm import relationship
 
 from sns.common.base import Base, BaseMixin
 from sns.posts.model import Post
+from sns.comments.model import Comment
 
 
 class User(Base, BaseMixin):
@@ -15,3 +16,4 @@ class User(Base, BaseMixin):
     verified = Column(Boolean, default=False)
     verification_code = Column(String(20), nullable=True, unique=True)
     posts = relationship("Post", back_populates="writer")
+    comments = relationship("Comment", back_populates="writer")
