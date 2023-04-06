@@ -35,7 +35,9 @@ markers = [
     "update_user",
     "delete_user",
     "read_post", 
-    "read_posts", 
+    "read_posts",
+    "create_post",
+    "update_post",  
     "delete_post", 
 ]
 
