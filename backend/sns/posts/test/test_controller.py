@@ -57,7 +57,7 @@ def test_read_posts_if_not_registered(client: TestClient):
     result_msg = response.json().get("detail")
 
     assert response.status_code == 403
-    assert result_msg == "등록되지 않은 유저입니다."
+    assert result_msg == "등록된 회원이 아닙니다."    
 
 
 @pytest.mark.read_posts
@@ -74,7 +74,7 @@ def test_read_posts_if_post_not_exist(
     result_msg = response.json().get("detail")
 
     assert response.status_code == 404 
-    assert result_msg == "생성된 글이 없습니다."
+    assert result_msg == "작성된 글이 없습니다."  
 
 
 @pytest.mark.read_posts
