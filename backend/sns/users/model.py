@@ -13,5 +13,5 @@ class User(Base, BaseMixin):
     verified = Column(Boolean, nullable=False, default=False)
     verification_code = Column(String(20), nullable=True, unique=True)
 
-    def __str__(self) -> str:
+    def __repr__(self) -> str:
         return f"User(id={self.id}, email={self.email}, name={self.name})"
