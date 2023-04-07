@@ -12,3 +12,6 @@ class User(Base, BaseMixin):
     profile_image_path = Column(String(200), nullable=True)
     verified = Column(Boolean, nullable=False, default=False)
     verification_code = Column(String(20), nullable=True, unique=True)
+
+    def __str__(self) -> str:
+        return f"User(id={self.id}, email={self.email}, name={self.name})"
