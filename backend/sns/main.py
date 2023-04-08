@@ -9,7 +9,7 @@ from sns.users.controller import router as users
 # from sns.comments.controller import router as comments
 # from sns.notification.controller import router as notification
 
-app = FastAPI(title=settings.PJT_NAME, openapi_url=f"{settings.API_V1_STR}")
+app = FastAPI(title=settings.PROJECT_NAME, openapi_url=f"{settings.API_V1_STR}")
 db.init_app(app)
 
 if settings.BACKEND_CORS_ORIGINS:

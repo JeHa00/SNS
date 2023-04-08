@@ -111,11 +111,11 @@ def send_new_account_email(email_to: str, password: str, url: str) -> None:
         url (str): 발송된 이메일에 첨부된 이메일 인증 url
     """
     message = EmailMessage()
-    message.add_header("Subject", f"{settings.PJT_NAME} - New account for user")
+    message.add_header("Subject", f"{settings.PROJECT_NAME} - New account for user")
     message.add_header("From", settings.EMAIL_ADDR)
     message.add_header("To", email_to)
     context = {
-        "project_name": settings.PJT_NAME,
+        "project_name": settings.PROJECT_NAME,
         "password": password,
         "email": email_to,
         "link": url,
@@ -132,11 +132,11 @@ def send_reset_password_email(email_to: str, password: str) -> None:
         password (str): 임시 비밀번호
     """
     message = EmailMessage()
-    message.add_header("Subject", f"{settings.PJT_NAME} - Reset password for user")
+    message.add_header("Subject", f"{settings.PROJECT_NAME} - Reset password for user")
     message.add_header("From", settings.EMAIL_ADDR)
     message.add_header("To", email_to)
     context = {
-        "project_name": settings.PJT_NAME,
+        "project_name": settings.PROJECT_NAME,
         "password": password,
         "email": email_to,
     }

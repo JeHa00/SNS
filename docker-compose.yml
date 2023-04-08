@@ -6,7 +6,7 @@ services:
     restart: always
     environment:
       MYSQL_ROOT_PASSWORD: a1s2d3f4
-      MYSQL_USER : pjt
+      MYSQL_USER : project
       MYSQL_PASSWORD: a1s2d3f4
       MYSQL_DATABASE: sns
       TZ: Asia/Seoul
