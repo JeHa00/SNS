@@ -5,6 +5,9 @@ repos:
       - id: trailing-whitespace
       - id: check-yaml
       - id: check-json
+      - id: check-flake8
+      - id: end-of-file-fixer
+      - id: mixed-line-ending  
 
   # black - formatting
   - repo: https://github.com/psf/black
