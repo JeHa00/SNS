@@ -9,13 +9,7 @@ from sns.users.schema import Msg
 from sns.users.model import User
 from sns.posts.schema import Post, PostCreate, PostUpdate
 from sns.posts import model
-from sns.posts.service import (
-    get_multi_posts,
-    get_post,
-    create,
-    update,
-    remove
-)
+from sns.posts.repository import post_crud
 
 
 router = APIRouter()
@@ -37,7 +31,7 @@ def read_post(
     **Returns:**  
         - Post: post_id에 해당되는 post 반환  
     """
-    post = get_post(db, post_id=post_id)    
+    post = post_crud.get_post(db, post_id=post_id)    
     
     if not post:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="해당 id의 포스트를 찾을 수 없습니다.")        
@@ -64,7 +58,7 @@ def read_posts(
     """
     selected_user = db.query(User).filter(User.id == user_id).first()
     if selected_user:
-        posts = get_multi_posts(db, writer_id=user_id)
+        posts = post_crud.get_multi_posts(db, writer_id=user_id)
         if len(posts) == 0:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="작성된 글이 없습니다.")
         else:
@@ -97,7 +91,7 @@ def create_post(
     selected_user = db.query(User).filter(User.id == user_id).first()
     if selected_user:
         if user_id == current_user.id:
-            post = create(db, post_info=data_to_be_created, writer_id=user_id)
+            post = post_crud.create(db, post_info=data_to_be_created, writer_id=user_id)
             return post
         else:
             raise HTTPException(
@@ -134,11 +128,11 @@ def update_post(
     selected_user = db.query(User).filter(User.id == user_id).first()
     if selected_user:
         if selected_user.id == current_user.id:
-            post = get_post(db, post_id=post_id)
+            post = post_crud.get_post(db, post_id=post_id)
             if not post:
                 raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="해당되는 글이 없습니다.")
             else:
-                update(db, post_info=post, data_to_be_updated=data_to_be_updated)
+                post_crud.update(db, post_info=post, data_to_be_updated=data_to_be_updated)
                 return post
         else:
             raise HTTPException(
@@ -169,7 +163,7 @@ def delete_post(
         - schema.Msg: 삭제 성공 메세지를 반환    
     """    
     if user_id == current_user.id:
-        remove(db, post_info=post_id)
+        post_crud.remove(db, post_info=post_id)
         return {"status": "success", "msg": "글이 삭제되었습니다."}
     else:
         raise HTTPException(
