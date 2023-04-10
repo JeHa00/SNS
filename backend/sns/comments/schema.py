@@ -10,21 +10,21 @@ class CommentBase(BaseModel):
 
 
 class CommentInDB(CommentBase):
-    id: int 
+    id: int
     writer_id: int
-    post_id: int 
+    post_id: int
     created_at: datetime
     updated_at: datetime
 
 
 class CommentCreate(CommentBase):
     writer_id: int
-    post_id: int 
+    post_id: int
     content: str = Field(max_length=500)
 
 
 class CommentUpdate(CommentCreate):
-    pass 
+    pass
 
 
 class Comment(CommentInDB):
