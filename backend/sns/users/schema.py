@@ -1,4 +1,3 @@
-from typing import Optional
 from pydantic import BaseModel, EmailStr, Field
 
 
@@ -12,32 +11,34 @@ class Token(BaseModel):
     token_type: str
 
 
-class TokenData(BaseModel):
-    email: str | None = None
+class TokenPayload(BaseModel):
+    sub: str
 
 
 class UserBase(BaseModel):
-    email: EmailStr
-    password: str = Field(min_length=8)
-    verified: bool = False
+    email: EmailStr | None
+    verified: bool = True
 
     class Config:
         orm_mode = True
 
 
-class UserProfile(BaseModel):
-    name: str
-    profile_text: Optional[str] = None
-
-
 class UserCreate(UserBase):
+    password: str = Field(min_length=8)
     password_confirm: str = Field(min_length=8)
     verified: bool = False
 
 
-class UserUpdate(UserProfile):
-    password: str = Field(min_length=8)
+class UserRead(UserBase):
+    name: str
+    profile_text: str | None
 
 
-class UserRead(UserProfile, UserBase):
-    pass
+class UserUpdate(BaseModel):
+    verified: bool = False
+    profile_text: str | None
+
+
+class UserPasswordUpdate(BaseModel):
+    current_password: str = Field(min_length=8)
+    new_password: str = Field(min_length=8)
