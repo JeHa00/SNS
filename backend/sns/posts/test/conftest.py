@@ -8,7 +8,7 @@ from sns.common.conftest import app, db_session, client
 from sns.users.test.utils import random_lower_string
 from sns.users.test.conftest import fake_user
 from sns.posts.schema import PostCreate
-from sns.posts.service import create
+from sns.posts.repository import post_crud
 from sns.posts.model import Post
 
 
@@ -17,7 +17,7 @@ def fake_post(client: TestClient, db_session: Session, fake_user: Dict) -> Post:
     content = random_lower_string(k=1000)
     post_info = PostCreate(content=content)
     user = fake_user.get("user")
-    post = create(db_session, post_info=post_info, writer_id=user.id)
+    post = post_crud.create(db_session, post_info=post_info, writer_id=user.id)
     return post
 
 
@@ -29,5 +29,5 @@ def fake_multi_posts(client: TestClient, db_session: Session, fake_user: Dict) -
         content = random_lower_string(k=1000)
         post_info = PostCreate(content=content)
         user = fake_user.get("user")
-        create(db_session, post_info=post_info, writer_id=user.id)
+        post_crud.create(db_session, post_info=post_info, writer_id=user.id)
         post_total_count_to_make -= 1

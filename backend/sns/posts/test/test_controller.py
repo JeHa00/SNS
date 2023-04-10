@@ -11,7 +11,7 @@ from sns.common.config import settings
 from sns.users.test.conftest import fake_user, get_user_token_headers_and_user_info
 from sns.users.test.utils import random_lower_string
 from sns.users.service import get_user
-from sns.posts.service import get_post
+from sns.posts.repository import post_crud
 from sns.posts.test.conftest import fake_post, fake_multi_posts
 from sns.posts.schema import PostCreate, PostUpdate
 from sns.posts import model
@@ -25,11 +25,11 @@ def test_read_post_existed(
 ):
     total_post_count = 100
     for post_id in range(1, total_post_count + 1):
-        response = client.get(f"{settings.API_V1_STR}/posts/{post_id}")
+        response = client.get(f"{settings.API_V1_PREFIX}/posts/{post_id}")
         post = response.json()
 
         assert response.status_code == 200
-        assert response != None
+        assert response is not None
         assert post.get('id') == post_id
 
 
@@ -40,7 +40,7 @@ def test_read_post_not_existed(
     fake_post: model.Post
 ):
     post_id = randint(fake_post.id + 1, 100)
-    response = client.get(f"{settings.API_V1_STR}/posts/{post_id}")
+    response = client.get(f"{settings.API_V1_PREFIX}/posts/{post_id}")
     result_msg = response.json().get("detail")
 
     assert response.status_code == 404
@@ -53,7 +53,7 @@ def test_read_posts_if_not_registered(client: TestClient):
     user_id = 1
 
     # 글 조회 및 결과
-    response = client.get(f"{settings.API_V1_STR}/users/{user_id}/posts")
+    response = client.get(f"{settings.API_V1_PREFIX}/users/{user_id}/posts")
     result_msg = response.json().get("detail")
 
     assert response.status_code == 403
@@ -70,7 +70,7 @@ def test_read_posts_if_post_not_exist(
     user = fake_user.get("user")
     
     # 글 조회 및 결과
-    response = client.get(f"{settings.API_V1_STR}/users/{user.id}/posts")
+    response = client.get(f"{settings.API_V1_PREFIX}/users/{user.id}/posts")
     result_msg = response.json().get("detail")
 
     assert response.status_code == 404 
@@ -88,11 +88,11 @@ def test_read_posts_if_post_exist(
     user = fake_user.get("user")
 
     # 글 조회 및 결과
-    response = client.get(f"{settings.API_V1_STR}/users/{user.id}/posts")
+    response = client.get(f"{settings.API_V1_PREFIX}/users/{user.id}/posts")
     result = response.json()
 
     assert response.status_code == 200
-    assert response != None
+    assert response is not None
     assert len(result) == 100
 
 
@@ -114,7 +114,7 @@ def test_create_post_if_user_not_registered(
 
     # 글 생성 및 결과
     response = client.post(
-        f"{settings.API_V1_STR}/users/{not_registered_user_id}/posts", 
+        f"{settings.API_V1_PREFIX}/users/{not_registered_user_id}/posts", 
         headers=headers, 
         json=data)
     result_msg = response.json().get("detail")
@@ -142,7 +142,7 @@ def test_create_post_if_unauthorized(
 
     # 글 생성 및 결과
     response = client.post(
-        f"{settings.API_V1_STR}/users/{unauthorized_user.id}/posts", 
+        f"{settings.API_V1_PREFIX}/users/{unauthorized_user.id}/posts", 
         headers=headers, 
         json=data)
     result_msg = response.json().get("detail")
@@ -169,14 +169,14 @@ def test_create_post_if_authorized(
 
     # 글 생성 및 결과
     response = client.post(
-        f"{settings.API_V1_STR}/users/{authorized_user.id}/posts", 
+        f"{settings.API_V1_PREFIX}/users/{authorized_user.id}/posts", 
         headers=headers, 
         json=data)
     created_post_id = response.json().get("id")
-    post = get_post(db_session, post_id=created_post_id)
+    post = post_crud.get_post(db_session, post_id=created_post_id)
 
     assert response.status_code == status.HTTP_201_CREATED
-    assert post != None
+    assert post is not None
 
 
 @pytest.mark.update_post
@@ -197,7 +197,7 @@ def test_update_post_if_user_not_registered(
 
     # 글 수정 및 결과
     response = client.put(
-        f"{settings.API_V1_STR}/users/{not_registered_user_id}/posts/{fake_post.id}", 
+        f"{settings.API_V1_PREFIX}/users/{not_registered_user_id}/posts/{fake_post.id}", 
         headers=headers, 
         json=data)
     result_msg = response.json().get("detail")
@@ -224,11 +224,11 @@ def test_update_post_if_unauthorized(
 
     # 글 수정 및 결과
     response = client.post(
-        f"{settings.API_V1_STR}/users/{authorized_user.id}/posts", 
+        f"{settings.API_V1_PREFIX}/users/{authorized_user.id}/posts", 
         headers=headers, 
         json=data)
     created_post_id = response.json().get("id")
-    post = get_post(db_session, post_id=created_post_id)
+    post = post_crud.get_post(db_session, post_id=created_post_id)
 
     assert response.status_code == status.HTTP_201_CREATED
     assert post != None
@@ -251,7 +251,7 @@ def test_update_post_if_post_not_exist(
 
     # 글 수정 및 결과
     response = client.put(
-        f"{settings.API_V1_STR}/users/{authorized_user.id}/posts/{1}", 
+        f"{settings.API_V1_PREFIX}/users/{authorized_user.id}/posts/{1}", 
         headers=headers, 
         json=data)
     result_msg = response.json().get("detail")
@@ -278,7 +278,7 @@ def test_update_post_only_one_if_authorized(
 
     # 글 수정 및 결과
     response = client.put(
-        f"{settings.API_V1_STR}/users/{authorized_user.id}/posts/{fake_post.id}", 
+        f"{settings.API_V1_PREFIX}/users/{authorized_user.id}/posts/{fake_post.id}", 
         headers=headers, 
         json=data)
     content_updated = response.json().get("content")
@@ -306,14 +306,14 @@ def test_update_post_multi_posts_if_authorized(
 
         # 글 수정 및 결과
         response = client.put(
-            f"{settings.API_V1_STR}/users/{authorized_user.id}/posts/{post_id}", 
+            f"{settings.API_V1_PREFIX}/users/{authorized_user.id}/posts/{post_id}", 
             headers=headers, 
             json=data)
         result_content = response.json().get("content")
         result_id = response.json().get("id")
 
         assert response.status_code == status.HTTP_200_OK
-        assert response != None
+        assert response is not None
         assert result_content == data.get("content")
         assert result_id == post_id
 
@@ -333,17 +333,17 @@ def test_delete_post_if_authorized(
     post_id = fake_post.id
 
     # 글 삭제 및 결과
-    response = client.delete(f"{settings.API_V1_STR}/users/{user_id}/posts/{post_id}", headers=headers)
+    response = client.delete(f"{settings.API_V1_PREFIX}/users/{user_id}/posts/{post_id}", headers=headers)
     result_status_text = response.json().get("status")
     result_msg = response.json().get("msg")
 
     # 결과 확인
-    post = get_post(db_session, post_id=post_id)
+    post = post_crud.get_post(db_session, post_id=post_id)
 
     assert response.status_code == status.HTTP_200_OK
     assert result_status_text == "success"
     assert result_msg == "글이 삭제되었습니다."
-    assert post == None
+    assert post is not None
 
 
 @pytest.mark.delete_post
@@ -359,12 +359,12 @@ def test_delete_post_if_not_authorized(
     post_id = fake_post.id
 
     # 글 삭제 및 결과
-    response = client.delete(f"{settings.API_V1_STR}/users/{user_id}/posts/{post_id}", headers=headers)
+    response = client.delete(f"{settings.API_V1_PREFIX}/users/{user_id}/posts/{post_id}", headers=headers)
     result_msg = response.json().get("detail")
 
     # 결과 확인
-    post = get_post(db_session, post_id=post_id)
+    post = post_crud.get_post(db_session, post_id=post_id)
 
     assert response.status_code == status.HTTP_401_UNAUTHORIZED
     assert result_msg == "삭제할 권한이 없습니다."
-    assert post != None
+    assert post is not None
