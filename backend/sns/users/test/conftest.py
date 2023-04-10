@@ -22,7 +22,9 @@ def fake_user(client: TestClient, db_session: Session):
 
 
 @pytest.fixture(scope="function")
-def get_user_token_headers_and_user_info(client: TestClient, db_session: Session) -> Dict:
+def get_user_token_headers_and_user_info(
+    client: TestClient, db_session: Session
+) -> Dict:
     # fake_user 생성
     email = random_email()
     password = random_lower_string(k=8)
@@ -34,7 +36,7 @@ def get_user_token_headers_and_user_info(client: TestClient, db_session: Session
     user_crud.update(db_session, fake_user, info_to_be_updated)
 
     # 로그인
-    login_info = {'email': email, 'password': password}
+    login_info = {"email": email, "password": password}
     response = client.post(f"{settings.API_V1_PREFIX}/login", json=login_info)
 
     # headers 반환
