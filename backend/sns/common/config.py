@@ -6,7 +6,7 @@ from sns.common.path import BASE_DIR
 
 class Settings(BaseSettings):
     PROJECT_NAME: str = "SNS"  
-    API_V1_STR: str = "/api/v1"
+    API_V1_PREFIX: str = "/api/v1"
 
     DB_USERNAME: str = "project"
     DB_PASSWORD: SecretStr = "a1s2d3f4"
