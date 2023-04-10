@@ -6,7 +6,7 @@ repos:
       - id: check-yaml
       - id: check-json
       - id: end-of-file-fixer
-      - id: mixed-line-ending  
+      - id: mixed-line-ending
 
   # black - formatting
   - repo: https://github.com/psf/black
@@ -19,4 +19,3 @@ repos:
     rev: 6.0.0
     hooks:
       - id: flake8
-      

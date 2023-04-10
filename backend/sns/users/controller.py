@@ -15,7 +15,6 @@ from sns.users.schema import (
     UserUpdate,
     UserRead,
     UserPasswordUpdate,
-    TokenPayload,
 )
 from sns.users.repositories.email_client import email_client
 from sns.users.repositories.db import user_crud

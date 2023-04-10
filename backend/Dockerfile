@@ -23,4 +23,3 @@ RUN poetry install --only-root
 # run app
 WORKDIR $APP_HOME/sns
 CMD ["uvicorn", "main:app", "--reload", "--host", "0.0.0.0", "--port", "8000"]
-

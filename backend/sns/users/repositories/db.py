@@ -1,4 +1,3 @@
-from typing import Dict, Annotated
 import secrets
 
 from fastapi import Depends, HTTPException, status
@@ -124,7 +123,7 @@ class UserDB:
 
         return db_obj
 
-    def update(self, db: Session, user: User, user_info: User | Dict) -> User:
+    def update(self, db: Session, user: User, user_info: User | dict) -> User:
         """user 정보를 수정한다.
 
         Args:
@@ -152,7 +151,7 @@ class UserDB:
 
         return user
 
-    def remove(self, db: Session, user_info: User | int) -> Dict:
+    def remove(self, db: Session, user_info: User | int) -> dict:
         """전달받은 해당 user를 삭제한다.
 
         Args:

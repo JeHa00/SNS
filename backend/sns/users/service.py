@@ -5,7 +5,6 @@ from jose import jwt
 
 from sns.common.config import settings
 from sns.users.model import User
-from sns.users.schema import TokenPayload
 
 
 class UserService:
