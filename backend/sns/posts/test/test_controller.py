@@ -19,9 +19,7 @@ from sns.posts import model
 
 @pytest.mark.read_post
 def test_read_post_existed(
-    client: TestClient, 
-    db_session: Session,
-    fake_multi_posts: None
+    client: TestClient, db_session: Session, fake_multi_posts: None
 ):
     total_post_count = 100
     for post_id in range(1, total_post_count + 1):
@@ -30,14 +28,12 @@ def test_read_post_existed(
 
         assert response.status_code == 200
         assert response is not None
-        assert post.get('id') == post_id
+        assert post.get("id") == post_id
 
 
 @pytest.mark.read_post
 def test_read_post_not_existed(
-    client: TestClient, 
-    db_session: Session, 
-    fake_post: model.Post
+    client: TestClient, db_session: Session, fake_post: model.Post
 ):
     post_id = randint(fake_post.id + 1, 100)
     response = client.get(f"{settings.API_V1_PREFIX}/posts/{post_id}")
@@ -57,33 +53,26 @@ def test_read_posts_if_not_registered(client: TestClient):
     result_msg = response.json().get("detail")
 
     assert response.status_code == 403
-    assert result_msg == "등록된 회원이 아닙니다."    
+    assert result_msg == "등록된 회원이 아닙니다."
 
 
 @pytest.mark.read_posts
-def test_read_posts_if_post_not_exist(
-    client: TestClient, 
-    fake_user: Dict
-):
-    
+def test_read_posts_if_post_not_exist(client: TestClient, fake_user: Dict):
     # 유저 정보
     user = fake_user.get("user")
-    
+
     # 글 조회 및 결과
     response = client.get(f"{settings.API_V1_PREFIX}/users/{user.id}/posts")
     result_msg = response.json().get("detail")
 
-    assert response.status_code == 404 
-    assert result_msg == "작성된 글이 없습니다."  
+    assert response.status_code == 404
+    assert result_msg == "작성된 글이 없습니다."
 
 
 @pytest.mark.read_posts
 def test_read_posts_if_post_exist(
-    client: TestClient, 
-    fake_user: Dict, 
-    fake_multi_posts: None
+    client: TestClient, fake_user: Dict, fake_multi_posts: None
 ):
-    
     # 유저 정보
     user = fake_user.get("user")
 
@@ -98,9 +87,7 @@ def test_read_posts_if_post_exist(
 
 @pytest.mark.create_post
 def test_create_post_if_user_not_registered(
-    client: TestClient, 
-    db_session: Session,
-    get_user_token_headers_and_user_info: Dict
+    client: TestClient, db_session: Session, get_user_token_headers_and_user_info: Dict
 ):
     # current_user 정보
     headers = get_user_token_headers_and_user_info.get("headers")
@@ -114,9 +101,10 @@ def test_create_post_if_user_not_registered(
 
     # 글 생성 및 결과
     response = client.post(
-        f"{settings.API_V1_PREFIX}/users/{not_registered_user_id}/posts", 
-        headers=headers, 
-        json=data)
+        f"{settings.API_V1_PREFIX}/users/{not_registered_user_id}/posts",
+        headers=headers,
+        json=data,
+    )
     result_msg = response.json().get("detail")
 
     assert response.status_code == status.HTTP_403_FORBIDDEN
@@ -125,10 +113,10 @@ def test_create_post_if_user_not_registered(
 
 @pytest.mark.create_post
 def test_create_post_if_unauthorized(
-    client: TestClient, 
-    db_session: Session, 
+    client: TestClient,
+    db_session: Session,
     fake_user: Dict,
-    get_user_token_headers_and_user_info: Dict
+    get_user_token_headers_and_user_info: Dict,
 ):
     # current_user 정보
     headers = get_user_token_headers_and_user_info.get("headers")
@@ -142,9 +130,10 @@ def test_create_post_if_unauthorized(
 
     # 글 생성 및 결과
     response = client.post(
-        f"{settings.API_V1_PREFIX}/users/{unauthorized_user.id}/posts", 
-        headers=headers, 
-        json=data)
+        f"{settings.API_V1_PREFIX}/users/{unauthorized_user.id}/posts",
+        headers=headers,
+        json=data,
+    )
     result_msg = response.json().get("detail")
 
     assert response.status_code == status.HTTP_401_UNAUTHORIZED
@@ -153,15 +142,12 @@ def test_create_post_if_unauthorized(
 
 @pytest.mark.create_post
 def test_create_post_if_authorized(
-    client: TestClient, 
-    db_session: Session,
-    get_user_token_headers_and_user_info: Dict
+    client: TestClient, db_session: Session, get_user_token_headers_and_user_info: Dict
 ):
     # current_user 정보
     headers = get_user_token_headers_and_user_info.get("headers")
     user_info = get_user_token_headers_and_user_info.get("user_info")
     authorized_user = get_user(db_session, email=user_info.get("email"))
-
 
     # 생성할 글 content 정보
     content = PostCreate(content=random_lower_string(k=1000))
@@ -169,9 +155,10 @@ def test_create_post_if_authorized(
 
     # 글 생성 및 결과
     response = client.post(
-        f"{settings.API_V1_PREFIX}/users/{authorized_user.id}/posts", 
-        headers=headers, 
-        json=data)
+        f"{settings.API_V1_PREFIX}/users/{authorized_user.id}/posts",
+        headers=headers,
+        json=data,
+    )
     created_post_id = response.json().get("id")
     post = post_crud.get_post(db_session, post_id=created_post_id)
 
@@ -181,9 +168,9 @@ def test_create_post_if_authorized(
 
 @pytest.mark.update_post
 def test_update_post_if_user_not_registered(
-    client: TestClient, 
-    get_user_token_headers_and_user_info: Dict, 
-    fake_post: model.Post
+    client: TestClient,
+    get_user_token_headers_and_user_info: Dict,
+    fake_post: model.Post,
 ):
     # current_user 정보
     headers = get_user_token_headers_and_user_info.get("headers")
@@ -197,9 +184,10 @@ def test_update_post_if_user_not_registered(
 
     # 글 수정 및 결과
     response = client.put(
-        f"{settings.API_V1_PREFIX}/users/{not_registered_user_id}/posts/{fake_post.id}", 
-        headers=headers, 
-        json=data)
+        f"{settings.API_V1_PREFIX}/users/{not_registered_user_id}/posts/{fake_post.id}",
+        headers=headers,
+        json=data,
+    )
     result_msg = response.json().get("detail")
 
     assert response.status_code == status.HTTP_403_FORBIDDEN
@@ -208,8 +196,8 @@ def test_update_post_if_user_not_registered(
 
 @pytest.mark.update_post
 def test_update_post_if_unauthorized(
-    client: TestClient, 
-    db_session: Session, 
+    client: TestClient,
+    db_session: Session,
     get_user_token_headers_and_user_info: Dict,
     fake_post: model.Post,
 ):
@@ -224,9 +212,10 @@ def test_update_post_if_unauthorized(
 
     # 글 수정 및 결과
     response = client.post(
-        f"{settings.API_V1_PREFIX}/users/{authorized_user.id}/posts", 
-        headers=headers, 
-        json=data)
+        f"{settings.API_V1_PREFIX}/users/{authorized_user.id}/posts",
+        headers=headers,
+        json=data,
+    )
     created_post_id = response.json().get("id")
     post = post_crud.get_post(db_session, post_id=created_post_id)
 
@@ -236,9 +225,7 @@ def test_update_post_if_unauthorized(
 
 @pytest.mark.update_post
 def test_update_post_if_post_not_exist(
-    client: TestClient, 
-    db_session: Session, 
-    get_user_token_headers_and_user_info: Dict
+    client: TestClient, db_session: Session, get_user_token_headers_and_user_info: Dict
 ):
     # current_user 정보
     headers = get_user_token_headers_and_user_info.get("headers")
@@ -251,9 +238,10 @@ def test_update_post_if_post_not_exist(
 
     # 글 수정 및 결과
     response = client.put(
-        f"{settings.API_V1_PREFIX}/users/{authorized_user.id}/posts/{1}", 
-        headers=headers, 
-        json=data)
+        f"{settings.API_V1_PREFIX}/users/{authorized_user.id}/posts/{1}",
+        headers=headers,
+        json=data,
+    )
     result_msg = response.json().get("detail")
 
     assert response.status_code == status.HTTP_404_NOT_FOUND
@@ -262,10 +250,10 @@ def test_update_post_if_post_not_exist(
 
 @pytest.mark.update_post
 def test_update_post_only_one_if_authorized(
-    client: TestClient, 
-    db_session: Session, 
+    client: TestClient,
+    db_session: Session,
     get_user_token_headers_and_user_info: Dict,
-    fake_post: model.Post, 
+    fake_post: model.Post,
 ):
     # current_user 정보
     headers = get_user_token_headers_and_user_info.get("headers")
@@ -278,9 +266,10 @@ def test_update_post_only_one_if_authorized(
 
     # 글 수정 및 결과
     response = client.put(
-        f"{settings.API_V1_PREFIX}/users/{authorized_user.id}/posts/{fake_post.id}", 
-        headers=headers, 
-        json=data)
+        f"{settings.API_V1_PREFIX}/users/{authorized_user.id}/posts/{fake_post.id}",
+        headers=headers,
+        json=data,
+    )
     content_updated = response.json().get("content")
 
     assert response.status_code == status.HTTP_200_OK
@@ -289,8 +278,8 @@ def test_update_post_only_one_if_authorized(
 
 @pytest.mark.update_post
 def test_update_post_multi_posts_if_authorized(
-    client: TestClient, 
-    db_session: Session, 
+    client: TestClient,
+    db_session: Session,
     get_user_token_headers_and_user_info: Dict,
     fake_multi_posts: None,
 ):
@@ -306,9 +295,10 @@ def test_update_post_multi_posts_if_authorized(
 
         # 글 수정 및 결과
         response = client.put(
-            f"{settings.API_V1_PREFIX}/users/{authorized_user.id}/posts/{post_id}", 
-            headers=headers, 
-            json=data)
+            f"{settings.API_V1_PREFIX}/users/{authorized_user.id}/posts/{post_id}",
+            headers=headers,
+            json=data,
+        )
         result_content = response.json().get("content")
         result_id = response.json().get("id")
 
@@ -320,9 +310,9 @@ def test_update_post_multi_posts_if_authorized(
 
 @pytest.mark.delete_post
 def test_delete_post_if_authorized(
-    client: TestClient, 
-    db_session: Session, 
-    get_user_token_headers_and_user_info: Dict, 
+    client: TestClient,
+    db_session: Session,
+    get_user_token_headers_and_user_info: Dict,
     fake_post: model.Post,
 ):
     # user 및 post 정보
@@ -333,7 +323,9 @@ def test_delete_post_if_authorized(
     post_id = fake_post.id
 
     # 글 삭제 및 결과
-    response = client.delete(f"{settings.API_V1_PREFIX}/users/{user_id}/posts/{post_id}", headers=headers)
+    response = client.delete(
+        f"{settings.API_V1_PREFIX}/users/{user_id}/posts/{post_id}", headers=headers
+    )
     result_status_text = response.json().get("status")
     result_msg = response.json().get("msg")
 
@@ -348,10 +340,10 @@ def test_delete_post_if_authorized(
 
 @pytest.mark.delete_post
 def test_delete_post_if_not_authorized(
-    client: TestClient, 
-    db_session: Session, 
-    get_user_token_headers_and_user_info: Dict, 
-    fake_post: model.Post, 
+    client: TestClient,
+    db_session: Session,
+    get_user_token_headers_and_user_info: Dict,
+    fake_post: model.Post,
 ):
     # user 및 post 정보
     headers = get_user_token_headers_and_user_info.get("headers")
@@ -359,7 +351,9 @@ def test_delete_post_if_not_authorized(
     post_id = fake_post.id
 
     # 글 삭제 및 결과
-    response = client.delete(f"{settings.API_V1_PREFIX}/users/{user_id}/posts/{post_id}", headers=headers)
+    response = client.delete(
+        f"{settings.API_V1_PREFIX}/users/{user_id}/posts/{post_id}", headers=headers
+    )
     result_msg = response.json().get("detail")
 
     # 결과 확인

@@ -11,4 +11,3 @@ class Post(Base, BaseMixin):
 
     def __repr__(self) -> str:
         return f"Post(id={self.id}, writer_id={self.writer_id}, created_at={self.created_at})"
-    
