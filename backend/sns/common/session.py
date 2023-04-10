@@ -1,6 +1,6 @@
 from fastapi import FastAPI
 from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker
+from sqlalchemy.orm import sessionmaker, close_all_sessions
 import logging
 
 from sns.common.config import settings
@@ -10,10 +10,7 @@ class SQLAlchemy:
     def __init__(self, app: FastAPI = None, **kwargs):
         self._engine = None
         self._session = None
-        self._app = None
-        if app is not None:
-            self._app = app
-            self.init_app(app=self._app, **kwargs)
+        self._app = app
 
     def init_app(self, app: FastAPI, **kwargs):
         """
@@ -40,7 +37,7 @@ class SQLAlchemy:
 
         @app.on_event("shutdown")
         def shutdown():
-            self._session.close_all()
+            close_all_sessions()
             self._engine.dispose()
             logging.info("DB disconnected")
 
