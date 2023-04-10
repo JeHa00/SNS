@@ -5,7 +5,7 @@ from sns.common.path import BASE_DIR
 
 
 class Settings(BaseSettings):
-    PROJECT_NAME: str = "SNS"  
+    PROJECT_NAME: str = "SNS"
     API_V1_PREFIX: str = "/api/v1"
 
     DB_USERNAME: str = "project"
@@ -27,7 +27,7 @@ class Settings(BaseSettings):
     SMTP_TLS: bool = True
     SMTP_PORT: int = 587 if SMTP_TLS else 465
     EMAIL_ADDRESS = "only.for.pjt@gmail.com"
-    EMAIL_PASSWORD = "wngvlgolokntjpas"  
+    EMAIL_PASSWORD = "wngvlgolokntjpas"
 
     class config:
         env_file = BASE_DIR / "env"

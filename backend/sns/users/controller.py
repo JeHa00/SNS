@@ -14,7 +14,7 @@ from sns.users.schema import (
     UserCreate,
     UserUpdate,
     UserRead,
-    UserPasswordUpdate
+    UserPasswordUpdate,
 )
 from sns.users.repositories.email_client import email_client
 from sns.users.repositories.db import user_crud
@@ -30,12 +30,12 @@ def signup(
     background_tasks: BackgroundTasks,
     db: Session = Depends(db.get_db),
 ):
-    """**email과 password로 새 user를 등록한다.**  
+    """**email과 password로 새 user를 등록한다.**
 
-    **Args:**  
+    **Args:**
         - signup_info (schema.UserCreate) : 등록할 email과 password 정보
 
-    **Returns:**   
+    **Returns:**
         - 새로 생성한 User 객체를 반환한다.
     """
     if (
@@ -85,11 +85,11 @@ def signup(
 def verify_email(code: str, db: Session = Depends(db.get_db)):
     """**code 정보를 받아 user를 조회하여 해당 user의 인증 상태를 True로 바꾼다.**
 
-    **Args:**  
-        - code (str) : url에 담겨진 code 정보  
+    **Args:**
+        - code (str) : url에 담겨진 code 정보
 
-    **Returns:**     
-        - Msg: 계정 인증 완료 메세지  
+    **Returns:**
+        - Msg: 계정 인증 완료 메세지
     """
     user = db.query(User).filter(User.verification_code == code).first()
     if not user:
@@ -101,17 +101,17 @@ def verify_email(code: str, db: Session = Depends(db.get_db)):
 
 
 @router.post("/login", response_model=Token, status_code=status.HTTP_200_OK)
-def login(email: str = Body(...), 
-          password: str = Body(...), 
-          db: Session = Depends(db.get_db)):
-    """**login 정보를 입력하면 access token을 발행한다.**  
+def login(
+    email: str = Body(...), password: str = Body(...), db: Session = Depends(db.get_db)
+):
+    """**login 정보를 입력하면 access token을 발행한다.**
 
-    **Args:**  
-        - email: 로그인 시 입력한 email      
-        - password: 로그인 시 입력한 password    
+    **Args:**
+        - email: 로그인 시 입력한 email
+        - password: 로그인 시 입력한 password
 
-    **Returns:**   
-        - dict: 입력한 정보가 정확하면 access token을 발행한다.  
+    **Returns:**
+        - dict: 입력한 정보가 정확하면 access token을 발행한다.
     """
     user = user_crud.get_user(db, email=email, password=password)
     if not user:
@@ -136,22 +136,28 @@ def reset_password(
     background_tasks: BackgroundTasks = BackgroundTasks(),
     db: Session = Depends(db.get_db),
 ):
-    """**로그인 시 비밀번호를 잊었을 때, 입력한 이메일 주소로 임시 비밀번호를 보낸다.**  
+    """**로그인 시 비밀번호를 잊었을 때, 입력한 이메일 주소로 임시 비밀번호를 보낸다.**
 
-    **Args:**    
-        - email: 로그인 시 입력한 이메일 주소    
+    **Args:**
+        - email: 로그인 시 입력한 이메일 주소
 
-    **Returns:**     
-        - Msg: 비밀번호 초기화 이메일 송신 완료 메세지  
+    **Returns:**
+        - Msg: 비밀번호 초기화 이메일 송신 완료 메세지
     """
     user = user_crud.get_user(db, email=email)
     if user:
         if user_service.is_verified(user):
             try:
                 temporary_password = secrets.token_urlsafe(8)
-                user_crud.update(db, user, {"password": user_service.get_password_hash(temporary_password)})
+                user_crud.update(
+                    db,
+                    user,
+                    {"password": user_service.get_password_hash(temporary_password)},
+                )
                 data = {"email_to": email, "password": temporary_password}
-                background_tasks.add_task(email_client.send_reset_password_email, **data)
+                background_tasks.add_task(
+                    email_client.send_reset_password_email, **data
+                )
                 return {"status": "success", "msg": "비밀번호 초기화를 위한 이메일 송신이 완료되었습니다."}
             except Exception:
                 raise
@@ -167,15 +173,15 @@ def change_password(
     current_user: UserBase = Depends(user_crud.get_current_user_verified),
     db: Session = Depends(db.get_db),
 ):
-    """**임시 비밀번호로 로그인 후, 다른 패스워드로 변경한다.**  
-       기존 패스워드 정보가 현재 유저의 패스워드 정보와 일치하면 새로운 패스워드로 변경한다.  
-       일치하지 않으면 변경하지 않는다.    
+    """**임시 비밀번호로 로그인 후, 다른 패스워드로 변경한다.**
+       기존 패스워드 정보가 현재 유저의 패스워드 정보와 일치하면 새로운 패스워드로 변경한다.
+       일치하지 않으면 변경하지 않는다.
 
-    **Args:**  
-        - password_info (UserPasswordUpdate): 현재 패스워드와 새 패스워드 정보  
-        - current_user (UserBase): 현재 유저 정보  
+    **Args:**
+        - password_info (UserPasswordUpdate): 현재 패스워드와 새 패스워드 정보
+        - current_user (UserBase): 현재 유저 정보
 
-    **Returns:**   
+    **Returns:**
         - Msg: 실행 완료 메세지
     """
     current_password, new_password = (
@@ -188,7 +194,9 @@ def change_password(
     if user_service.verify_password(current_password, user.password):
         try:
             user = user_crud.get_user(db, email=current_user.email)
-            user_crud.update(db, user, {"password": user_service.get_password_hash(new_password)})
+            user_crud.update(
+                db, user, {"password": user_service.get_password_hash(new_password)}
+            )
             return {"status": "success", "msg": "비밀번호가 변경되었습니다."}
         except Exception:
             raise HTTPException(status_code=500, detail="비밀번호 변경에 실패했습니다.")
@@ -206,14 +214,14 @@ def read_user(
     current_user: UserBase = Depends(user_crud.get_current_user_verified),
     db: Session = Depends(db.get_db),
 ):
-    """**user_id가 current_user와의 일치 유무에 따라 다른 user 정보를 반환한다.**  
+    """**user_id가 current_user와의 일치 유무에 따라 다른 user 정보를 반환한다.**
 
-    **Args:**    
-        - user_id (int): db에 저장된 user id  
-        - current_user (UserBase): 현재 유저 정보  
+    **Args:**
+        - user_id (int): db에 저장된 user id
+        - current_user (UserBase): 현재 유저 정보
 
-    **Returns:**     
-        - 유저 정보  
+    **Returns:**
+        - 유저 정보
     """
     selected_user = db.query(User).filter(User.id == user_id).first()
     if selected_user:
@@ -229,22 +237,24 @@ def read_user(
         raise HTTPException(status_code=400, detail="등록되지 않은 유저입니다.")
 
 
-@router.patch("/users/{user_id}", response_model=UserRead, status_code=status.HTTP_200_OK)
+@router.patch(
+    "/users/{user_id}", response_model=UserRead, status_code=status.HTTP_200_OK
+)
 def update_user(
     user_id: int,
     info_to_be_updated: UserUpdate,
     current_user: UserBase = Depends(user_crud.get_current_user_verified),
     db: Session = Depends(db.get_db),
 ):
-    """**user_id와 현재 user id와 같으면 유저 자신의 정보를 수정한다.**  
+    """**user_id와 현재 user id와 같으면 유저 자신의 정보를 수정한다.**
 
-    **Args:**    
-        - user_id (int): db에 저장된 user id  
-        - info_to_be_updated (UserUpdate): 업데이트할 user 정보  
-        - current_user (UserBase): token에서 가져온 현재 유저 정보  
+    **Args:**
+        - user_id (int): db에 저장된 user id
+        - info_to_be_updated (UserUpdate): 업데이트할 user 정보
+        - current_user (UserBase): token에서 가져온 현재 유저 정보
 
-    **Returns:**     
-        - Msg: 실행 완료 메세지  
+    **Returns:**
+        - Msg: 실행 완료 메세지
     """
     selected_user = db.query(User).filter(User.id == user_id).first()
     if selected_user.email == current_user.email:
@@ -269,14 +279,14 @@ def delete_user(
     current_user: UserBase = Depends(user_crud.get_current_user_verified),
     db: Session = Depends(db.get_db),
 ):
-    """**user_id와 현재 user id와 같으면 유저 자신의 계정을 삭제한다.**  
+    """**user_id와 현재 user id와 같으면 유저 자신의 계정을 삭제한다.**
 
-    **Args:**  
-        - user_id (int): db에 저장된 user id  
-        - current_user (User, optional): token에서 가져온 현재 유저 정보  
+    **Args:**
+        - user_id (int): db에 저장된 user id
+        - current_user (User, optional): token에서 가져온 현재 유저 정보
 
-    **Returns:**   
-        - Msg: 계정 삭제 완료 메세지  
+    **Returns:**
+        - Msg: 계정 삭제 완료 메세지
     """
     selected_user = db.query(User).filter(User.id == user_id).first()
     if selected_user.email == current_user.email:
