@@ -7,14 +7,12 @@ from sns.common.config import settings
 from sns.users.model import User
 
 
-class UserService():
-
+class UserService:
     __pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
     def get_pwd_context(cls):
-        
         return cls.__pwd_context
-    
+
     def create_access_token(self, data: dict, expires: timedelta | None = None) -> str:
         """주어진 데이터를 바탕으로 access token을 생성한다.
 
@@ -38,7 +36,7 @@ class UserService():
         )
         return encoded_jwt
 
-    def verify_password(self, plain_password: str, hashed_password: str) -> bool:
+    def verify_password(cls, plain_password: str, hashed_password: str) -> bool:
         """plain_password가 hash 화되었을 때 hashed_password와 일치하는지 판단한다.
 
         Args:
@@ -48,9 +46,9 @@ class UserService():
         Returns:
             bool: 일치 유무를 반환
         """
-        return self.__class__.get_pwd_context.verify(plain_password, hashed_password)
+        return cls.get_pwd_context().verify(plain_password, hashed_password)
 
-    def get_password_hash(self, password: str) -> str:
+    def get_password_hash(cls, password: str) -> str:
         """암호화된 패스워드를 얻는다.
 
         Args:
@@ -59,7 +57,7 @@ class UserService():
         Returns:
             str: 암호화된 패스워드
         """
-        return self.__class__.get_pwd_context.hash(password)
+        return cls.get_pwd_context().hash(password)
 
     def is_verified(self, user: User) -> bool:
         """user의 이메일 인증 여부를 확인한다.
