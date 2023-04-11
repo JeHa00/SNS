@@ -4,9 +4,13 @@ import pytest
 from fastapi.testclient import TestClient
 from sqlalchemy.orm import Session
 
+# flake8: noqa
 from sns.common.conftest import app, db_session, client
+
+# flake8: noqa
+from sns.users.test.conftest import fake_user, get_user_token_headers_and_user_info
+
 from sns.users.test.utils import random_lower_string
-from sns.users.test.conftest import fake_user
 from sns.posts.schema import PostCreate
 from sns.posts.repository import post_crud
 from sns.posts.model import Post
