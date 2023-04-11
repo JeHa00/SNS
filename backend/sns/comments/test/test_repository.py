@@ -5,7 +5,7 @@ from sns.users.test.utils import random_lower_string
 from sns.posts.model import Post
 from sns.comments.model import Comment
 from sns.comments.repository import comment_crud
-from sns.comments.schema import CommentCreate
+from sns.comments.schema import CommentCreate, CommentUpdate
 
 
 def test_create(
@@ -119,13 +119,27 @@ def test_get_multi_comments_by_post_id(
 def test_update_only_one_by_int(
     client: TestClient, db_session: Session, fake_comment: Comment
 ):
-    pass
+    new_content = random_lower_string(k=500)
+    data_to_be_updated = CommentUpdate(content=new_content)
+    comment = comment_crud.update(
+        db_session, comment_info=fake_comment.id, data_to_be_updated=data_to_be_updated
+    )
+    assert comment is not None
+    assert comment.id == fake_comment.id
+    assert comment.content == new_content
 
 
 def test_update_only_one_by_model_object(
     client: TestClient, db_session: Session, fake_comment: Comment
 ):
-    pass
+    new_content = random_lower_string(k=500)
+    data_to_be_updated = CommentUpdate(content=new_content)
+    comment = comment_crud.update(
+        db_session, comment_info=fake_comment, data_to_be_updated=data_to_be_updated
+    )
+    assert comment is not None
+    assert comment.id == fake_comment.id
+    assert comment.content == new_content
 
 
 def test_update_multi_comments_by_int(
@@ -133,40 +147,88 @@ def test_update_multi_comments_by_int(
     db_session: Session,
     fake_multi_comments: None,
 ):
-    pass
+    new_content = random_lower_string(k=500)
+    content = CommentUpdate(content=new_content)
+
+    for comment_id in range(1, 101):
+        comment = comment_crud.update(
+            db_session, comment_info=comment_id, data_to_be_updated=content
+        )
+        assert comment is not None
+        assert comment.content == new_content
 
 
+# NOTE: Post domain에서 발생한 것과 동일한 문제
 def test_update_multi_comments_by_model_object(
     client: TestClient,
     db_session: Session,
+    fake_post: Post,
     fake_multi_comments: None,
 ):
-    pass
+    old_content = fake_post.content
+    new_content = random_lower_string(k=500)
+    content = CommentUpdate(content=new_content)
+    comments = comment_crud.get_multi_comments(db_session, post_id=fake_post.id)
+
+    assert len(comments) == 100
+
+    for comment_model_object in comments:
+        assert hasattr(comment_model_object, "content")  # NOTE: 이게 없으면 FAILED 발생
+        comment = comment_crud.update(
+            db_session, comment_info=comment_model_object, data_to_be_updated=content
+        )
+        assert comment.content != old_content
+        assert comment.content == new_content
 
 
 def test_remove_only_one_by_int(
     client: TestClient, db_session: Session, fake_comment: Comment
 ):
-    pass
+    comment_id = fake_comment.id
+    comment_crud.remove(db_session, comment_info=comment_id)
+    comment = comment_crud.get_comment(db_session, comment_id=comment_id)
+
+    assert comment is None
 
 
 def test_remove_only_one_by_model_object(
     client: TestClient, db_session: Session, fake_comment: Comment
 ):
-    pass
+    comment_crud.remove(db_session, comment_info=fake_comment)
+    comment = comment_crud.get_comment(db_session, comment_id=fake_comment.id)
+
+    assert comment is None
 
 
 def test_remove_multi_comments_by_int(
     client: TestClient,
     db_session: Session,
+    fake_post: Post,
     fake_multi_comments: None,
 ):
-    pass
+    comments = comment_crud.get_multi_comments(db_session, post_id=fake_post.id)
+
+    assert len(comments) == 100
+
+    for comment in comments:
+        comment_crud.remove(db_session, comment_info=comment.id)
+        comment = comment_crud.get_comment(db_session, comment_id=comment.id)
+
+        assert comment is None
 
 
 def test_remove_multi_comments_by_model_object(
     client: TestClient,
     db_session: Session,
+    fake_post: Post,
     fake_multi_comments: None,
 ):
-    pass
+    comments = comment_crud.get_multi_comments(db_session, post_id=fake_post.id)
+
+    assert len(comments) == 100
+
+    for comment in comments:
+        comment_crud.remove(db_session, comment_info=comment)
+        comment = comment_crud.get_comment(db_session, comment_id=comment.id)
+
+        assert comment is None
