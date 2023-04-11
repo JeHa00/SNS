@@ -4,11 +4,12 @@ import pytest
 from fastapi.testclient import TestClient
 from sqlalchemy.orm import Session
 
+# flake8: noqa
+from sns.common.conftest import app, db_session, client
+from sns.common.config import settings
 from sns.users.test.utils import random_lower_string, random_email
 from sns.users.schema import UserCreate, UserUpdate
 from sns.users.repositories.db import user_crud
-from sns.common.config import settings
-from sns.common.conftest import app, db_session, client
 
 
 @pytest.fixture(scope="function")
