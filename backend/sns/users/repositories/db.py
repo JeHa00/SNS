@@ -29,13 +29,13 @@ class UserDB:
         Returns:
             User: 입력된 값들과 일치하는 유저 객체를 반환한다. 없으면 None을 반환
         """
-        user = db.query(User).filter(User.email == kwargs["email"]).first()
+        user = db.query(User).filter(User.email == kwargs.get("email")).first()
 
         if len(kwargs) == 1:
             return user
         else:
             if not user or not user_service.verify_password(
-                kwargs["password"], user.password
+                kwargs.get("password"), user.password
             ):
                 return False
             return user
