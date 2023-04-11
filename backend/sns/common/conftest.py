@@ -9,20 +9,30 @@ from sqlalchemy.orm import sessionmaker
 from sns.common.config import settings
 from sns.common.session import db
 from sns.common.base import Base
-from sns.main import app as main_app
-
+from sns.users.controller import router as users
+from sns.posts.controller import router as posts
+from sns.comments.controller import router as comments
 
 engine = create_engine(settings.get_test_db_url())
 TestingSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
 
 @pytest.fixture(scope="function")
-def app() -> Generator[FastAPI, Any, None]:
+def start_app() -> FastAPI:
+    app = FastAPI()
+    app.include_router(users, tags=["Users"], prefix=settings.API_V1_STR)
+    app.include_router(posts, tags=["Posts"], prefix=settings.API_V1_STR)
+    app.include_router(comments, tags=["Comments"], prefix=settings.API_V1_STR)
+    return app
+
+
+@pytest.fixture(scope="function")
+def app(start_app: FastAPI) -> Generator[FastAPI, Any, None]:
     """
     Create a fresh database on each test case
     """
     Base.metadata.create_all(bind=engine)
-    yield main_app
+    yield start_app
     Base.metadata.drop_all(bind=engine)
 
 
