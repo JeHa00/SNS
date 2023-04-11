@@ -23,8 +23,8 @@ class CommentCreate(CommentBase):
     content: str = Field(max_length=500)
 
 
-class CommentUpdate(CommentCreate):
-    pass
+class CommentUpdate(CommentBase):
+    content: str = Field(max_length=500)
 
 
 class Comment(CommentInDB):
