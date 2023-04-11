@@ -23,7 +23,8 @@ class CommentDB:
     def get_multi_comments(
         self, db: Session, skip: int = 0, limit: int = 100, **kwargs
     ) -> List[Comment]:
-        """writer_id에 해당되는 writer가 작성한 comment들, 또는 post_id에 해당되는 post에 작성된 comment들을 조회한다.
+        """writer_id에 해당되는 writer가 작성한 comment들,
+          또는 post_id에 해당되는 post에 작성된 comment들을 조회한다.
 
         Args:
             skip (int, optional): 건너띌 갯수. 기본 값은 0.
@@ -33,7 +34,7 @@ class CommentDB:
         Returns:
             List[Comment]: comment 객체들을 list 배열에 담아 반환
         """
-        if kwargs["writer_id"]:
+        if kwargs.get("writer_id"):
             return (
                 db.query(Comment)
                 .filter(Comment.writer_id == kwargs["writer_id"])
@@ -41,7 +42,7 @@ class CommentDB:
                 .limit(limit)
                 .all()
             )
-        elif kwargs["post_id"]:
+        else:
             return (
                 db.query(Comment)
                 .filter(Comment.post_id == kwargs["post_id"])
@@ -84,7 +85,8 @@ class CommentDB:
         comment_info: Comment | int,
         data_to_be_updated: CommentUpdate,
     ) -> Comment:
-        """Comment 모델 객체 또는 comment_id 로 주어진 comment 객체를 data_to_be_updated로 받은 내용으로 수정한다.
+        """Comment 모델 객체 또는 comment_id 로 주어진 comment 객체를
+           data_to_be_updated로 받은 내용으로 수정한다.
 
         Args:
             comment_info (Comment | int): Comment 객체 정보
