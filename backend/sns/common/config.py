@@ -30,17 +30,17 @@ class Settings(BaseSettings):
     EMAIL_ADDR = "only.for.pjt@gmail.com"
     EMAIL_PASSWORD = "wngvlgolokntjpas"
 
-
     def get_test_db_url(self):
         db_username: str = "root"
         db_host: str = "0.0.0.0"
         db_name: str = "test"
+        db_port: str = "3310"
 
         return self.SQLALCHEMY_DATABASE_URI.format(
             username=db_username,
             pw=self.DB_PASSWORD.get_secret_value(),
             host=db_host,
-            port=self.DB_PORT,
+            port=db_port,
             name=db_name,
         )
 
