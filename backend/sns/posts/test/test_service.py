@@ -3,9 +3,7 @@ from typing import Dict, List
 from fastapi.testclient import TestClient
 from sqlalchemy.orm import Session
 
-from sns.users.test.conftest import fake_user
 from sns.users.test.utils import random_lower_string
-from sns.posts.test.conftest import fake_post, fake_multi_posts
 from sns.posts.schema import PostCreate, PostUpdate
 from sns.posts.model import Post
 from sns.posts.repository import post_crud
@@ -114,8 +112,8 @@ def test_update_multi_posts_by_int(
         assert post.content == "Hello World!"
 
 
-# FIXME: int를 사용하여 post를 조회 후 업데이트하는 걸 여러 post에 시도 시 문제가 없지만, model object를 사용하면 문제가 발생된다.
-# FIXME: post model 객체 정보는 넘어가지만, update 내부 jsonable_encoder 가 반환 시 첫 번째 model object만 값을 반환한다.
+# FIXME: int를 사용하여 post를 조회 후 업데이트를 여러 post에 시도 시 문제가 없지만, model object를 사용하면 문제가 발생된다.
+# FIXME: post model 객체는 넘어가지만, update 내부 jsonable_encoder가 반환 시 첫 번째 model object만 반환한다.
 def test_update_multi_posts_by_model_object(
     client: TestClient,
     db_session: Session,

@@ -10,4 +10,4 @@ class Post(Base, BaseMixin):
     writer = relationship("User", back_populates="posts")
 
     def __repr__(self) -> str:
-        return f"Post(id={self.id}, writer_id={self.writer_id}, created_at={self.created_at})"
+        return f"Post(id={self.id}, writer_id={self.writer_id})"

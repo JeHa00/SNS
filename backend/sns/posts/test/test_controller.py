@@ -8,19 +8,15 @@ from fastapi import status
 import pytest
 
 from sns.common.config import settings
-from sns.users.test.conftest import fake_user, get_user_token_headers_and_user_info
 from sns.users.test.utils import random_lower_string
 from sns.users.service import get_user
-from sns.posts.repository import post_crud
-from sns.posts.test.conftest import fake_post, fake_multi_posts
 from sns.posts.schema import PostCreate, PostUpdate
+from sns.posts.repository import post_crud
 from sns.posts import model
 
 
 @pytest.mark.read_post
-def test_read_post_existed(
-    client: TestClient, db_session: Session, fake_multi_posts: None
-):
+def test_read_post_existed(client: TestClient, fake_multi_posts: None):
     total_post_count = 100
     for post_id in range(1, total_post_count + 1):
         response = client.get(f"{settings.API_V1_PREFIX}/posts/{post_id}")
@@ -32,9 +28,7 @@ def test_read_post_existed(
 
 
 @pytest.mark.read_post
-def test_read_post_not_existed(
-    client: TestClient, db_session: Session, fake_post: model.Post
-):
+def test_read_post_not_existed(client: TestClient, fake_post: model.Post):
     post_id = randint(fake_post.id + 1, 100)
     response = client.get(f"{settings.API_V1_PREFIX}/posts/{post_id}")
     result_msg = response.json().get("detail")
@@ -87,7 +81,7 @@ def test_read_posts_if_post_exist(
 
 @pytest.mark.create_post
 def test_create_post_if_user_not_registered(
-    client: TestClient, db_session: Session, get_user_token_headers_and_user_info: Dict
+    client: TestClient, get_user_token_headers_and_user_info: Dict
 ):
     # current_user 정보
     headers = get_user_token_headers_and_user_info.get("headers")
@@ -114,7 +108,6 @@ def test_create_post_if_user_not_registered(
 @pytest.mark.create_post
 def test_create_post_if_unauthorized(
     client: TestClient,
-    db_session: Session,
     fake_user: Dict,
     get_user_token_headers_and_user_info: Dict,
 ):
@@ -220,7 +213,7 @@ def test_update_post_if_unauthorized(
     post = post_crud.get_post(db_session, post_id=created_post_id)
 
     assert response.status_code == status.HTTP_201_CREATED
-    assert post != None
+    assert post is not None
 
 
 @pytest.mark.update_post
@@ -335,7 +328,7 @@ def test_delete_post_if_authorized(
     assert response.status_code == status.HTTP_200_OK
     assert result_status_text == "success"
     assert result_msg == "글이 삭제되었습니다."
-    assert post is not None
+    assert post is None
 
 
 @pytest.mark.delete_post

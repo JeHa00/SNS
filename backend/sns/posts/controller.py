@@ -86,7 +86,7 @@ def create_post(
         - current_user (User, optional): 현재 로그인된 user 정보
 
     **Raises:**
-        - HTTPException(401 UNAUTHORIZED): user_id가 현재 로그인된 유저의 id와 값이 달라서 작성할 권한이 없음을 보여주는 에러
+        - HTTPException(401 UNAUTHORIZED): user_id가 로그인된 유저 id와 달라 작성 권한이 없음을 보여주는 에러
         - HTTPException(403 FORBIDDEN): user_id를 가진 user를 찾지 못하여 등록된 회원이 아님을 보여주는 에러
 
     **Returns:**
@@ -128,8 +128,8 @@ def update_post(
         - current_user (User, optional): 현재 유저 정보
 
     **Raises:**
-        - HTTPException(404 NOT FOUND): user_id가 현재 로그인된 유저의 id와 같아 권한이 있지만, 수정할 글이 없음을 보여주는 에러
-        - HTTPException(401 UNAUTHORIZED): user_id가 현재 로그인된 유저의 id와 값이 달라서 작성할 권한이 없음을 보여주는 에러
+        - HTTPException(404 NOT FOUND): 수정 권한은 있지만, 수정할 글이 없음을 보여주는 에러
+        - HTTPException(401 UNAUTHORIZED): user_id가 로그인된 유저 id와 달라서 작성 권한이 없음을 보여주는 에러
         - HTTPException(403 FORBIDDEN): user_id를 가진 user를 찾지 못하여 등록된 회원이 아님을 보여주는 에러
 
     **Returns:**
