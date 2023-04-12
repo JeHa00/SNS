@@ -3,6 +3,7 @@ from typing import Dict, List
 from fastapi.testclient import TestClient
 from sqlalchemy.orm import Session
 
+from sns.users.service import delete
 from sns.users.test.utils import random_lower_string
 from sns.posts.schema import PostCreate, PostUpdate
 from sns.posts.model import Post
@@ -185,6 +186,16 @@ def test_delete_multi_posts_by_model_object(
     for post in posts:
         post_crud.remove(db_session, post_info=post)
 
+    posts = post_crud.get_multi_posts(db_session, writer_id=user.id)
+
+    assert len(posts) == 0
+
+
+def test_delete_user_having_multi_posts(
+    client: TestClient, db_session: Session, fake_user, fake_multi_posts: None
+):
+    user = fake_user.get("user")
+    delete(db_session, user_info=user)
     posts = post_crud.get_multi_posts(db_session, writer_id=user.id)
 
     assert len(posts) == 0
