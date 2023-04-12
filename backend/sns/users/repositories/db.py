@@ -9,7 +9,7 @@ from jose import jwt, JWTError
 from sns.common.config import settings
 from sns.common.session import db
 from sns.users.service import user_service
-from sns.users.schema import UserCreate, Token
+from sns.users.schema import UserCreate, UserUpdate, Token
 from sns.users.model import User
 
 
@@ -123,23 +123,25 @@ class UserDB:
 
         return db_obj
 
-    def update(self, db: Session, user: User, user_info: User | dict) -> User:
+    def update(
+        self, db: Session, user: User, data_to_be_updated: UserUpdate | dict
+    ) -> User:
         """user 정보를 수정한다.
 
         Args:
             db (Session): db session
             user (User): user 정보
-            user_info (BaseModel | dict): 변경할 유저 정보
+            data_to_be_updated (BaseModel | dict): 변경할 유저 정보
 
         Returns:
             User: 수정된 유저 객체
         """
         obj_data = jsonable_encoder(user)
 
-        if isinstance(user_info, dict):
-            data_to_be_updated = user_info
+        if isinstance(data_to_be_updated, dict):
+            data_to_be_updated = data_to_be_updated
         else:
-            data_to_be_updated = user_info.dict(exclude_unset=True)
+            data_to_be_updated = data_to_be_updated.dict(exclude_unset=True)
 
         for field in obj_data:
             if field in data_to_be_updated:
