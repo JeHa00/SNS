@@ -18,13 +18,11 @@ class CommentInDB(CommentBase):
 
 
 class CommentCreate(CommentBase):
-    writer_id: int
-    post_id: int
     content: str = Field(max_length=500)
 
 
-class CommentUpdate(CommentBase):
-    content: str = Field(max_length=500)
+class CommentUpdate(CommentCreate):
+    pass
 
 
 class Comment(CommentInDB):
