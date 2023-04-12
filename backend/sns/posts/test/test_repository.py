@@ -120,7 +120,6 @@ def test_update_multi_posts_by_model_object(
     fake_user: Dict,
     fake_multi_posts: List[Post],
 ):
-    print()
     # 생성한 post 목록들
     user = fake_user.get("user")
     posts = post_crud.get_multi_posts(db_session, user.id)
