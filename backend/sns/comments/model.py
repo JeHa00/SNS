@@ -6,7 +6,9 @@ from sns.common.base import Base, BaseMixin
 
 class Comment(Base, BaseMixin):
     content = Column(String(500), nullable=False)
+
     writer_id = Column(Integer, ForeignKey("user.id", ondelete="CASCADE"))
-    post_id = Column(Integer, ForeignKey("post.id", ondelete="CASCADE"))
     writer = relationship("User", back_populates="comments")
+
+    post_id = Column(Integer, ForeignKey("post.id", ondelete="CASCADE"))
     post = relationship("Post", back_populates="comments")
