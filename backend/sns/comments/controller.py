@@ -67,9 +67,11 @@ def create_comment(
     selected_user = db.query(User).filter(User.id == user_id).first()
     if selected_user:
         if selected_user.id == current_user.id:
-            content = CommentCreate(content=data_to_be_created)
             comment = comment_crud.create(
-                db, data_to_be_created=content, writer_id=user_id, post_id=post_id
+                db,
+                data_to_be_created=data_to_be_created,
+                writer_id=user_id,
+                post_id=post_id,
             )
             return comment
         else:
@@ -97,9 +99,8 @@ def update_comment(
     selected_user = db.query(User).filter(User.id == user_id).first()
     if selected_user:
         if selected_user.id == current_user.id:
-            content = CommentUpdate(content=data_to_be_updated)
             comment = comment_crud.update(
-                db, comment_info=comment_id, data_to_be_updated=content
+                db, comment_info=comment_id, data_to_be_updated=data_to_be_updated
             )
             return comment
         else:
