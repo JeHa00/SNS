@@ -1,8 +1,10 @@
 from fastapi.testclient import TestClient
 from sqlalchemy.orm import Session
 
+from sns.users.service import delete as user_remove
 from sns.users.test.utils import random_lower_string
 from sns.posts.model import Post
+from sns.posts.service import remove as post_remove
 from sns.comments.model import Comment
 from sns.comments.repository import comment_crud
 from sns.comments.schema import CommentCreate, CommentUpdate
@@ -232,3 +234,36 @@ def test_remove_multi_comments_by_model_object(
         comment = comment_crud.get_comment(db_session, comment_id=comment.id)
 
         assert comment is None
+
+
+def test_remove_multi_comments_by_deleting_user(
+    client: TestClient,
+    db_session: Session,
+    fake_user: dict,
+    fake_multi_comments: None,
+):
+    user = fake_user.get("user")
+    comments = comment_crud.get_multi_comments(db_session, writer_id=user.id)
+
+    assert len(comments) == 100
+
+    user_remove(db_session, user_info=user)
+    comments = comment_crud.get_multi_comments(db_session, writer_id=user.id)
+
+    assert len(comments) == 0
+
+
+def test_remove_multi_comments_by_deleting_post(
+    client: TestClient,
+    db_session: Session,
+    fake_post: Post,
+    fake_multi_comments: None,
+):
+    comments = comment_crud.get_multi_comments(db_session, post_id=fake_post.id)
+
+    assert len(comments) == 100
+
+    post_remove(db_session, post_info=fake_post)
+    comments = comment_crud.get_multi_comments(db_session, post_id=fake_post.id)
+
+    assert len(comments) == 0
