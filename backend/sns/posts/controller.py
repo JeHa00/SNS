@@ -41,7 +41,7 @@ def read_post(post_id: int, db: Session = Depends(db.get_db)) -> model.Post:
 @router.get(
     "/users/{user_id}/posts", response_model=List[Post], status_code=status.HTTP_200_OK
 )
-def read_posts(user_id: int, db: Session = Depends(db.get_db)):
+def read_posts(user_id: int, db: Session = Depends(db.get_db)) -> List[Post]:
     """**user_id에 일치하는 user가 작성한 post들을 조회**
 
     **Args:**
@@ -77,7 +77,7 @@ def create_post(
     data_to_be_created: PostCreate,
     current_user: User = Depends(get_current_user_verified),
     db: Session = Depends(db.get_db),
-):
+) -> Post:
     """**user_id가 현재 로그인된 user와 동일할 때 post를 생성한다.**
 
     **Args:**
@@ -118,7 +118,7 @@ def update_post(
     data_to_be_updated: PostUpdate,
     current_user: User = Depends(get_current_user_verified),
     db: Session = Depends(db.get_db),
-):
+) -> Post:
     """**user_id가 현재 user id와 동일하여 수정 권한이 있을 때 post_id에 해당되는 post를 수정한다.**
 
     **Args:**
@@ -168,7 +168,7 @@ def delete_post(
     post_id: int,
     current_user: User = Depends(get_current_user_verified),
     db: Session = Depends(db.get_db),
-):
+) -> Msg:
     """**user_id가 current_user의 id와 동일할 때, 해당 post_id를 가진 post를 삭제한다.**
 
     **Args:**
@@ -180,7 +180,7 @@ def delete_post(
         - HTTPException: post_id에 해당되는 post를 찾을 수 없을 때 발생되는 에러(404 NOT FOUND)
 
     **Returns:**
-        - schema.Msg: 삭제 성공 메세지를 반환
+        - Msg: 삭제 성공 메세지를 반환
     """
     if user_id == current_user.id:
         post_crud.remove(db, post_info=post_id)
