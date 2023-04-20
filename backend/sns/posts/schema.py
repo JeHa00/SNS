@@ -26,3 +26,19 @@ class PostUpdate(PostCreate):
 
 class Post(PostInDB):
     content: str = Field(max_length=1000)
+
+
+class PostLikeInDB(BaseModel):
+    is_like: bool = True
+
+    class Config:
+        orm_mode = True
+
+
+class PostLike(PostLikeInDB):
+    who_like_id: int | None
+    like_target_id: int | None
+
+
+class PostUnlike(PostLike):
+    is_like: bool = False
