@@ -111,35 +111,49 @@ class PostDB:
 
 
 class PostLikeDB:
-    # liker 조회
     def get_users_who_like(self, db: Session, like_target_id: int) -> List[User]:
-        """like_target_id에 일치하는 post를 좋아요한 유저들을 조회한다.
+        """like_target_id에 일치하는 post를 좋아요한 liker 유저들을 조회한다.
 
         Args:
             like_target_id (int): like를 받은 post의 id
 
         Returns:
-            _type_: _description_
+            List[User]: list 데이터 타입에 담겨진 User 객체
         """
         # like_target_id에 해당되는 post에 좋아요를 누른 다수의 user 조회
         return (
-            db.query(PostLike)
-            .filter(PostLike.like_target_id == like_target_id, PostLike.is_like is True)
+            db.query(User)
+            .join(User.liker)
+            .filter(PostLike.like_target_id == like_target_id, PostLike.is_like)
             .all()
         )
 
-    # likee 조회
-    def get_like_targets(self, db: Session, who_like_id: int):
-        # who_like_id에 해당되는 user가 좋아요를 누른 다수의 post 조회
-        # return db.query(PostLike).filter(PostLike.who_like_id == who_like_id).all()
+    def get_like_targets(self, db: Session, who_like_id: int) -> List[Post]:
+        """who_like_id에 해당하는 user가 좋아요를 표시한 likee인 다수의 post를 조회한다.
+
+        Args:
+            who_like_id (int): 작성된 post에 좋아요를 한 user의 id
+
+        Returns:
+            List[Post]: list 데이터 타입에 담겨진 Post 객체 정보들
+        """
         return (
-            db.query(PostLike)
-            .filter(PostLike.who_like_id == who_like_id, PostLike.is_like is True)
+            db.query(Post)
+            .join(Post.likee)
+            .filter(PostLike.who_like_id == who_like_id, PostLike.is_like)
             .all()
         )
 
-    def like(self, db: Session, like_info: schema.PostLike):
-        is_like, who_like_id, like_target_id = like_info.values()
+    def like(self, db: Session, like_info: schema.PostLike) -> PostLike:
+        """like_info 를 토대로 post에 좋아요를 실행한다.
+
+        Args:
+            like_info (schema.PostLike): who_like_id, like_target_id, is_like 값 정보
+
+        Returns:
+            PostLike: is_like 값이 True로 생성된 PostLike 객체를 반환
+        """
+        _, who_like_id, like_target_id = like_info.values()
 
         db_obj = (
             db.query(PostLike)
@@ -152,8 +166,6 @@ class PostLikeDB:
 
         if db_obj is None:
             db_obj = PostLike(**like_info)
-        else:
-            setattr(db_obj, "is_like", is_like)
 
         db.add(db_obj)
         db.commit()
@@ -161,7 +173,18 @@ class PostLikeDB:
 
         return db_obj
 
-    def unlike(self, db: Session, unlike_info: schema.PostUnlike):
+    def unlike(self, db: Session, unlike_info: schema.PostUnlike) -> PostLike:
+        """like_info 를 토대로 post에 좋아요를 취소한다.
+
+        Args:
+            like_info (schema.PostLike): who_like_id, like_target_id, is_like 값 정보
+
+        Raises:
+            ValueError: is_like 값이 이미 False인 경우 발생되는 에러
+
+        Returns:
+            PostLike: is_like 값이 변경된 PostLike 객체를 반환
+        """
         is_like, who_like_id, like_target_id = unlike_info.values()
 
         db_obj = (
@@ -172,14 +195,19 @@ class PostLikeDB:
             )
             .first()
         )
+        if not db_obj:
+            raise LookupError("해당 id 정보와 일치하는 객체 정보가 존재하지 않습니다.")
+        else:
+            if db_obj.is_like is True:
+                setattr(db_obj, "is_like", is_like)
 
-        setattr(db_obj, "is_like", is_like)
+                db.add(db_obj)
+                db.commit()
+                db.refresh(db_obj)
 
-        db.add(db_obj)
-        db.commit()
-        db.refresh(db_obj)
-
-        return db_obj
+                return db_obj
+            else:
+                raise ValueError("is_like가 이미 False입니다.")
 
 
 post_crud = PostDB()
