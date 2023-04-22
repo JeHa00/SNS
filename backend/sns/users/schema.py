@@ -45,8 +45,8 @@ class UserPasswordUpdate(BaseModel):
 
 
 class FollowBase(BaseModel):
-    following: int
-    follower: int
+    following_id: int
+    follower_id: int
 
     class Config:
         orm_mode = True
