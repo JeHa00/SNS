@@ -5,14 +5,63 @@ from sqlalchemy.orm import Session
 
 from sns.common.session import db
 from sns.users.service import get_current_user_verified
-from sns.users.schema import Msg
+from sns.users.schema import Msg, UserBase
 from sns.users.model import User
-from sns.posts.schema import Post, PostCreate, PostUpdate
+from sns.posts.schema import Post, PostCreate, PostUpdate, PostLike, PostUnlike
 from sns.posts import model
-from sns.posts.repository import post_crud
+from sns.posts.repository import post_crud, post_like_crud
 
 
 router = APIRouter()
+
+
+@router.get("/posts/likees", response_model=List[Post], status_code=status.HTTP_200_OK)
+def read_likees(
+    current_user: User = Depends(get_current_user_verified),
+    db: Session = Depends(db.get_db),
+):
+    posts = post_like_crud.get_like_targets(db, who_like_id=current_user.id)
+    return posts
+
+
+@router.get(
+    "/posts/{post_id}/likers",
+    response_model=List[UserBase],
+    status_code=status.HTTP_200_OK,
+)
+def read_likers(post_id: int, db: Session = Depends(db.get_db)):
+    likers = post_like_crud.get_users_who_like(db, like_target_id=post_id)
+    return likers
+
+
+@router.post(
+    "/posts/{post_id}/like",
+    response_model=Msg,
+    status_code=status.HTTP_200_OK,
+)
+def like_post(
+    post_id: int,
+    current_user: User = Depends(get_current_user_verified),
+    db: Session = Depends(db.get_db),
+):
+    like_info = PostLike(who_like_id=current_user.id, like_target_id=post_id)
+    post_like_crud.like(db, like_info=like_info)
+    return {"status": "success", "msg": "post 좋아요가 완료되었습니다."}
+
+
+@router.post(
+    "/posts/{post_id}/unlike",
+    response_model=Msg,
+    status_code=status.HTTP_200_OK,
+)
+def unlike_post(
+    post_id: int,
+    current_user: User = Depends(get_current_user_verified),
+    db: Session = Depends(db.get_db),
+):
+    unlike_info = PostUnlike(who_like_id=current_user.id, like_target_id=post_id)
+    post_like_crud.unlike(db, unlike_info=unlike_info)
+    return {"status": "success", "msg": "post 좋아요가 취소되었습니다"}
 
 
 @router.get("/posts/{post_id}", response_model=Post, status_code=status.HTTP_200_OK)
