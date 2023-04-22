@@ -28,17 +28,17 @@ class Post(PostInDB):
     content: str = Field(max_length=1000)
 
 
-class PostLikeInDB(BaseModel):
-    is_like: bool = True
+class PostLikeBase(BaseModel):
+    who_like_id: int
+    like_target_id: int
 
     class Config:
         orm_mode = True
 
 
-class PostLike(PostLikeInDB):
-    who_like_id: int | None
-    like_target_id: int | None
+class PostLike(PostLikeBase):
+    is_like: bool = True
 
 
-class PostUnlike(PostLike):
+class PostUnlike(PostLikeBase):
     is_like: bool = False
