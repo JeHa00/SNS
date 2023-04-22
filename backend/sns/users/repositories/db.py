@@ -10,7 +10,7 @@ from sns.common.config import settings
 from sns.common.session import db
 from sns.users.service import user_service
 from sns.users import schema
-from sns.users.model import User
+from sns.users.model import User, Follow
 
 
 class UserDB:
@@ -174,4 +174,69 @@ class UserDB:
         return {"status": "success"}
 
 
+class FollowDB:
+    def get_follow(self, db: Session, follow_info: schema.Follow):
+        db_obj = (
+            db.query(Follow)
+            .filter(
+                Follow.follower_id == follow_info.follower,
+                Follow.following_id == follow_info.following,
+            )
+            .first()
+        )
+
+        return db_obj
+
+    def get_followers(self, db: Session, following_id: int):
+        # following_id가 따르는 follower들
+        return (
+            db.query(User)
+            .join(User.to_user)
+            .filter(Follow.following_id == following_id)
+            .all()
+        )
+
+    def get_followings(self, db: Session, follower_id: int):
+        # follower_id를 따르는 user들
+        return (
+            db.query(User)
+            .join(User.from_user)
+            .filter(Follow.follower_id == follower_id)
+            .all()
+        )
+
+    def follow(self, db: Session, follow_info: schema.Follow):
+        db_obj = self.get_follow(db, follow_info)
+
+        if db_obj is None:
+            db_obj = Follow(**jsonable_encoder(follow_info))
+        else:
+            if db_obj.is_followed is False:
+                setattr(db_obj, "is_followed", follow_info.is_followed)
+
+        db.add(db_obj)
+        db.commit()
+        db.refresh(db_obj)
+
+        return db_obj
+
+    def unfollow(self, db: Session, unfollow_info: schema.Unfollow):
+        db_obj = self.get_follow(db, unfollow_info)
+
+        if not db_obj:
+            raise LookupError("해당 id와 일치하는 객체 정보가 존재하지 않습니다.")
+        else:
+            if db_obj.is_followed is True:
+                setattr(db_obj, "is_followed", unfollow_info.is_followed)
+
+                db.add(db_obj)
+                db.commit()
+                db.refresh(db_obj)
+
+                return db_obj
+            else:
+                raise ValueError("is_followed가 이미 False입니다.")
+
+
 user_crud = UserDB()
+follow_crud = FollowDB()
