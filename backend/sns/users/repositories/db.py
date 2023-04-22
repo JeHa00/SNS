@@ -9,7 +9,7 @@ from jose import jwt, JWTError
 from sns.common.config import settings
 from sns.common.session import db
 from sns.users.service import user_service
-from sns.users.schema import UserCreate, UserUpdate, Token
+from sns.users import schema
 from sns.users.model import User
 
 
@@ -43,7 +43,7 @@ class UserDB:
     @staticmethod
     def get_current_user(
         db: Session = Depends(db.get_db),
-        token: Token = Depends(__oauth2_scheme),
+        token: schema.Token = Depends(__oauth2_scheme),
     ) -> User:
         """발급했던 Token으로부터 user 정보를 가져온다.
 
@@ -98,7 +98,7 @@ class UserDB:
 
         return current_user
 
-    def create(self, db: Session, user_info: UserCreate) -> User:
+    def create(self, db: Session, user_info: schema.UserCreate) -> User:
         """받은 정보로 새 유저를 등록한다.
 
         Args:
@@ -124,7 +124,7 @@ class UserDB:
         return db_obj
 
     def update(
-        self, db: Session, user: User, data_to_be_updated: UserUpdate | dict
+        self, db: Session, user: User, data_to_be_updated: schema.UserUpdate | dict
     ) -> User:
         """user 정보를 수정한다.
 
