@@ -1,3 +1,4 @@
+from typing import List
 import secrets
 
 from fastapi import Depends, HTTPException, status
@@ -175,7 +176,16 @@ class UserDB:
 
 
 class FollowDB:
-    def get_follow(self, db: Session, follow_info: schema.Follow):
+    def get_follow(self, db: Session, follow_info: schema.Follow) -> Follow:
+        """follow_info에 일치하는 Follow 객체를 조회한다.
+
+        Args:
+            db (Session): db session
+            follow_info (schema.Follow): follower_id, following_id 정보
+
+        Returns:
+            Follow: 일치한 Follow 객체를 반환
+        """
         db_obj = (
             db.query(Follow)
             .filter(
@@ -187,8 +197,16 @@ class FollowDB:
 
         return db_obj
 
-    def get_followers(self, db: Session, following_id: int):
-        # following_id가 따르는 follower들
+    def get_followers(self, db: Session, following_id: int) -> List[User]:
+        """following_id에 해당하는 user가 따르는 follower들을 조회한다.
+
+        Args:
+            db (Session): db session
+            following_id (int): follow 신청을 한 user id
+
+        Returns:
+            List[User]: following_id로부터 follow 신청을 받은 user 목록
+        """
         return (
             db.query(User)
             .join(User.to_user)
@@ -196,8 +214,16 @@ class FollowDB:
             .all()
         )
 
-    def get_followings(self, db: Session, follower_id: int):
-        # follower_id를 따르는 user들
+    def get_followings(self, db: Session, follower_id: int) -> List[User]:
+        """follow_id에 해당하는 user를 따르는 following들을 조회한다.
+
+        Args:
+            db (Session): db session
+            follower_id (int): follow 신청을 받은 user id
+
+        Returns:
+            List[User]: follower_id를 따르는 user 목록
+        """
         return (
             db.query(User)
             .join(User.from_user)
@@ -205,7 +231,16 @@ class FollowDB:
             .all()
         )
 
-    def follow(self, db: Session, follow_info: schema.Follow):
+    def follow(self, db: Session, follow_info: schema.Follow) -> Follow:
+        """follow_info 를 토대로 follow 관계를 맺기 위해 Follow 객체를 생성한다.
+
+        Args:
+            db (Session): db session
+            follow_info (schema.Follow): following과 follower에 각각 해당하는 user id 정보
+
+        Returns:
+            Follow: 생성된 Follow 객체를 반환
+        """
         db_obj = self.get_follow(db, follow_info)
 
         if db_obj is None:
@@ -220,7 +255,20 @@ class FollowDB:
 
         return db_obj
 
-    def unfollow(self, db: Session, unfollow_info: schema.Unfollow):
+    def unfollow(self, db: Session, unfollow_info: schema.Unfollow) -> Follow:
+        """unfollow_info를 토대로 follow 관계를 취소하기 위해 is_followed 값을 False로 변경한다.
+
+        Args:
+            db (Session): db session
+            unfollow_info (schema.Unfollow): following과 follower에 각각 해당하는 user id 정보
+
+        Raises:
+            LookupError: unfollow_info에 해당하는 Follow 객체 정보가 조회되지 않을 때 발생
+            ValueError: unfollow_info에 해당하는 Follow 객체의 is_followed 값이 이미 False일 때 발생
+
+        Returns:
+            Follow: follow 관계가 끊어진 Follow 객체 정보를 반환
+        """
         db_obj = self.get_follow(db, unfollow_info)
 
         if not db_obj:
