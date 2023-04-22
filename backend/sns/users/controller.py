@@ -1,3 +1,4 @@
+from typing import List
 import secrets
 
 from fastapi import APIRouter, Depends, status, HTTPException, Body
@@ -16,6 +17,7 @@ from sns.users.schema import (
     Token,
     Msg,
 )
+from sns.users.repositories.db import user_crud, follow_crud
 from sns.users.service import (
     get_current_user_verified,
     send_reset_password_email,
@@ -111,9 +113,9 @@ def verify_email(code: str, db: Session = Depends(db.get_db)):
 
 
 @router.post("/login", response_model=Token, status_code=status.HTTP_200_OK)
-def login(email: str = Body(...), 
-          password: str = Body(...), 
-          db: Session = Depends(db.get_db)):
+def login(
+    email: str = Body(...), password: str = Body(...), db: Session = Depends(db.get_db)
+):
     """login 정보를 입력하면 access token을 발행한다.
 
     Args: \\
@@ -239,7 +241,9 @@ def read_user(
         raise HTTPException(status_code=400, detail="등록되지 않은 유저입니다.")
 
 
-@router.patch("/users/{user_id}", response_model=UserRead, status_code=status.HTTP_200_OK)
+@router.patch(
+    "/users/{user_id}", response_model=UserRead, status_code=status.HTTP_200_OK
+)
 def update_user(
     user_id: int,
     info_to_be_updated: UserUpdate,
@@ -303,3 +307,57 @@ def delete_user(
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED, detail="삭제할 권한이 없습니다."
         )
+
+
+@router.get(
+    "/users/{user_id}/followers",
+    response_model=List[UserBase],
+    status_code=status.HTTP_200_OK,
+)
+def read_followers(
+    user_id: int,
+    db: Session = Depends(db.get_db),
+) -> List[UserBase]:
+    followers = follow_crud.get_followers(db, following_id=user_id)
+    return followers
+
+
+@router.get(
+    "/users/{user_id}/followings",
+    response_model=List[UserBase],
+    status_code=status.HTTP_200_OK,
+)
+def read_followings(
+    user_id: int,
+    db: Session = Depends(db.get_db),
+) -> List[UserBase]:
+    followings = follow_crud.get_followings(db, follower_id=user_id)
+    return followings
+
+
+@router.post("/follow/{user_id}", response_model=Msg, status_code=status.HTTP_200_OK)
+def follow_user(
+    user_id: int,
+    current_user: UserBase = Depends(user_crud.get_current_user_verified),
+    db: Session = Depends(db.get_db),
+) -> Msg:
+    data = Follow(following_id=current_user.id, follower_id=user_id)
+    follow_object = follow_crud.follow(db, follow_info=data)
+    if follow_object:
+        return {"status": "success", "msg": "follow 관계가 맺어졌습니다."}
+    else:
+        return {"status": "fail", "msg": "follow 관계가 실패했습니다."}
+
+
+@router.post("/unfollow/{user_id}", response_model=Msg, status_code=status.HTTP_200_OK)
+def unfollower_user(
+    user_id: int,
+    current_user: UserBase = Depends(user_crud.get_current_user_verified),
+    db: Session = Depends(db.get_db),
+) -> Msg:
+    data = Unfollow(following_id=current_user.id, follower_id=user_id)
+    follow_object = follow_crud.follow(db, follow_info=data)
+    if follow_object:
+        return {"status": "success", "msg": "follow 관계 취소가 완료되었습니다."}
+    else:
+        return {"status": "fail", "msg": "follow 관계 취소가 실패했습니다."}
