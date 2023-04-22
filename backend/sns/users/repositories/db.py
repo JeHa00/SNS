@@ -189,8 +189,8 @@ class FollowDB:
         db_obj = (
             db.query(Follow)
             .filter(
-                Follow.follower_id == follow_info.follower,
-                Follow.following_id == follow_info.following,
+                Follow.follower_id == follow_info.follower_id,
+                Follow.following_id == follow_info.following_id,
             )
             .first()
         )
