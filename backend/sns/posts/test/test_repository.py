@@ -1,7 +1,6 @@
 from typing import Dict, List
 
 from fastapi.testclient import TestClient
-from fastapi.encoders import jsonable_encoder
 from sqlalchemy.orm import Session
 
 from sns.users.service import delete
@@ -209,7 +208,7 @@ def test_like(
 
     for post_id in range(1, 101):
         like_info = schema.PostLike(who_like_id=user.id, like_target_id=post_id)
-        post_like_crud.like(db_session, like_info=jsonable_encoder(like_info))
+        post_like_crud.like(db_session, like_info=like_info)
 
     posts = db_session.query(PostLike).filter(PostLike.who_like_id == user.id).all()
 
@@ -249,14 +248,14 @@ def test_unlike(
 
     for post_id in range(1, 51):
         unlike_info = schema.PostUnlike(who_like_id=user.id, like_target_id=post_id)
-        post_like_crud.unlike(db_session, unlike_info=jsonable_encoder(unlike_info))
+        post_like_crud.unlike(db_session, unlike_info=unlike_info)
 
         who_like = post_like_crud.get_users_who_like(db_session, like_target_id=post_id)
         assert len(who_like) == 1  # who_like_id=2 인 유저 정보만 조회
 
     for post_id in range(1, 101):
         unlike_info = schema.PostUnlike(who_like_id=2, like_target_id=post_id)
-        post_like_crud.unlike(db_session, unlike_info=jsonable_encoder(unlike_info))
+        post_like_crud.unlike(db_session, unlike_info=unlike_info)
 
         who_like = post_like_crud.get_users_who_like(db_session, like_target_id=post_id)
 

@@ -55,8 +55,8 @@ def fake_postlike(
 
     for post_id in range(1, 51):
         like_info = PostLike(who_like_id=user.id, like_target_id=post_id)
-        post_like_crud.like(db_session, like_info=jsonable_encoder(like_info))
+        post_like_crud.like(db_session, like_info=like_info)
 
     for post_id in range(1, 101):
         like_info = PostLike(who_like_id=another_user.id, like_target_id=post_id)
-        post_like_crud.like(db_session, like_info=jsonable_encoder(like_info))
+        post_like_crud.like(db_session, like_info=like_info)
