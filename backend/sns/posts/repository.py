@@ -153,19 +153,17 @@ class PostLikeDB:
         Returns:
             PostLike: is_like 값이 True로 생성된 PostLike 객체를 반환
         """
-        _, who_like_id, like_target_id = like_info.values()
-
         db_obj = (
             db.query(PostLike)
             .filter(
-                PostLike.who_like_id == who_like_id,
-                PostLike.like_target_id == like_target_id,
+                PostLike.who_like_id == like_info.who_like_id,
+                PostLike.like_target_id == like_info.like_target_id,
             )
             .first()
         )
 
         if db_obj is None:
-            db_obj = PostLike(**like_info)
+            db_obj = PostLike(**jsonable_encoder(like_info))
 
         db.add(db_obj)
         db.commit()
@@ -185,13 +183,11 @@ class PostLikeDB:
         Returns:
             PostLike: is_like 값이 변경된 PostLike 객체를 반환
         """
-        is_like, who_like_id, like_target_id = unlike_info.values()
-
         db_obj = (
             db.query(PostLike)
             .filter(
-                PostLike.who_like_id == who_like_id,
-                PostLike.like_target_id == like_target_id,
+                PostLike.who_like_id == unlike_info.who_like_id,
+                PostLike.like_target_id == unlike_info.like_target_id,
             )
             .first()
         )
@@ -199,7 +195,7 @@ class PostLikeDB:
             raise LookupError("해당 id 정보와 일치하는 객체 정보가 존재하지 않습니다.")
         else:
             if db_obj.is_like is True:
-                setattr(db_obj, "is_like", is_like)
+                setattr(db_obj, "is_like", unlike_info.is_like)
 
                 db.add(db_obj)
                 db.commit()
