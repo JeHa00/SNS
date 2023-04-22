@@ -9,7 +9,8 @@ import pytest
 
 from sns.common.config import settings
 from sns.users.test.utils import random_lower_string
-from sns.users.service import get_user
+from sns.users.service import get_user, update
+from sns.users.schema import UserUpdate
 from sns.posts.schema import PostCreate, PostUpdate
 from sns.posts.repository import post_crud
 from sns.posts import model
@@ -355,3 +356,113 @@ def test_delete_post_if_not_authorized(
     assert response.status_code == status.HTTP_401_UNAUTHORIZED
     assert result_msg == "삭제할 권한이 없습니다."
     assert post is not None
+
+
+@pytest.mark.read_likers
+def test_read_likers(client: TestClient, db_session: Session, fake_postlike: None):
+    for post_id in range(1, 101):
+        if post_id <= 50:
+            response = client.get(f"{settings.API_V1_PREFIX}/posts/{post_id}/likers")
+            result = response.json()
+
+            assert response.status_code == status.HTTP_200_OK
+            assert len(result) == 2
+        else:
+            response = client.get(f"{settings.API_V1_PREFIX}/posts/{post_id}/likers")
+            result = response.json()
+
+            assert response.status_code == status.HTTP_200_OK
+            assert len(result) == 1
+
+
+@pytest.mark.read_likees
+def test_read_likees_if_likees_not_exist(
+    client: TestClient,
+    db_session: Session,
+    get_user_token_headers_and_user_info: dict,
+):
+    # current user 정보
+    headers = get_user_token_headers_and_user_info.get("headers")
+
+    # likees 조회 및 결과
+    response = client.get(f"{settings.API_V1_PREFIX}/posts/likees", headers=headers)
+    result = response.json()
+
+    assert len(result) == 0
+
+
+@pytest.mark.read_likees
+def test_read_likees_if_likees_exist(
+    client: TestClient, db_session: Session, fake_user: dict, fake_postlike: None
+):
+    # login 정보
+    user = fake_user.get("user")
+    user_info = fake_user.get("user_info")
+    login_info = {
+        "email": user_info.email,
+        "password": user_info.password,
+    }
+
+    # verified 업데이트
+    info_to_be_updated = UserUpdate(verified=True)
+    user_info = jsonable_encoder(info_to_be_updated)
+    update(db_session, user, user_info)
+
+    # token 발행
+    response = client.post(f"{settings.API_V1_PREFIX}/login", json=login_info)
+    token = response.json().get("access_token")
+    headers = {"Authorization": f"Bearer {token}"}
+
+    # likees 조회 및 결과
+    response = client.get(f"{settings.API_V1_PREFIX}/posts/likees", headers=headers)
+    result = response.json()
+
+    assert len(result) == 50
+
+
+@pytest.mark.like_post
+def test_like_post(
+    client: TestClient,
+    db_session: Session,
+    get_user_token_headers_and_user_info: dict,
+    fake_multi_posts: None,
+):
+    headers = get_user_token_headers_and_user_info.get("headers")
+
+    for post_id in range(1, 101):
+        response = client.post(
+            f"{settings.API_V1_PREFIX}/posts/{post_id}/like", headers=headers
+        )
+        result = response.json()
+        result_status_text = result.get("status")
+        result_msg = result.get("msg")
+
+        assert response.status_code == status.HTTP_200_OK
+        assert result_status_text == "success"
+        assert result_msg == "post 좋아요가 완료되었습니다."
+
+
+@pytest.mark.unlike_post
+def test_unlike_post(
+    client: TestClient,
+    db_session: Session,
+    get_user_token_headers_and_user_info: dict,
+    fake_multi_posts: None,
+):
+    headers = get_user_token_headers_and_user_info.get("headers")
+
+    for post_id in range(1, 101):
+        response = client.post(
+            f"{settings.API_V1_PREFIX}/posts/{post_id}/like", headers=headers
+        )
+
+    for post_id in range(1, 101):
+        response = client.post(
+            f"{settings.API_V1_PREFIX}/posts/{post_id}/unlike", headers=headers
+        )
+        result_status_text = response.json().get("status")
+        result_msg = response.json().get("msg")
+
+        assert response.status_code == status.HTTP_200_OK
+        assert result_status_text == "success"
+        assert result_msg == "post 좋아요가 취소되었습니다"

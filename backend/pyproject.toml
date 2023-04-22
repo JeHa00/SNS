@@ -34,11 +34,15 @@ markers = [
     "read_user",
     "update_user",
     "delete_user",
-    "read_post", 
+    "read_post",
     "read_posts",
     "create_post",
-    "update_post",  
-    "delete_post", 
+    "update_post",
+    "delete_post",
+    "read_likers",
+    "read_likees",
+    "like_post",
+    "unlike_post",
 ]
 
 
