@@ -111,6 +111,16 @@ class PostDB:
 
 
 class PostLikeDB:
+    def get_like(self, db: Session, model_info: schema.PostLikeBase) -> PostLike:
+        return (
+            db.query(PostLike)
+            .filter(
+                PostLike.like_target_id == model_info.like_target_id,
+                PostLike.who_like_id == model_info.who_like_id,
+            )
+            .first()
+        )
+
     def get_users_who_like(self, db: Session, like_target_id: int) -> List[User]:
         """like_target_id에 일치하는 post를 좋아요한 liker 유저들을 조회한다.
 
@@ -153,14 +163,7 @@ class PostLikeDB:
         Returns:
             PostLike: is_like 값이 True로 생성된 PostLike 객체를 반환
         """
-        db_obj = (
-            db.query(PostLike)
-            .filter(
-                PostLike.who_like_id == like_info.who_like_id,
-                PostLike.like_target_id == like_info.like_target_id,
-            )
-            .first()
-        )
+        db_obj = self.get_like(db, like_info)
 
         if db_obj is None:
             db_obj = PostLike(**jsonable_encoder(like_info))
@@ -183,14 +186,8 @@ class PostLikeDB:
         Returns:
             PostLike: is_like 값이 변경된 PostLike 객체를 반환
         """
-        db_obj = (
-            db.query(PostLike)
-            .filter(
-                PostLike.who_like_id == unlike_info.who_like_id,
-                PostLike.like_target_id == unlike_info.like_target_id,
-            )
-            .first()
-        )
+        db_obj = self.get_like(db, unlike_info)
+
         if not db_obj:
             raise LookupError("해당 id 정보와 일치하는 객체 정보가 존재하지 않습니다.")
         else:
