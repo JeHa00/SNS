@@ -5,6 +5,9 @@ import copy
 from fastapi.testclient import TestClient
 from sqlalchemy.orm import Session
 
+from fastapi.testclient import TestClient
+from sqlalchemy.orm import Session
+
 # flake8: noqa
 from sns.common.conftest import start_app, app, db_session, client
 from sns.common.config import settings
@@ -49,3 +52,30 @@ def get_user_token_headers_and_login_data(
     token = response.json()["access_token"]
     headers = {"Authorization": f"Bearer {token}"}
     return {"headers": headers, "login_data": login_data}
+
+
+@pytest.fixture(scope="function")
+def fake_multi_user(client: TestClient, db_session: Session):
+    for _ in range(10):
+        # fake_user 생성
+        email = random_email()
+        password = random_lower_string(k=8)
+        signup_data = UserCreate(
+            email=email,
+            password=password,
+            password_confirm=password,
+        )
+        fake_user = user_service.create(db_session, signup_data.dict())
+
+        # verified 업데이트
+        user_service.update(db_session, fake_user, {"verified": True})
+
+
+@pytest.fixture(scope="function")
+def fake_follow(client: TestClient, db_session: Session, fake_multi_user: None):
+    for following_id in range(1, 11):
+        for follower_id in range(1, 11):
+            if following_id == follower_id:
+                continue
+            follow_data = {"following_id": following_id, "follwer_id": follower_id}
+            user_crud.follow(db_session, None, **follow_data)
