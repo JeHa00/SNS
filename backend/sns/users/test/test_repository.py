@@ -169,3 +169,59 @@ def test_delete_user_by_model_object(fake_user: Dict, db_session: Session):
     assert user_02 is None
     assert user_01 != user_02
     assert result == {"status": "success"}
+
+
+def test_follow(client: TestClient, db_session: Session, fake_multi_user: None):
+    # following_id가 1인 user의 follow 요청
+    for follower_id in range(2, 11):
+        follow_data = {"following_id": 1, "follower_id": follower_id}
+        user_crud.follow(db_session, None, **follow_data)
+        follow = user_crud.get_follow(db_session, follower_id, 1)
+        assert follow is not None
+        assert hasattr(follow, "is_followed")
+        assert hasattr(follow, "following")
+        assert hasattr(follow, "following_id")
+        assert hasattr(follow, "follower")
+        assert hasattr(follow, "follower_id")
+        assert follow.following_id == 1
+        assert follow.follower_id == follower_id
+
+    # following_id가 2인 user의 follow 요청
+    for follower_id in range(3, 11):
+        follow_data = {"following_id": 2, "follower_id": follower_id}
+        user_crud.follow(db_session, None, **follow_data)
+        follow = user_crud.get_follow(db_session, follower_id, 2)
+        assert follow is not None
+        assert hasattr(follow, "is_followed")
+        assert hasattr(follow, "following")
+        assert hasattr(follow, "following_id")
+        assert hasattr(follow, "follower")
+        assert hasattr(follow, "follower_id")
+        assert follow.following_id == 2
+        assert follow.follower_id == follower_id
+
+
+def test_get_followers(client: TestClient, db_session: Session, fake_follow: None):
+    for following_id in range(1, 11):
+        followers = user_crud.get_followers(db_session, following_id=following_id)
+        assert len(followers) == 9
+
+
+def test_get_followings(client: TestClient, db_session: Session, fake_follow: None):
+    for follower_id in range(1, 11):
+        followings = user_crud.get_followings(db_session, follower_id=follower_id)
+        assert len(followings) == 9
+
+
+def test_unfollow(client: TestClient, db_session: Session, fake_follow: None):
+    for following_id in range(1, 11):
+        for follower_id in range(1, 11):
+            if following_id == follower_id:
+                continue
+            selected_follow = user_crud.get_follow(
+                db_session,
+                follower_id,
+                following_id,
+            )
+            follow_object = user_crud.unfollow(db_session, selected_follow)
+            assert follow_object.is_followed is False

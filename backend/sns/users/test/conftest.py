@@ -77,5 +77,5 @@ def fake_follow(client: TestClient, db_session: Session, fake_multi_user: None):
         for follower_id in range(1, 11):
             if following_id == follower_id:
                 continue
-            follow_data = {"following_id": following_id, "follwer_id": follower_id}
+            follow_data = {"following_id": following_id, "follower_id": follower_id}
             user_crud.follow(db_session, None, **follow_data)
