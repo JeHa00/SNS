@@ -26,10 +26,10 @@ class User(Base, BaseMixin):
 
 
 class Follow(Base, BaseMixin):
-    following_id = Column(Integer, ForeignKey("user.id"), ondelete="CASCADE")
+    following_id = Column(Integer, ForeignKey("user.id", ondelete="CASCADE"))
     following = relationship("User", back_populates="from_user")
 
-    follower_id = Column(Integer, ForeignKey("user.id"), ondelete="CASCADE")
+    follower_id = Column(Integer, ForeignKey("user.id", ondelete="CASCADE"))
     follower = relationship("User", back_populates="to_user")
 
     is_followed = Column(Boolean, nullable=False, default=True)
