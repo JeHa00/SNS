@@ -6,12 +6,13 @@ from jose import jwt
 
 from fastapi.encoders import jsonable_encoder
 from fastapi.exceptions import HTTPException
+from fastapi.testclient import TestClient
 from sqlalchemy.orm import Session
 
 from sns.common.config import settings
 from sns.users.test.utils import random_lower_string, random_email
-from sns.users.schema import UserCreate, UserUpdate
-from sns.users.repositories.db import user_crud
+from sns.users.schema import UserCreate, UserUpdate, Follow, Unfollow
+from sns.users.repositories.db import user_crud, follow_crud
 from sns.users.service import user_service
 
 
@@ -174,3 +175,80 @@ def test_delete_user_by_model_object(fake_user: Dict, db_session: Session):
     assert user_02 is None
     assert user_01 != user_02
     assert result == {"status": "success"}
+
+
+def test_follow(client: TestClient, db_session: Session, fake_multi_user: None):
+    # following_id가 1인 user의 follow 요청
+    for follower_id in range(2, 11):
+        follow_info = Follow(following_id=1, follower_id=follower_id)
+        follow_crud.follow(db_session, follow_info=follow_info)
+        follow = follow_crud.get_follow(db_session, follow_info=follow_info)
+        assert follow is not None
+        assert hasattr(follow, "is_followed")
+        assert hasattr(follow, "following")
+        assert hasattr(follow, "following_id")
+        assert hasattr(follow, "follower")
+        assert hasattr(follow, "follower_id")
+        assert follow.following_id == 1
+        assert follow.follower_id == follower_id
+
+    # following_id가 2인 user의 follow 요청
+    for follower_id in range(3, 11):
+        follow_info = Follow(following_id=2, follower_id=follower_id)
+        follow_crud.follow(db_session, follow_info=follow_info)
+        follow = follow_crud.get_follow(db_session, follow_info=follow_info)
+        assert follow is not None
+        assert hasattr(follow, "is_followed")
+        assert hasattr(follow, "following")
+        assert hasattr(follow, "following_id")
+        assert hasattr(follow, "follower")
+        assert hasattr(follow, "follower_id")
+        assert follow.following_id == 2
+        assert follow.follower_id == follower_id
+
+
+def test_get_followers(client: TestClient, db_session: Session, fake_follow: None):
+    for following_id in range(1, 11):
+        followers = follow_crud.get_followers(db_session, following_id=following_id)
+        assert len(followers) == 9
+
+
+def test_get_followings(client: TestClient, db_session: Session, fake_follow: None):
+    for follower_id in range(1, 11):
+        followings = follow_crud.get_followings(db_session, follower_id=follower_id)
+        assert len(followings) == 9
+
+
+def test_unfollow_if_Follow_object_not_exist(client: TestClient, db_session: Session):
+    with pytest.raises(LookupError):
+        unfollow_info = Unfollow(following_id=1, follower_id=1)
+        follow_crud.unfollow(db_session, unfollow_info=unfollow_info)
+
+
+@pytest.fixture(scope="function")
+def test_unfollow_if_is_followed_is_True(
+    client: TestClient, db_session: Session, fake_follow: None
+):
+    for following_id in range(1, 11):
+        for follower_id in range(1, 11):
+            if following_id == follower_id:
+                continue
+            unfollow_info = Unfollow(following_id=following_id, follower_id=follower_id)
+            follow_object = follow_crud.unfollow(
+                db_session, unfollow_info=unfollow_info
+            )
+            assert follow_object.is_followed is False
+
+
+def test_unfollow_if_is_followed_already_False(
+    client: TestClient, db_session: Session, test_unfollow_if_is_followed_is_True: None
+):
+    with pytest.raises(ValueError):
+        for following_id in range(1, 11):
+            for follower_id in range(1, 11):
+                if following_id == follower_id:
+                    continue
+                unfollow_info = Unfollow(
+                    following_id=following_id, follower_id=follower_id
+                )
+                follow_crud.unfollow(db_session, unfollow_info=unfollow_info)
