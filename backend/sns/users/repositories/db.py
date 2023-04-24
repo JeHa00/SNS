@@ -198,9 +198,6 @@ class FollowDB:
             .first()
         )
 
-        if not db_obj:
-            raise LookupError("해당 id와 일치하는 객체 정보가 존재하지 않습니다. Follow 객체를 먼저 등록하세요.")
-
         return db_obj
 
     def get_followers(self, db: Session, following_id: int) -> List[User]:
