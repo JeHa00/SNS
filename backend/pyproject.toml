@@ -45,6 +45,10 @@ markers = [
     "read_likees",
     "like_post",
     "unlike_post",
+    "read_followers",
+    "read_followings",
+    "follow_user",
+    "unfollow_user"
 ]
 
 
