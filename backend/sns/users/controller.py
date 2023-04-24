@@ -19,6 +19,7 @@ from sns.users.schema import (
     Token,
     Msg,
 )
+
 from sns.users.repositories.email_client import email_client
 from sns.users.repositories.db import user_crud, follow_crud
 from sns.users.service import user_service
@@ -317,6 +318,14 @@ def read_followers(
     user_id: int,
     db: Session = Depends(db.get_db),
 ) -> List[UserBase]:
+    """**user_id에 해당하는 user가 따르는 followers를 조회한다.**
+
+    **Args:**
+        - user_id (int): followers를 따르는 user의 id
+
+    **Returns:**
+        - List[UserBase]: follower 목록
+    """
     followers = follow_crud.get_followers(db, following_id=user_id)
     return followers
 
@@ -330,33 +339,77 @@ def read_followings(
     user_id: int,
     db: Session = Depends(db.get_db),
 ) -> List[UserBase]:
+    """**user_id에 해당하는 user를 따르는 following들을 조회한다.**
+
+    **Args:**
+        - user_id (int): following들이 따르는 user의 id
+
+    **Returns:**
+        - List[UserBase]: following 목록
+    """
     followings = follow_crud.get_followings(db, follower_id=user_id)
     return followings
 
 
-@router.post("/follow/{user_id}", response_model=Msg, status_code=status.HTTP_200_OK)
+@router.post(
+    "/users/{user_id}/follow", response_model=Msg, status_code=status.HTTP_200_OK
+)
 def follow_user(
     user_id: int,
     current_user: UserBase = Depends(user_crud.get_current_user_verified),
     db: Session = Depends(db.get_db),
 ) -> Msg:
+    """**currnet_user가 user_id에 해당하는 user를 follow 한다.**
+       즉, current_user는 following이 되고 user_id는 follower가 된다.
+
+    **Args:**
+        - user_id (int): current_user가 follow 관계를 맺으려는 user의 id
+        - current_user (UserBase, optional): 현재 로그인되어 있는 user
+
+    **Raises:**
+        - HTTPException (500 INTERNAL SERVER ERROR): follow 관계 맺기가 실패하면 발생하는 에러
+
+    **Returns:**
+        - Msg: follow 관계 맺기 성공 메세지
+    """
     data = Follow(following_id=current_user.id, follower_id=user_id)
-    follow_object = follow_crud.follow(db, follow_info=data)
-    if follow_object:
+    try:
+        follow_crud.follow(db, follow_info=data)
         return {"status": "success", "msg": "follow 관계가 맺어졌습니다."}
-    else:
-        return {"status": "fail", "msg": "follow 관계가 실패했습니다."}
+    except Exception:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="follow 관계 맺기가 실패하였습니다.",
+        )
 
 
-@router.post("/unfollow/{user_id}", response_model=Msg, status_code=status.HTTP_200_OK)
-def unfollower_user(
+@router.post(
+    "/users/{user_id}/unfollow", response_model=Msg, status_code=status.HTTP_200_OK
+)
+def unfollow_user(
     user_id: int,
     current_user: UserBase = Depends(user_crud.get_current_user_verified),
     db: Session = Depends(db.get_db),
 ) -> Msg:
+    """**current_user가 user_id에 해당하는 user와 follow 관계가 되어있는 상태에서 unfollow 한다.**
+      is_followed 값이 False로 수정된다.
+
+    **Args:**
+        - user_id (int): unfollow 하려는 user의 id
+        - current_user (UserBase, optional): 현재 로그인되어 있는 user
+
+    **Raises:**
+        - HTTPException (500 INTERNAL SERVER ERROR): follow 관계 맺기가 실패하면 발생하는 에러
+
+    **Returns:**
+        - Msg: follow 관계 취소 성공 메세지
+    """
     data = Unfollow(following_id=current_user.id, follower_id=user_id)
-    follow_object = follow_crud.follow(db, follow_info=data)
-    if follow_object:
+    try:
+        follow_crud.unfollow(db, unfollow_info=data)
         return {"status": "success", "msg": "follow 관계 취소가 완료되었습니다."}
-    else:
-        return {"status": "fail", "msg": "follow 관계 취소가 실패했습니다."}
+    except Exception:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="follow 관계 취소가 실패하였습니다.",
+        )
