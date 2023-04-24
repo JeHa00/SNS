@@ -414,3 +414,79 @@ def test_delete_user_if_authorized(
     assert response.status_code == status.HTTP_200_OK
     assert result_status_text == "success"
     assert result_msg == "계정이 삭제되었습니다."
+
+
+@pytest.mark.read_followers
+def test_read_followers(client: TestClient, db_session: Session, fake_follow: None):
+    for user_id in range(1, 11):
+        response = client.get(f"{settings.API_V1_PREFIX}/users/{user_id}/followers")
+        result = response.json()
+
+        assert response.status_code == status.HTTP_200_OK
+        assert len(result) == 9
+
+        for user in result:
+            assert "email" in user
+            assert "verified" in user
+
+
+@pytest.mark.read_followings
+def test_read_followings(client: TestClient, db_session: Session, fake_follow: None):
+    for user_id in range(1, 11):
+        response = client.get(f"{settings.API_V1_PREFIX}/users/{user_id}/followings")
+        result = response.json()
+        assert response.status_code == status.HTTP_200_OK
+        assert len(result) == 9
+
+        for user in result:
+            assert "email" in user
+            assert "verified" in user
+
+
+@pytest.mark.follow_user
+def test_follow_user_if_success(
+    client: TestClient,
+    db_session: Session,
+    fake_multi_user: None,
+    get_user_token_headers_and_user_info: dict,
+):
+    # current_user 정보
+    headers = get_user_token_headers_and_user_info.get("headers")
+
+    # follow 요청 및 결과
+    for user_id in range(1, 11):
+        response = client.post(
+            f"{settings.API_V1_PREFIX}/users/{user_id}/follow", headers=headers
+        )
+        result_status_text = response.json().get("status")
+        result_msg = response.json().get("msg")
+
+        assert response.status_code == status.HTTP_200_OK
+        assert result_status_text == "success"
+        assert result_msg == "follow 관계가 맺어졌습니다."
+
+
+@pytest.mark.unfollow_user
+def test_unfollow_user_if_success(
+    client: TestClient,
+    db_session: Session,
+    fake_multi_user: None,
+    get_user_token_headers_and_user_info: dict,
+):
+    # current_user 정보
+    headers = get_user_token_headers_and_user_info.get("headers")
+
+    for user_id in range(1, 11):
+        # follow 요청
+        client.post(f"{settings.API_V1_PREFIX}/users/{user_id}/follow", headers=headers)
+
+        # unfollow 요청 및 결과
+        response = client.post(
+            f"{settings.API_V1_PREFIX}/users/{user_id}/unfollow", headers=headers
+        )
+        result_status_text = response.json().get("status")
+        result_msg = response.json().get("msg")
+
+        assert response.status_code == status.HTTP_200_OK
+        assert result_status_text == "success"
+        assert result_msg == "follow 관계 취소가 완료되었습니다."
