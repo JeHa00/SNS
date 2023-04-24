@@ -183,6 +183,9 @@ class FollowDB:
             db (Session): db session
             follow_info (schema.Follow): follower_id, following_id 정보
 
+        Raises:
+            LookupError: follow_info에 해당하는 Follow 객체 정보가 조회되지 않을 때 발생
+
         Returns:
             Follow: 일치한 Follow 객체를 반환
         """
@@ -194,6 +197,9 @@ class FollowDB:
             )
             .first()
         )
+
+        if not db_obj:
+            raise LookupError("해당 id와 일치하는 객체 정보가 존재하지 않습니다. Follow 객체를 먼저 등록하세요.")
 
         return db_obj
 
@@ -263,7 +269,6 @@ class FollowDB:
             unfollow_info (schema.Unfollow): following과 follower에 각각 해당하는 user id 정보
 
         Raises:
-            LookupError: unfollow_info에 해당하는 Follow 객체 정보가 조회되지 않을 때 발생
             ValueError: unfollow_info에 해당하는 Follow 객체의 is_followed 값이 이미 False일 때 발생
 
         Returns:
@@ -271,19 +276,16 @@ class FollowDB:
         """
         db_obj = self.get_follow(db, unfollow_info)
 
-        if not db_obj:
-            raise LookupError("해당 id와 일치하는 객체 정보가 존재하지 않습니다.")
+        if db_obj.is_followed is True:
+            setattr(db_obj, "is_followed", unfollow_info.is_followed)
+
+            db.add(db_obj)
+            db.commit()
+            db.refresh(db_obj)
+
+            return db_obj
         else:
-            if db_obj.is_followed is True:
-                setattr(db_obj, "is_followed", unfollow_info.is_followed)
-
-                db.add(db_obj)
-                db.commit()
-                db.refresh(db_obj)
-
-                return db_obj
-            else:
-                raise ValueError("is_followed가 이미 False입니다.")
+            raise ValueError("is_followed가 이미 False입니다.")
 
 
 user_crud = UserDB()
