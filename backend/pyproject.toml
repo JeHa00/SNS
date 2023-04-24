@@ -34,6 +34,10 @@ markers = [
     "read_user",
     "update_user",
     "delete_user",
+    "read_followers",
+    "read_followings",
+    "follow_user",
+    "unfollow_user",
     "read_post",
     "read_posts",
     "create_post",
@@ -48,6 +52,7 @@ markers = [
 
 [tool.poetry.group.dev.dependencies]
 black = "^23.1.0"
+pre-commit = "^3.2.2"
 
 [build-system]
 requires = ["poetry-core"]

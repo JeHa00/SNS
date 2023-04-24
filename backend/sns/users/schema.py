@@ -42,3 +42,19 @@ class UserUpdate(BaseModel):
 class UserPasswordUpdate(BaseModel):
     current_password: str = Field(min_length=8)
     new_password: str = Field(min_length=8)
+
+
+class FollowBase(BaseModel):
+    following_id: int
+    follower_id: int
+
+    class Config:
+        orm_mode = True
+
+
+class Follow(FollowBase):
+    is_followed: bool = True
+
+
+class Unfollow(FollowBase):
+    is_followed: bool = False

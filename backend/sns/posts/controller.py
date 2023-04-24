@@ -4,8 +4,8 @@ from fastapi import APIRouter, Depends, status, HTTPException
 from sqlalchemy.orm import Session
 
 from sns.common.session import db
-from sns.users.service import get_current_user_verified
-from sns.users.schema import Msg, UserBase
+from sns.users.repositories.db import user_crud
+from sns.users.schema import UserBase, Msg
 from sns.users.model import User
 from sns.posts.schema import Post, PostCreate, PostUpdate, PostLike, PostUnlike
 from sns.posts.repository import post_crud, post_like_crud
@@ -17,7 +17,7 @@ router = APIRouter()
 
 @router.get("/posts/likees", response_model=List[Post], status_code=status.HTTP_200_OK)
 def read_likees(
-    current_user: User = Depends(get_current_user_verified),
+    current_user: User = Depends(user_crud.get_current_user_verified),
     db: Session = Depends(db.get_db),
 ) -> List[Post]:
     """**current_user에게 좋아요를 받은 likee인 post들을 조회한다.**
@@ -57,7 +57,7 @@ def read_likers(post_id: int, db: Session = Depends(db.get_db)) -> List[UserBase
 )
 def like_post(
     post_id: int,
-    current_user: User = Depends(get_current_user_verified),
+    current_user: User = Depends(user_crud.get_current_user_verified),
     db: Session = Depends(db.get_db),
 ) -> Msg:
     """**현재 로그인되어있는 user가 post_id에 해당하는 post를 like 한다.**
@@ -81,7 +81,7 @@ def like_post(
 )
 def unlike_post(
     post_id: int,
-    current_user: User = Depends(get_current_user_verified),
+    current_user: User = Depends(user_crud.get_current_user_verified),
     db: Session = Depends(db.get_db),
 ) -> Msg:
     """**현재 로그인되어있는 user가 post_id에 해당하는 post의 like를 취소한다.**
@@ -159,7 +159,7 @@ def read_posts(user_id: int, db: Session = Depends(db.get_db)) -> List[Post]:
 def create_post(
     user_id: int,
     data_to_be_created: PostCreate,
-    current_user: User = Depends(get_current_user_verified),
+    current_user: User = Depends(user_crud.get_current_user_verified),
     db: Session = Depends(db.get_db),
 ) -> Post:
     """**user_id가 현재 로그인된 user와 동일할 때 post를 생성한다.**
@@ -200,7 +200,7 @@ def update_post(
     user_id: int,
     post_id: int,
     data_to_be_updated: PostUpdate,
-    current_user: User = Depends(get_current_user_verified),
+    current_user: User = Depends(user_crud.get_current_user_verified),
     db: Session = Depends(db.get_db),
 ) -> Post:
     """**user_id가 현재 user id와 동일하여 수정 권한이 있을 때 post_id에 해당되는 post를 수정한다.**
@@ -250,7 +250,7 @@ def update_post(
 def delete_post(
     user_id: int,
     post_id: int,
-    current_user: User = Depends(get_current_user_verified),
+    current_user: User = Depends(user_crud.get_current_user_verified),
     db: Session = Depends(db.get_db),
 ) -> Msg:
     """**user_id가 current_user의 id와 동일할 때, 해당 post_id를 가진 post를 삭제한다.**

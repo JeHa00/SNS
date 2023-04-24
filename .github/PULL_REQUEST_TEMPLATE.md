@@ -29,5 +29,3 @@
 
 ## Screenshot 📷
 - (option)
-
-<br>
