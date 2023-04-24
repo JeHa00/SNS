@@ -134,7 +134,7 @@ class PostLikeDB:
         return (
             db.query(User)
             .join(User.liker)
-            .filter(PostLike.like_target_id == like_target_id, PostLike.is_like)
+            .filter(PostLike.like_target_id == like_target_id, PostLike.is_liked)
             .all()
         )
 
@@ -150,7 +150,7 @@ class PostLikeDB:
         return (
             db.query(Post)
             .join(Post.likee)
-            .filter(PostLike.who_like_id == who_like_id, PostLike.is_like)
+            .filter(PostLike.who_like_id == who_like_id, PostLike.is_liked)
             .all()
         )
 
@@ -158,10 +158,10 @@ class PostLikeDB:
         """like_info 를 토대로 post에 좋아요를 실행한다.
 
         Args:
-            like_info (schema.PostLike): who_like_id, like_target_id, is_like 값 정보
+            like_info (schema.PostLike): who_like_id, like_target_id, is_liked 값 정보
 
         Returns:
-            PostLike: is_like 값이 True로 생성된 PostLike 객체를 반환
+            PostLike: is_liked 값이 True로 생성된 PostLike 객체를 반환
         """
         db_obj = self.get_like(db, like_info)
 
@@ -178,21 +178,21 @@ class PostLikeDB:
         """like_info 를 토대로 post에 좋아요를 취소한다.
 
         Args:
-            like_info (schema.PostLike): who_like_id, like_target_id, is_like 값 정보
+            like_info (schema.PostLike): who_like_id, like_target_id, is_liked 값 정보
 
         Raises:
-            ValueError: is_like 값이 이미 False인 경우 발생되는 에러
+            ValueError: is_liked 값이 이미 False인 경우 발생되는 에러
 
         Returns:
-            PostLike: is_like 값이 변경된 PostLike 객체를 반환
+            PostLike: is_liked 값이 변경된 PostLike 객체를 반환
         """
         db_obj = self.get_like(db, unlike_info)
 
         if not db_obj:
             raise LookupError("해당 id 정보와 일치하는 객체 정보가 존재하지 않습니다.")
         else:
-            if db_obj.is_like is True:
-                setattr(db_obj, "is_like", unlike_info.is_like)
+            if db_obj.is_liked is True:
+                setattr(db_obj, "is_liked", unlike_info.is_liked)
 
                 db.add(db_obj)
                 db.commit()
@@ -200,7 +200,7 @@ class PostLikeDB:
 
                 return db_obj
             else:
-                raise ValueError("is_like가 이미 False입니다.")
+                raise ValueError("is_liked가 이미 False입니다.")
 
 
 post_crud = PostDB()

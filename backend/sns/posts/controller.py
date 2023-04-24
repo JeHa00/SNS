@@ -8,8 +8,8 @@ from sns.users.service import get_current_user_verified
 from sns.users.schema import Msg, UserBase
 from sns.users.model import User
 from sns.posts.schema import Post, PostCreate, PostUpdate, PostLike, PostUnlike
-from sns.posts import model
 from sns.posts.repository import post_crud, post_like_crud
+from sns.posts import model
 
 
 router = APIRouter()
@@ -19,7 +19,15 @@ router = APIRouter()
 def read_likees(
     current_user: User = Depends(get_current_user_verified),
     db: Session = Depends(db.get_db),
-):
+) -> List[Post]:
+    """**current_user에게 좋아요를 받은 likee인 post들을 조회한다.**
+
+    **Args:**
+        - current_user (User, optional): 현재 로그인된 user 정보
+
+    **Returns:**
+        List[Post]: like를 받은 post 목록을 반환
+    """
     posts = post_like_crud.get_like_targets(db, who_like_id=current_user.id)
     return posts
 
@@ -29,7 +37,15 @@ def read_likees(
     response_model=List[UserBase],
     status_code=status.HTTP_200_OK,
 )
-def read_likers(post_id: int, db: Session = Depends(db.get_db)):
+def read_likers(post_id: int, db: Session = Depends(db.get_db)) -> List[UserBase]:
+    """**post_id에 해당하는 post를 좋아요한 liker들인 user를 조회한다.**
+
+    **Args:**
+        - post_id (int): 좋아요를 받은 post
+
+    **Returns:**
+        - List[UserBase]: post를 좋아요한 유저 목록을 반환
+    """
     likers = post_like_crud.get_users_who_like(db, like_target_id=post_id)
     return likers
 
@@ -43,7 +59,16 @@ def like_post(
     post_id: int,
     current_user: User = Depends(get_current_user_verified),
     db: Session = Depends(db.get_db),
-):
+) -> Msg:
+    """**현재 로그인되어있는 user가 post_id에 해당하는 post를 like 한다.**
+
+    **Args:**
+        - post_id (int): current_user로부터 like를 받을 post
+        - current_user (User, optional): 현재 로그인된 user 정보
+
+    **Returns:**
+        - Msg: post 좋아요 성공 메세지를 반환
+    """
     like_info = PostLike(who_like_id=current_user.id, like_target_id=post_id)
     post_like_crud.like(db, like_info=like_info)
     return {"status": "success", "msg": "post 좋아요가 완료되었습니다."}
@@ -58,7 +83,17 @@ def unlike_post(
     post_id: int,
     current_user: User = Depends(get_current_user_verified),
     db: Session = Depends(db.get_db),
-):
+) -> Msg:
+    """**현재 로그인되어있는 user가 post_id에 해당하는 post의 like를 취소한다.**
+        이는 is_liked 값을 false로 바꾼다.
+
+    **Args:**
+        - post_id (int): _description_
+        - current_user (User, optional): 현재 로그인된 user 정보
+
+    **Returns:**
+        Msg: post 좋아요 취소 성공 메세지를 반환
+    """
     unlike_info = PostUnlike(who_like_id=current_user.id, like_target_id=post_id)
     post_like_crud.unlike(db, unlike_info=unlike_info)
     return {"status": "success", "msg": "post 좋아요가 취소되었습니다"}
@@ -174,7 +209,7 @@ def update_post(
         - user_id (int): 수정할 user의 id
         - post_id (int): 수정될 post의 id
         - data_to_be_updated (PostUpdate): 업데이트할 정보
-        - current_user (User, optional): 현재 유저 정보
+        - current_user (User, optional): 현재 로그인된 user 정보
 
     **Raises:**
         - HTTPException(404 NOT FOUND): 수정 권한은 있지만, 수정할 글이 없음을 보여주는 에러

@@ -37,8 +37,8 @@ class PostLikeBase(BaseModel):
 
 
 class PostLike(PostLikeBase):
-    is_like: bool = True
+    is_liked: bool = True
 
 
 class PostUnlike(PostLikeBase):
-    is_like: bool = False
+    is_liked: bool = False

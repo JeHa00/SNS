@@ -24,11 +24,11 @@ class PostLike(Base, BaseMixin):
     like_target_id = Column(Integer, ForeignKey("post.id", ondelete="CASCADE"))
     like_target = relationship("Post", back_populates="likee")
 
-    is_like = Column(Boolean, default=True)
+    is_liked = Column(Boolean, default=True)
 
     def __repr__(self) -> str:
         return (
             f"PostLike(who_like_id={self.who_like_id}, "
             f"like_target_id={self.like_target_id}, "
-            f"is_like={self.is_like})"
+            f"is_liked={self.is_liked})"
         )
