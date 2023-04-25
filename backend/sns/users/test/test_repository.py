@@ -5,7 +5,6 @@ from pydantic import ValidationError
 from datetime import datetime, timedelta
 from jose import jwt
 
-from fastapi.encoders import jsonable_encoder
 from fastapi.exceptions import HTTPException
 from fastapi.testclient import TestClient
 from sqlalchemy.orm import Session
@@ -116,7 +115,7 @@ def test_update_user_on_being_verified(fake_user: Dict, db_session: Session):
     user_02 = user_crud.get_user(db_session, email=user_01.email)
 
     assert user_02
-    assert jsonable_encoder(user_01) == jsonable_encoder(user_02)
+    assert user_01 == user_02
     assert old_verified is False
     assert user_service.is_verified(user_02) is True
     assert old_verified != user_service.is_verified(user_02)
@@ -135,7 +134,7 @@ def test_update_user_on_password(fake_user: Dict, db_session: Session):
     new_password = user_02.password
 
     assert user_02
-    assert jsonable_encoder(user_01) == jsonable_encoder(user_02)
+    assert user_01 == user_02
     assert old_password != new_password
 
 
@@ -152,7 +151,7 @@ def test_update_user_on_profile_text(fake_user: Dict, db_session: Session):
     new_profile_text = user_02.profile_text
 
     assert user_02
-    assert jsonable_encoder(user_01) == jsonable_encoder(user_02)
+    assert user_01 == user_02
     assert old_profile_text != new_profile_text
 
 
