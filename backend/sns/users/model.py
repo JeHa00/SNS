@@ -15,10 +15,9 @@ class User(Base, BaseMixin):
     profile_text = Column(String(300), nullable=True)
     profile_image_name = Column(String(50), nullable=True)
     profile_image_path = Column(String(200), nullable=True)
-    verified = Column(Boolean, default=False)
-    verification_code = Column(String(20), nullable=True, unique=True)
 
     posts = relationship("Post", back_populates="writer", cascade="all, delete-orphan")
+
     liker = relationship(
         "PostLike", back_populates="who_like", cascade="all, delete-orphan"
     )
@@ -33,6 +32,19 @@ class User(Base, BaseMixin):
         "Follow",
         back_populates="follower",
         foreign_keys="Follow.follower_id",
+        cascade="all, delete-orphan",
+    )
+
+    sender = relationship(
+        "Notification",
+        back_populates="from_user",
+        foreign_keys="Notification.from_user_id",
+        cascade="all, delete-orphan",
+    )
+    receiver = relationship(
+        "Notification",
+        back_populates="to_user",
+        foreign_keys="Notification.to_user_id",
         cascade="all, delete-orphan",
     )
 
