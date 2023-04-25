@@ -51,9 +51,7 @@ class PostDB:
         Returns:
             Post: 생성된 post 정보를 반환
         """
-        obj_in_data = jsonable_encoder(post_info)
-        content = obj_in_data.get("content")
-        db_obj = Post(content=content, writer_id=writer_id)
+        db_obj = Post(content=post_info.content, writer_id=writer_id)
 
         db.add(db_obj)
         db.commit()
@@ -78,14 +76,12 @@ class PostDB:
         else:
             post = post_info
 
-        obj_data = jsonable_encoder(post)
-
         if isinstance(data_to_be_updated, dict):
             data_to_be_updated = data_to_be_updated
         else:
             data_to_be_updated = data_to_be_updated.dict(exclude_unset=True)
 
-        for field in obj_data:
+        for field in jsonable_encoder(post):
             if field in data_to_be_updated:
                 setattr(post, field, data_to_be_updated[field])
 
