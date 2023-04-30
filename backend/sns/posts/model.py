@@ -13,6 +13,10 @@ class Post(Base, BaseMixin):
         "PostLike", back_populates="like_target", cascade="all, delete-orphan"
     )
 
+    post_used_in_notification = relationship(
+        "Notification", back_populates="related_post", cascade="all, delete-orphan"
+    )
+
     def __repr__(self) -> str:
         return f"Post(id={self.id}, writer_id={self.writer_id})"
 

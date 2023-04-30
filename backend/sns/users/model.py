@@ -1,6 +1,5 @@
 from sqlalchemy import Column, String, Boolean, Integer, ForeignKey
 from sqlalchemy.orm import relationship
-
 from sns.common.base import Base, BaseMixin
 
 

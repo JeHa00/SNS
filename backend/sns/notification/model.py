@@ -15,6 +15,13 @@ class Notification(Base, BaseMixin):
 
     notification_type = Column(Enum("post", "follow", "like"), nullable=False)
 
+    related_post_id = Column(Integer, ForeignKey("post.id", ondelete="CASCADE"))
+    related_post = relationship(
+        "Post",
+        back_populates="post_used_in_notification",
+        foreign_keys=[related_post_id],
+    )
+
     def __repr__(self) -> str:
         return (
             f"Notification(notification_type={self.notification_type}, "
