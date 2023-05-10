@@ -27,7 +27,7 @@ class Settings(BaseSettings):
     SMTP_SERVER: str = "smtp.gmail.com"
     SMTP_TLS: str = True
     SMTP_PORT: int = 587 if SMTP_TLS else 465
-    EMAIL_ADDR = "only.for.pjt@gmail.com"
+    EMAIL_ADDRESS = "only.for.pjt@gmail.com"
     EMAIL_PASSWORD = "wngvlgolokntjpas"
 
     def get_test_db_url(self):
