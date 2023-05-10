@@ -96,7 +96,7 @@ def verify_email(code: str, db: Session = Depends(db.get_db)):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN, detail="등록되지 않은 인증 링크입니다."
         )
-    user_crud.update(db, user=user, user_info={"verified": True})
+    user_crud.update(db, user=user, data_to_be_updated={"verified": True})
     return {"status": "success", "msg": "이메일 인증이 완료되었습니다."}
 
 

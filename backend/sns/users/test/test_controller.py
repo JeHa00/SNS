@@ -99,7 +99,9 @@ def test_verify_email_if_code_is_registered(
 ):
     code = secrets.token_urlsafe(10)  # 인증 코드 생성
     user_crud.update(
-        db_session, user=fake_user.get("user"), user_info={"verification_code": code}
+        db_session,
+        user=fake_user.get("user"),
+        data_to_be_updated={"verification_code": code},
     )  # 유저 정보에 인증 코드 저장
 
     # 이메일 인증 및 결과
