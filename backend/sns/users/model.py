@@ -1,8 +1,6 @@
 from sqlalchemy import Column, String, Boolean
-from sqlalchemy.orm import relationship
 
 from sns.common.base import Base, BaseMixin
-from sns.posts.model import Post
 
 
 class User(Base, BaseMixin):
