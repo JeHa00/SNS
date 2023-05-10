@@ -6,12 +6,12 @@ from sqlalchemy.orm import Session
 import pytest
 
 from sns.users.test.utils import random_lower_string, random_email
-from sns.users.schema import UserCreate, UserUpdate
+from sns.users.schema import UserCreate, UserUpdate, UserPasswordUpdate
 from sns.users.repositories.db import user_crud
 from sns.users.service import user_service
 
 
-def test_create_user(client: TestClient, db_session: Session):
+def test_create_user_if_success(client: TestClient, db_session: Session):
     email = random_email()
     password = random_lower_string(k=8)
     hashed_password = user_service.get_password_hash(password)
@@ -34,7 +34,34 @@ def test_create_user(client: TestClient, db_session: Session):
     assert hasattr(user, "updated_at")
     assert user_service.verify_password(password, user.password) is True
 
+
+def test_create_user_if_password_is_not_same_as_password_confirm(client: TestClient):
+    # 서로 다른 password 생성
+    password = random_lower_string(k=8)
+    password_confirm = random_lower_string(k=8)
+
+    while password == password_confirm:
+        password = random_lower_string(k=8)
+        password_confirm = random_lower_string(k=8)
+
+    # 회원가입 정보
+    with pytest.raises(ValidationError):
+        UserCreate(
+            email=random_email(),
+            password=password,
+            password_confirm=password_confirm,
+            verified=False,
+        )
+
+
+def test_create_user_if_password_length_is_below_minimum_length(
+    client: TestClient, db_session: Session
+):
+    email = random_email()
+
+    # 최소 글자 수보다 작은 패스워드 생성
     password_below_minimum = random_lower_string(k=7)
+
     with pytest.raises(ValidationError):
         UserCreate(
             email=email,
@@ -103,6 +130,18 @@ def test_update_user_on_profile_text(fake_user: Dict, db_session: Session):
     assert user_02
     assert user_01 == user_02
     assert old_profile_text != new_profile_text
+
+
+def test_change_password_if_new_password_is_same_as_current_password(
+    db_session: Session,
+):
+    password = random_lower_string(k=8)
+
+    with pytest.raises(ValidationError):
+        UserPasswordUpdate(
+            current_password=password,
+            new_password=password,
+        )
 
 
 def test_delete_user_by_int(fake_user: Dict, db_session: Session):
