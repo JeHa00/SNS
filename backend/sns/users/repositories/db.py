@@ -1,22 +1,20 @@
 import secrets
 
-from fastapi import Depends, HTTPException, status
-from fastapi.security import OAuth2PasswordBearer
 from fastapi.encoders import jsonable_encoder
 from sqlalchemy.orm import Session
-from jose import jwt, JWTError
 
-from sns.common.config import settings
-from sns.common.session import db
-from sns.users.service import user_service
-from sns.users import schema
 from sns.users.model import User
+from sns.users import schema
 
 
 class UserDB:
-    __oauth2_scheme = OAuth2PasswordBearer(tokenUrl=f"{settings.API_V1_PREFIX}/token")
-
-    def get_user(self, db: Session, **kwargs) -> User | bool:
+    def get_user(
+        self,
+        db: Session,
+        email: str = None,
+        user_id: int = None,
+        verification_code: str = None,
+    ) -> User:
         """이메일이 이미 등록되어있는지 또는 해당 이메일을 가진 유저의 비밀번호가 인자로 받은 비밀번호와 일치하는지 판단한다.
 
         Args:
@@ -29,90 +27,34 @@ class UserDB:
         Returns:
             User: 입력된 값들과 일치하는 유저 객체를 반환한다. 없으면 None을 반환
         """
-        user = db.query(User).filter(User.email == kwargs.get("email")).first()
-
-        if len(kwargs) == 1:
-            return user
+        if email is not None:
+            user = db.query(User).filter(User.email == email).first()
+        elif user_id is not None:
+            user = db.query(User).filter(User.id == user_id).first()
         else:
-            if not user or not user_service.verify_password(
-                kwargs.get("password"), user.password
-            ):
-                return False
-            return user
-
-    @staticmethod
-    def get_current_user(
-        db: Session = Depends(db.get_db),
-        token: schema.Token = Depends(__oauth2_scheme),
-    ) -> User:
-        """발급했던 Token으로부터 user 정보를 가져온다.
-
-        Args:
-            db (Session): db session
-            token (Token, optional): 발급받은 token 정보
-
-        Raises:
-            credentials_exception: decoding 작업 시 발생되는 JWT error
-            credentials_exception: jwt로부터 얻은 email 정보로 유저 조회 시 없을 경우 발생되는 에러
-
-        Returns:
-            User: jwt로부터 얻은 유저 정보
-        """
-        credentials_exception = HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Could not validate credentials",
-            headers={"WWW-Authenticate": "Bearer"},
-        )
-
-        try:
-            payload = jwt.decode(token, settings.SECRET_KEY, settings.SECRET_ALGORITHM)
-            email: str = payload.get("sub")
-            if email is None:
-                raise credentials_exception
-        except JWTError:
-            raise credentials_exception
-
-        user = db.query(User).filter(User.email == email).first()
-
-        if user is None:
-            raise credentials_exception
+            user = (
+                db.query(User)
+                .filter(User.verification_code == verification_code)
+                .first()
+            )
 
         return user
 
-    def get_current_user_verified(
-        self, current_user: User = Depends(get_current_user)
-    ) -> User:
-        """인증된 현재 유저 정보를 반환한다.
-
-        Args:
-            current_user (Depends): 현재 유저 정보
-
-        Raises:
-            HTTPException: 인증되지 않을 경우 발생
-
-        Returns:
-            인증된 유저 정보를 반환
-        """
-        if not current_user.verified:
-            raise HTTPException(status_code=400, detail="인증되지 않은 유저입니다.")
-
-        return current_user
-
-    def create(self, db: Session, user_info: schema.UserCreate) -> User:
+    def create(self, db: Session, data_for_signup: schema.UserCreate) -> User:
         """받은 정보로 새 유저를 등록한다.
 
         Args:
             db (Session): db session
-            user_info (UserCreate): 새로 등록한 유저의 email과 password
+            data_for_signup (UserCreate): 새로 등록한 유저의 email과 password
 
         Returns:
             User: 새로 생성한 유저 객체
         """
-        name = secrets.token_urlsafe(8)
+        name = secrets.token_urlsafe(8)  # minimum name length
 
         db_obj = User(
-            email=user_info.email,
-            password=user_service.get_password_hash(user_info.password),
+            email=data_for_signup.email,
+            password=data_for_signup.password,
             name=f"user-{name}",
             verified=False,
         )
@@ -134,7 +76,7 @@ class UserDB:
             data_to_be_updated (BaseModel | dict): 변경할 유저 정보
 
         Returns:
-            User: 수정된 유저 객체
+            User: 수정된 user 객체
         """
         obj_data = jsonable_encoder(user)
 
@@ -153,20 +95,20 @@ class UserDB:
 
         return user
 
-    def remove(self, db: Session, user_info: User | int) -> dict:
+    def remove(self, db: Session, user_data: User | int) -> dict:
         """전달받은 해당 user를 삭제한다.
 
         Args:
             db (Session): db session
-            user_info (BaseModel | int): user model 정보 또는 user.id 정보
+            user_data (BaseModel | int): user model 정보 또는 user.id 정보
 
         Returns:
             Dict: 성공 시, 성공 메세지를 반환
         """
-        if isinstance(user_info, int):
-            user = db.query(User).filter(User.id == user_info).first()
+        if isinstance(user_data, int):
+            user = self.get_user(db, user_id=user_data)
         else:
-            user = user_info
+            user = user_data
 
         db.delete(user)
         db.commit()
