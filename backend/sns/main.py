@@ -1,5 +1,7 @@
-from fastapi import FastAPI
+from fastapi.exceptions import RequestValidationError
 from starlette.middleware.cors import CORSMiddleware
+from fastapi.responses import PlainTextResponse
+from fastapi import FastAPI
 
 from sns.common.config import settings
 from sns.common.session import db
@@ -26,3 +28,8 @@ app.include_router(users, tags=["Users"], prefix=settings.API_V1_PREFIX)
 # app.include_router(posts, tags=['Posts'], prefix=settings.API_V1_PREFIX)
 # app.include_router(comments, tags=['Comments'], prefix=settings.API_V1_PREFIX)
 # app.include_router(notification, tags=['Notification'], prefix=settings.API_V1_PREFIX)
+
+
+@app.exception_handler(RequestValidationError)
+async def validation_exception_handler(request, exc):
+    return PlainTextResponse(str(exc), status_code=400)
