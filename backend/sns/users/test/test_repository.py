@@ -115,6 +115,18 @@ def test_update_user_on_password(fake_user: Dict, db_session: Session):
     assert old_password != new_password
 
 
+def test_change_password_if_new_password_is_same_as_current_password(
+    db_session: Session,
+):
+    password = random_lower_string(k=8)
+
+    with pytest.raises(ValidationError):
+        UserPasswordUpdate(
+            current_password=password,
+            new_password=password,
+        )
+
+
 def test_update_user_on_profile_text(fake_user: Dict, db_session: Session):
     user_01 = fake_user.get("user")
     old_profile_text = user_01.profile_text
@@ -130,18 +142,6 @@ def test_update_user_on_profile_text(fake_user: Dict, db_session: Session):
     assert user_02
     assert user_01 == user_02
     assert old_profile_text != new_profile_text
-
-
-def test_change_password_if_new_password_is_same_as_current_password(
-    db_session: Session,
-):
-    password = random_lower_string(k=8)
-
-    with pytest.raises(ValidationError):
-        UserPasswordUpdate(
-            current_password=password,
-            new_password=password,
-        )
 
 
 def test_delete_user_by_int(fake_user: Dict, db_session: Session):
