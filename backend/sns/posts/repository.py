@@ -41,17 +41,17 @@ class PostDB:
             .all()
         )
 
-    def create(self, db: Session, post_info: PostCreate, writer_id: int) -> Post:
-        """주어진 post_info, writer_id 정보를 가지는 post를 생성한다.
+    def create(self, db: Session, post_data: PostCreate, writer_id: int) -> Post:
+        """주어진 post_data, writer_id 정보를 가지는 post를 생성한다.
 
         Args:
-            post_info (PostCreate): 생성될 post의 content 정보
+            post_data (PostCreate): 생성될 post의 content 정보
             writer_id (int): post를 생성하는 user id
 
         Returns:
             Post: 생성된 post 정보를 반환
         """
-        db_obj = Post(content=post_info.content, writer_id=writer_id)
+        db_obj = Post(content=post_data.content, writer_id=writer_id)
 
         db.add(db_obj)
         db.commit()
@@ -60,28 +60,28 @@ class PostDB:
         return db_obj
 
     def update(
-        self, db: Session, post_info: Post | int, data_to_be_updated: PostUpdate
+        self, db: Session, post_data: Post | int, data_to_be_updated: PostUpdate
     ) -> Post:
         """post_info에 해당되는 Post 객체를 data_to_be_updated 정보를 가지도록 수정한다.
 
         Args:
-            post_info (Post | int): 수정할 post 객체 정보로, Post model 또는 id 값으로 전달된다.
+            post_data (Post | int): 수정할 post 객체 정보로, Post model 또는 id 값으로 전달된다.
             data_to_be_updated (PostUpdate): 수정 시 반영할 내용
 
         Returns:
             Post: 수정된 post 객체를 반환
         """
-        if isinstance(post_info, int):
-            post = db.query(Post).filter(Post.id == post_info).first()
+        if isinstance(post_data, int):
+            post = db.query(Post).filter(Post.id == post_data).first()
         else:
-            post = post_info
+            post = post_data
 
         if isinstance(data_to_be_updated, dict):
             data_to_be_updated = data_to_be_updated
         else:
             data_to_be_updated = data_to_be_updated.dict(exclude_unset=True)
 
-        for field in jsonable_encoder(post):
+        for field in jsonable_encoder(post):  # post.dict()
             if field in data_to_be_updated:
                 setattr(post, field, data_to_be_updated[field])
 
@@ -91,16 +91,16 @@ class PostDB:
 
         return post
 
-    def remove(self, db: Session, post_info: Post | int) -> bool:
-        """post_info 해당되는 post 객체를 삭제한다.
+    def remove(self, db: Session, post_to_be_deleted: Post | int) -> bool:
+        """post_to_be_deleted 해당되는 post 객체를 삭제한다.
 
         Args:
-            post_info (Post | int): 삭제할 post 객체 정보로, Post model 또는 id 값으로 전달된다.
+            post_to_be_deleted (Post | int): 삭제할 post 객체 정보로, Post model 또는 id 값으로 전달된다.
         """
-        if isinstance(post_info, int):
-            post = db.query(Post).filter(Post.id == post_info).first()
+        if isinstance(post_to_be_deleted, int):
+            post = db.query(Post).filter(Post.id == post_to_be_deleted).first()
         else:
-            post = post_info
+            post = post_to_be_deleted
         db.delete(post)
         db.commit()
 

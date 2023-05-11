@@ -6,7 +6,7 @@ from sns.common.path import BASE_DIR
 
 class Settings(BaseSettings):
     PJT_NAME: str = "SNS"
-    API_V1_STR: str = "/api/v1"
+    API_V1_PREFIX: str = "/api/v1"
 
     DB_USERNAME: str = "pjt"
     DB_PASSWORD: SecretStr = "a1s2d3f4"
@@ -29,7 +29,6 @@ class Settings(BaseSettings):
     SMTP_PORT: int = 587 if SMTP_TLS else 465
     EMAIL_ADDR = "only.for.pjt@gmail.com"
     EMAIL_PASSWORD = "wngvlgolokntjpas"
-
 
     def get_test_db_url(self):
         db_username: str = "root"
