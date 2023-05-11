@@ -191,6 +191,10 @@ def update_user(
     - data_to_be_updated (UserUpdate): 업데이트할 user 정보
     - current_user (UserBase): token에서 가져온 현재 유저 정보
 
+    Raises:
+
+    - HTTPException (401 UNAUTHORIZED): 변경 권한이 없음을 나타내는 에러
+
     Returns:
 
     - Msg: 실행 완료 메세지
@@ -218,6 +222,10 @@ def delete_user(
 
     - user_id (int): db에 저장된 user id
     - current_user (User, optional): token에서 가져온 현재 유저 정보
+
+    Raises:
+
+    - HTTPException (401 UNAUTHORIZED): 삭제 권한이 없음을 나타내는 에러
 
     Returns:
 
