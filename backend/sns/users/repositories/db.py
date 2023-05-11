@@ -56,7 +56,7 @@ class UserDB:
             email=data_for_signup.email,
             password=data_for_signup.password,
             name=f"user-{name}",
-            verified=False,
+            verified=data_for_signup.verified,
         )
 
         db.add(db_obj)
@@ -95,20 +95,20 @@ class UserDB:
 
         return user
 
-    def remove(self, db: Session, user_data: User | int) -> dict:
+    def remove(self, db: Session, user_to_be_deleted: User | int) -> dict:
         """전달받은 해당 user를 삭제한다.
 
         Args:
             db (Session): db session
-            user_data (BaseModel | int): user model 정보 또는 user.id 정보
+            user_to_be_deleted (BaseModel | int): user model 정보 또는 user.id 정보
 
         Returns:
             Dict: 성공 시, 성공 메세지를 반환
         """
-        if isinstance(user_data, int):
-            user = self.get_user(db, user_id=user_data)
+        if isinstance(user_to_be_deleted, int):
+            user = self.get_user(db, user_id=user_to_be_deleted)
         else:
-            user = user_data
+            user = user_to_be_deleted
 
         db.delete(user)
         db.commit()
