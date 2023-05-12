@@ -5,12 +5,13 @@ from sns.common.path import BASE_DIR
 
 
 class Settings(BaseSettings):
-    PJT_NAME: str = "SNS"
+    PROJECT_NAME: str = "SNS"
     API_V1_PREFIX: str = "/api/v1"
 
-    DB_USERNAME: str = "pjt"
+    DB_USERNAME: str = "project"
     DB_PASSWORD: SecretStr = "a1s2d3f4"
     DB_HOST: str = "db.mysql"
+    DB_HOST: str = "0.0.0.0"
     DB_PORT: int = "3306"
     DB_NAME: str = "sns"
 
@@ -34,12 +35,13 @@ class Settings(BaseSettings):
         db_username: str = "root"
         db_host: str = "0.0.0.0"
         db_name: str = "test"
+        db_port: str = "3310"
 
         return self.SQLALCHEMY_DATABASE_URI.format(
             username=db_username,
             pw=self.DB_PASSWORD.get_secret_value(),
             host=db_host,
-            port=self.DB_PORT,
+            port=db_port,
             name=db_name,
         )
 

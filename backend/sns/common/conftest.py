@@ -11,7 +11,8 @@ from sns.common.session import db
 from sns.common.base import Base
 from sns.users.controller import router as users
 from sns.posts.controller import router as posts
-from sns.comments.controller import router as comments
+
+# from sns.comments.controller import router as comments
 
 engine = create_engine(settings.get_test_db_url())
 TestingSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
@@ -20,9 +21,9 @@ TestingSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engin
 @pytest.fixture(scope="function")
 def start_app() -> FastAPI:
     app = FastAPI()
-    app.include_router(users, tags=["Users"], prefix=settings.API_V1_STR)
-    app.include_router(posts, tags=["Posts"], prefix=settings.API_V1_STR)
-    app.include_router(comments, tags=["Comments"], prefix=settings.API_V1_STR)
+    app.include_router(users, tags=["Users"], prefix=settings.API_V1_PREFIX)
+    app.include_router(posts, tags=["Posts"], prefix=settings.API_V1_PREFIX)
+    # app.include_router(comments, tags=["Comments"], prefix=settings.API_V1_PREFIX)
     return app
 
 
