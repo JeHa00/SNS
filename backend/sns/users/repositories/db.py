@@ -28,15 +28,11 @@ class UserDB:
             User: 입력된 값들과 일치하는 유저 객체를 반환한다. 없으면 None을 반환
         """
         if email is not None:
-            user = db.query(User).filter(User.email == email).first()
+            user = db.query(User).filter(email == email).first()
         elif user_id is not None:
             user = db.query(User).filter(User.id == user_id).first()
         else:
-            user = (
-                db.query(User)
-                .filter(User.verification_code == verification_code)
-                .first()
-            )
+            user = db.query(User).filter(verification_code == verification_code).first()
 
         return user
 

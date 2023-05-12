@@ -13,9 +13,7 @@ class EmailClient:
         self._password = None  # 임시 비밀번호
         self._url = None  # 이메일 인증 코드 url
 
-    def make_massage(
-        self, email_to: str, template_name: str, **kwargs
-    ) -> dict(str, str):
+    def make_massage(self, email_to: str, template_name: str, **kwargs) -> dict:
         """발송될 이메일 메세지와 이메일 템플릿 종류에 따른 렌더링 데이터를 생성한다.
 
         Args:
