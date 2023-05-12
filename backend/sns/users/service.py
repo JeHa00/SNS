@@ -102,8 +102,8 @@ class UserService:
 
     def send_verification_email(
         self,
-        email: str,
         db: Session,
+        email: str,
         background_tasks: BackgroundTasks,
     ) -> None:
         """입력 받은 email 주소로 이메일 인증 메일을 보낸다.
@@ -117,7 +117,7 @@ class UserService:
         """
         try:
             code = secrets.token_urlsafe(10)  # verification_code의 최소 길이 10
-            new_user = self.get_user(db, {"email": email})
+            new_user = self.get_user(db, email=email)
             self.update(
                 db, user=new_user, data_to_be_updated={"verification_code": code}
             )
@@ -134,7 +134,7 @@ class UserService:
             )
 
     def send_password_reset_email(
-        self, email: str, db: Session, background_tasks: BackgroundTasks
+        self, db: Session, email: str, background_tasks: BackgroundTasks
     ) -> None:
         """입력 받은 email 주소로 임시 비밀번호를 발송한다.
 
@@ -147,7 +147,7 @@ class UserService:
         """
         try:
             temporary_password = secrets.token_urlsafe(8)  # 패스워드의 최소 길이 8
-            selected_user = self.get_user(db, {"email": email})
+            selected_user = self.get_user(db, email=email)
             hashed_password = self.get_password_hash(temporary_password)
 
             self.update(
