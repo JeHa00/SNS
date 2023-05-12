@@ -33,7 +33,6 @@ def get_user_token_headers_and_login_data(
     email = random_email()
     password = random_lower_string(k=8)
     signup_data = UserCreate(email=email, password=password, password_confirm=password)
-    login_data = copy.deepcopy(signup_data)
     fake_user = user_service.create(db_session, data_for_signup=signup_data)
 
     # verified 업데이트
@@ -41,10 +40,10 @@ def get_user_token_headers_and_login_data(
     user_crud.update(db_session, fake_user, info_to_be_updated)
 
     # 로그인
-    login_information = {"email": email, "password": password}
-    response = client.post(f"{settings.API_V1_PREFIX}/login", json=login_information)
+    login_data = {"email": email, "password": password}
+    response = client.post(f"{settings.API_V1_PREFIX}/login", json=login_data)
 
     # headers 반환
-    token = response.json().get("access_token")
+    token = response.json()["access_token"]
     headers = {"Authorization": f"Bearer {token}"}
     return {"headers": headers, "login_data": login_data}

@@ -117,7 +117,7 @@ class UserService:
         """
         try:
             code = secrets.token_urlsafe(10)  # verification_code의 최소 길이 10
-            new_user = self.get_user(db, {"email": email})
+            new_user = self.get_user(db, email=email)
             self.update(
                 db, user=new_user, data_to_be_updated={"verification_code": code}
             )
@@ -134,7 +134,7 @@ class UserService:
             )
 
     def send_password_reset_email(
-        self, email: str, db: Session, background_tasks: BackgroundTasks
+        self, db: Session, email: str, background_tasks: BackgroundTasks
     ) -> None:
         """입력 받은 email 주소로 임시 비밀번호를 발송한다.
 
@@ -145,22 +145,22 @@ class UserService:
         Raises:
             HTTPException (500 INTERNAL SERVER ERROR): 이메일 전송과정에서 문제가 생기면 에러를 발생시킨다.
         """
-        try:
-            temporary_password = secrets.token_urlsafe(8)  # 패스워드의 최소 길이 8
-            selected_user = self.get_user(db, {"email": email})
-            hashed_password = self.get_password_hash(temporary_password)
+        # try:
+        temporary_password = secrets.token_urlsafe(8)  # 패스워드의 최소 길이 8
+        selected_user = self.get_user(db, email=email)
+        hashed_password = self.get_password_hash(temporary_password)
 
-            self.update(
-                db, user=selected_user, data_to_be_updated={"password": hashed_password}
-            )
+        self.update(
+            db, user=selected_user, data_to_be_updated={"password": hashed_password}
+        )
 
-            data = {"email_to": email, "password": temporary_password}
-            background_tasks.add_task(email_client.send_reset_password_email, **data)
-        except Exception:
-            raise HTTPException(
-                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail="이메일 발송 과정에서 에러가 발생했습니다. 다시 시도하세요.",
-            )
+        data = {"email_to": email, "password": temporary_password}
+        background_tasks.add_task(email_client.send_reset_password_email, **data)
+        # except Exception:
+        #     raise HTTPException(
+        #         status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        #         detail="이메일 발송 과정에서 에러가 발생했습니다. 다시 시도하세요.",
+        #     )
 
     @staticmethod
     def get_current_user(

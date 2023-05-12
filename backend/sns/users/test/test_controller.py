@@ -19,13 +19,13 @@ def test_signup_if_email_is_not_verified(
     client: TestClient, db_session: Session, fake_user: dict
 ):
     # fake_user 정보
-    login_data = fake_user.get("login_data")
+    login_data = fake_user["login_data"]
 
     # 회원가입 및 결과
     response = client.post(
         f"{settings.API_V1_PREFIX}/signup", json=jsonable_encoder(login_data)
     )
-    result_msg = response.json().get("detail")
+    result_msg = response.json()["detail"]
 
     assert response.status_code == status.HTTP_403_FORBIDDEN
     assert result_msg == "인증 완료되지 못한 이메일입니다. 먼저 이메일 인증을 완료하세요."
@@ -36,8 +36,8 @@ def test_signup_if_email_is_already_verified(
     fake_user: dict, client: TestClient, db_session: Session
 ):
     # fake_user 정보
-    user = fake_user.get("user")
-    signup_data = fake_user.get("login_data")
+    user = fake_user["user"]
+    signup_data = fake_user["login_data"]
 
     # verified 정보 업데이트
     data_to_be_updated = UserUpdate(verified=True)
@@ -47,7 +47,7 @@ def test_signup_if_email_is_already_verified(
     response = client.post(
         f"{settings.API_V1_PREFIX}/signup", json=jsonable_encoder(signup_data)
     )
-    result_msg = response.json().get("detail")
+    result_msg = response.json()["detail"]
 
     assert response.status_code == status.HTTP_403_FORBIDDEN
     assert result_msg == "이미 인증된 이메일입니다."
@@ -59,7 +59,7 @@ def test_verify_email_if_code_is_not_registered(client: TestClient):
 
     # 이메일 인증 및 결과
     response = client.patch(f"{settings.API_V1_PREFIX}/verification-email/{code}")
-    result_msg = response.json().get("detail")
+    result_msg = response.json()["detail"]
 
     assert response.status_code == status.HTTP_400_BAD_REQUEST
 
@@ -74,14 +74,14 @@ def test_verify_email_if_code_is_registered(
     code = secrets.token_urlsafe(10)  # 인증 코드 생성
     user_service.update(
         db_session,
-        user=fake_user.get("user"),
+        user=fake_user["user"],
         data_to_be_updated={"verification_code": code},
     )  # 유저 정보에 인증 코드 저장
 
     # 이메일 인증 및 결과
     response = client.patch(f"{settings.API_V1_PREFIX}/verification-email/{code}")
-    result_status_text = response.json().get("status")
-    result_msg = response.json().get("msg")
+    result_status_text = response.json()["status"]
+    result_msg = response.json()["msg"]
 
     assert response.status_code == status.HTTP_200_OK
     assert result_status_text == "success"
@@ -91,14 +91,14 @@ def test_verify_email_if_code_is_registered(
 @pytest.mark.login
 def test_login_if_user_is_not_verified(client: TestClient, fake_user: Dict):
     # fake_user 정보
-    login_data = fake_user.get("login_data")
+    login_data = fake_user["login_data"]
 
     # 로그인 및 결과
     response = client.post(
         f"{settings.API_V1_PREFIX}/login",
         json={"email": login_data.email, "password": login_data.password},
     )
-    result_msg = response.json().get("detail")
+    result_msg = response.json()["detail"]
 
     assert response.status_code == status.HTTP_403_FORBIDDEN
     assert result_msg == "인증 완료되지 못한 이메일입니다. 먼저 이메일 인증을 완료하세요."
@@ -107,14 +107,14 @@ def test_login_if_user_is_not_verified(client: TestClient, fake_user: Dict):
 @pytest.mark.login
 def test_login_if_login_information_is_wrong(client: TestClient, fake_user: Dict):
     # fake_user 정보
-    user = fake_user.get("user")
+    user = fake_user["user"]
 
     # 로그인 및 결과
     response = client.post(
         f"{settings.API_V1_PREFIX}/login",
         json={"email": user.email, "password": random_lower_string(k=8)},
     )
-    result_msg = response.json().get("detail")  # 로그인 결과
+    result_msg = response.json()["detail"]  # 로그인 결과
 
     assert response.status_code == status.HTTP_400_BAD_REQUEST
     assert result_msg == "입력한 비밀번호가 기존 비밀번호와 일치하지 않습니다."
@@ -125,8 +125,8 @@ def test_login_if_user_registered(
     client: TestClient, db_session: Session, fake_user: Dict
 ):
     # fake_user 정보
-    user = fake_user.get("user")
-    login_data = fake_user.get("login_data")
+    user = fake_user["user"]
+    login_data = fake_user["login_data"]
 
     # token 생성
     access_token_01 = user_service.create_access_token(data={"sub": user.email})
@@ -141,8 +141,8 @@ def test_login_if_user_registered(
         f"{settings.API_V1_PREFIX}/login",
         json={"email": login_data.email, "password": login_data.password},
     )
-    access_token_02 = response.json().get("access_token")
-    token_type = response.json().get("token_type")
+    access_token_02 = response.json()["access_token"]
+    token_type = response.json()["token_type"]
     email_02 = user_service.get_current_user(db_session, access_token_02)
 
     assert response.status_code == status.HTTP_200_OK
@@ -153,11 +153,11 @@ def test_login_if_user_registered(
 @pytest.mark.reset_password
 def test_reset_password_if_not_verified_email(client: TestClient, fake_user: Dict):
     # fake_user 정보
-    user = fake_user.get("user")
+    user = fake_user["user"]
 
     # 패스워드 초기화 및 결과
     response = client.post(f"{settings.API_V1_PREFIX}/password-reset", json=user.email)
-    result_msg = response.json().get("detail")
+    result_msg = response.json()["detail"]
 
     assert response.status_code == status.HTTP_403_FORBIDDEN
     assert result_msg == "인증 완료되지 못한 이메일입니다. 먼저 이메일 인증을 완료하세요."
@@ -172,10 +172,10 @@ def test_reset_password_if_not_user(client: TestClient):
     response = client.post(
         f"{settings.API_V1_PREFIX}/password-reset", json=not_registered_email
     )
-    result_msg = response.json().get("detail")
+    result_msg = response.json()["detail"]
 
     assert response.status_code == status.HTTP_400_BAD_REQUEST
-    assert result_msg == "등록된 회원이 아닙니다."
+    assert result_msg == "해당되는 유저를 찾을 수 없습니다."
 
 
 @pytest.mark.reset_password
@@ -183,7 +183,7 @@ def test_reset_password_if_registered(
     client: TestClient, db_session: Session, fake_user: Dict
 ):
     # fake_user 정보
-    user = fake_user.get("user")
+    user = fake_user["user"]
 
     # verified 값 true로 변경
     info_to_be_updated = UserUpdate(verified=True, profile_text=None)
@@ -191,8 +191,9 @@ def test_reset_password_if_registered(
 
     # 패스워드 초기화 및 결과
     response = client.post(f"{settings.API_V1_PREFIX}/password-reset", json=user.email)
-    result_status_text = response.json().get("status")
-    result_msg = response.json().get("msg")
+
+    result_status_text = response.json()["status"]
+    result_msg = response.json()["msg"]
 
     assert response.status_code == status.HTTP_200_OK
     assert result_status_text == "success"
@@ -204,7 +205,7 @@ def test_change_password_if_password_is_wrong(
     client: TestClient, get_user_token_headers_and_login_data: Dict
 ):
     # current_user 정보
-    headers = get_user_token_headers_and_login_data.get("headers")
+    headers = get_user_token_headers_and_login_data["headers"]
     wrong_password = random_lower_string(k=8)
 
     # 패스워드 변경 정보
@@ -218,7 +219,7 @@ def test_change_password_if_password_is_wrong(
         headers=headers,
         json=password_info.dict(),
     )
-    result_msg = response.json().get("detail")
+    result_msg = response.json()["detail"]
 
     assert response.status_code == status.HTTP_400_BAD_REQUEST
     assert result_msg == "입력한 비밀번호가 기존 비밀번호와 일치하지 않습니다."
@@ -229,12 +230,12 @@ def test_change_password_if_password_is_not_wrong(
     client: TestClient, get_user_token_headers_and_login_data: Dict
 ):
     # current_user 정보
-    headers = get_user_token_headers_and_login_data.get("headers")
-    login_data = get_user_token_headers_and_login_data.get("login_data")
+    headers = get_user_token_headers_and_login_data["headers"]
+    login_data = get_user_token_headers_and_login_data["login_data"]
 
     # password 변경 정보
     password_info = UserPasswordUpdate(
-        current_password=login_data.password,
+        current_password=login_data["password"],
         new_password=random_lower_string(k=8),
     )
 
@@ -244,8 +245,8 @@ def test_change_password_if_password_is_not_wrong(
         headers=headers,
         json=password_info.dict(),
     )
-    result_status_text = response.json().get("status")
-    result_msg = response.json().get("msg")
+    result_status_text = response.json()["status"]
+    result_msg = response.json()["msg"]
 
     assert response.status_code == status.HTTP_200_OK
     assert result_status_text == "success"
@@ -256,12 +257,12 @@ def test_change_password_if_password_is_not_wrong(
 def test_read_user_if_not_registered(
     client: TestClient, get_user_token_headers_and_login_data: Dict
 ):
-    headers = get_user_token_headers_and_login_data.get("headers")  # current_user 정보
+    headers = get_user_token_headers_and_login_data["headers"]  # current_user 정보
 
     # 유저 조회 및 결과
     user_id = randint(2, 10)  # 임의로 생성한 user_id
     response = client.get(f"{settings.API_V1_PREFIX}/users/{user_id}", headers=headers)
-    result_msg = response.json().get("detail")
+    result_msg = response.json()["detail"]
 
     assert response.status_code == 400
     assert result_msg == "해당되는 유저를 찾을 수 없습니다."
@@ -272,10 +273,10 @@ def test_read_user_if_user_is_not_same_as_current_user(
     client: TestClient, get_user_token_headers_and_login_data: Dict, fake_user: Dict
 ):
     # current_user 정보
-    headers = get_user_token_headers_and_login_data.get("headers")
+    headers = get_user_token_headers_and_login_data["headers"]
 
     # 다른 유저 조회 및 결과
-    other_user = fake_user.get("user")
+    other_user = fake_user["user"]
     response = client.get(
         f"{settings.API_V1_PREFIX}/users/{other_user.id}", headers=headers
     )
@@ -292,15 +293,15 @@ def test_read_user_if_user_is_same_as_current_user(
     client: TestClient, db_session: Session, get_user_token_headers_and_login_data: Dict
 ):
     # current_user 정보
-    headers = get_user_token_headers_and_login_data.get("headers")
-    current_user_data = get_user_token_headers_and_login_data.get("login_data")
-    current_user_email = current_user_data.email
+    headers = get_user_token_headers_and_login_data["headers"]
+    current_user_data = get_user_token_headers_and_login_data["login_data"]
+    current_user_email = current_user_data["email"]
 
     # 동일한 유저 정보 조회 및 결과
     user_id = user_service.get_user(db_session, email=current_user_email).id
     response = client.get(f"{settings.API_V1_PREFIX}/users/{user_id}", headers=headers)
     result = response.json()
-    email_of_user_id = result.get("email")
+    email_of_user_id = result["email"]
 
     assert "email" in result
     assert "password" in result
@@ -320,12 +321,12 @@ def test_update_user_on_profile_text_if_not_authorized(
     client: TestClient, get_user_token_headers_and_login_data: Dict, fake_user: Dict
 ):
     # current_user 정보
-    headers = get_user_token_headers_and_login_data.get("headers")
-    current_user_data = get_user_token_headers_and_login_data.get("login_data")
-    current_user_email = current_user_data.email
+    headers = get_user_token_headers_and_login_data["headers"]
+    current_user_data = get_user_token_headers_and_login_data["login_data"]
+    current_user_email = current_user_data["email"]
 
     # 다른 유저 정보
-    not_authorized_user = fake_user.get("user")
+    not_authorized_user = fake_user["user"]
     email_of_not_authorized_user = not_authorized_user.email
 
     # 변경할 유저 정보
@@ -337,7 +338,7 @@ def test_update_user_on_profile_text_if_not_authorized(
         headers=headers,
         json=info_to_be_updated.dict(),
     )
-    result_msg = response.json().get("detail")
+    result_msg = response.json()["detail"]
 
     assert current_user_email != email_of_not_authorized_user
     assert response.status_code == status.HTTP_401_UNAUTHORIZED
@@ -349,9 +350,9 @@ def test_update_user_on_profile_text_if_authorized(
     client: TestClient, db_session: Session, get_user_token_headers_and_login_data: Dict
 ):
     # current_user 정보
-    headers = get_user_token_headers_and_login_data.get("headers")
-    current_user_data = get_user_token_headers_and_login_data.get("login_data")
-    current_user_email = current_user_data.email
+    headers = get_user_token_headers_and_login_data["headers"]
+    current_user_data = get_user_token_headers_and_login_data["login_data"]
+    current_user_email = current_user_data["email"]
 
     # 동일한 유저의 프로필 정보 변경
     user = user_service.get_user(db_session, email=current_user_email)
@@ -371,14 +372,14 @@ def test_delete_user_if_not_authorized(
     client: TestClient, get_user_token_headers_and_login_data: Dict, fake_user: Dict
 ):
     # current_user 정보
-    headers = get_user_token_headers_and_login_data.get("headers")
+    headers = get_user_token_headers_and_login_data["headers"]
 
     # 유저 삭제 및 결과
-    not_authorized_user = fake_user.get("user")
+    not_authorized_user = fake_user["user"]
     response = client.delete(
         f"{settings.API_V1_PREFIX}/users/{not_authorized_user.id}", headers=headers
     )
-    result_msg = response.json().get("detail")
+    result_msg = response.json()["detail"]
 
     assert response.status_code == status.HTTP_401_UNAUTHORIZED
     assert result_msg == "삭제할 권한이 없습니다."
@@ -389,17 +390,17 @@ def test_delete_user_if_authorized(
     client: TestClient, db_session: Session, get_user_token_headers_and_login_data: Dict
 ):
     # current_user 정보
-    headers = get_user_token_headers_and_login_data.get("headers")
-    current_user_data = get_user_token_headers_and_login_data.get("login_data")
-    current_user_email = current_user_data.email
+    headers = get_user_token_headers_and_login_data["headers"]
+    current_user_data = get_user_token_headers_and_login_data["login_data"]
+    current_user_email = current_user_data["email"]
 
     # 유저 삭제 및 결과
     user = user_service.get_user(db_session, email=current_user_email)
     response = client.delete(
         f"{settings.API_V1_PREFIX}/users/{user.id}", headers=headers
     )
-    result_status_text = response.json().get("status")
-    result_msg = response.json().get("msg")
+    result_status_text = response.json()["status"]
+    result_msg = response.json()["msg"]
 
     assert response.status_code == status.HTTP_200_OK
     assert result_status_text == "success"

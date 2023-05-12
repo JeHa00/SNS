@@ -1,6 +1,7 @@
 from typing import Dict
 
 from fastapi.testclient import TestClient
+from fastapi import HTTPException
 from pydantic import ValidationError
 from sqlalchemy.orm import Session
 import pytest
@@ -85,7 +86,11 @@ def test_get_user(client: TestClient, db_session: Session):
 
 def test_update_user_on_being_verified(fake_user: Dict, db_session: Session):
     user_01 = fake_user.get("user")
-    old_verified = user_service.is_verified(user_01)
+
+    with pytest.raises(HTTPException):
+        user_service.is_verified(user_01)
+
+    previous_is_verified = False
 
     info_to_be_updated = UserUpdate(verified=True, profile_text=None)
     user_crud.update(db_session, user_01, info_to_be_updated)
@@ -93,9 +98,8 @@ def test_update_user_on_being_verified(fake_user: Dict, db_session: Session):
 
     assert user_02
     assert user_01 == user_02
-    assert old_verified is False
     assert user_service.is_verified(user_02) is True
-    assert old_verified != user_service.is_verified(user_02)
+    assert previous_is_verified != user_service.is_verified(user_02)
 
 
 def test_update_user_on_password(fake_user: Dict, db_session: Session):
@@ -147,7 +151,7 @@ def test_update_user_on_profile_text(fake_user: Dict, db_session: Session):
 def test_delete_user_by_int(fake_user: Dict, db_session: Session):
     user_01 = fake_user.get("user")
     email = user_01.email
-    result = user_crud.remove(db_session, user_data=user_01.id)
+    result = user_crud.remove(db_session, user_to_be_deleted=user_01.id)
     user_02 = user_crud.get_user(db_session, email=email)
 
     assert user_02 is None
@@ -158,7 +162,7 @@ def test_delete_user_by_int(fake_user: Dict, db_session: Session):
 def test_delete_user_by_model_object(fake_user: Dict, db_session: Session):
     user_01 = fake_user.get("user")
     email = user_01.email
-    result = user_crud.remove(db_session, user_data=user_01)
+    result = user_crud.remove(db_session, user_to_be_deleted=user_01)
     user_02 = user_crud.get_user(db_session, email=email)
 
     assert user_02 is None
