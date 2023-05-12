@@ -8,7 +8,7 @@ from sqlalchemy.orm import Session
 from sns.common.conftest import start_app, app, db_session, client
 
 # flake8: noqa
-from sns.users.test.conftest import fake_user, get_user_token_headers_and_user_info
+from sns.users.test.conftest import fake_user, get_user_token_headers_and_login_data
 
 from sns.users.test.utils import random_lower_string
 from sns.posts.schema import PostCreate
