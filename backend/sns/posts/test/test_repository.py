@@ -131,12 +131,11 @@ def test_update_multi_posts_by_model_object(
 
     data_to_be_updated = PostUpdate(content="Hello World!")  # 업데이트할 내용
 
-    for i, post in enumerate(posts):
+    for post in posts:
         post_crud.update(
             db_session, post_data=post, data_to_be_updated=data_to_be_updated
         )
         assert post.content == "Hello World!"
-        print(i + 1)
 
 
 def test_delete_only_one_by_int(
