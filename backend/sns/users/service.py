@@ -243,7 +243,7 @@ class UserService:
             user = user_crud.get_user(db, verification_code=kwargs["verification_code"])
 
         if user is None:
-            raise HTTPException(status_code=400, detail="해당되는 유저를 찾을 수 없습니다.")
+            raise HTTPException(status_code=404, detail="해당되는 유저를 찾을 수 없습니다.")
 
         if len(kwargs) == 1:
             return user
