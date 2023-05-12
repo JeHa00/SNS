@@ -3,8 +3,8 @@ from typing import List
 from fastapi.encoders import jsonable_encoder
 from sqlalchemy.orm import Session
 
-from sns.posts.model import Post
 from sns.posts.schema import PostCreate, PostUpdate
+from sns.posts.model import Post
 
 
 class PostDB:
@@ -21,9 +21,9 @@ class PostDB:
         return post
 
     def get_multi_posts(
-        self, db: Session, writer_id: int, skip: int = 0, limit: int = 100
+        self, db: Session, writer_id: int, skip: int = 0, limit: int = 10
     ) -> List[Post]:
-        """writer_id 값에 해당되는 user가 작성한 여러 post들을 조회한다.
+        """writer_id 값에 해당되는 user가 작성한 여러 post들을 조회하여 생성날짜를 기준으로 최신순으로 정렬하여 반환한다.
 
         Args:
             writer_id (int): writer user의 id
@@ -33,13 +33,17 @@ class PostDB:
         Returns:
             List[Post]: post 객체 정보들이 list 배열에 담겨져 반환
         """
-        return (
+
+        query = (
             db.query(Post)
             .filter(writer_id == writer_id)
-            .offset(skip)
-            .limit(limit)
-            .all()
+            .order_by(Post.created_at.desc())
         )
+        if skip != 0 or limit != 0:
+            query = query.offset(skip).limit(limit).all()
+            return query
+        else:
+            return query.all()
 
     def create(self, db: Session, post_data: PostCreate, writer_id: int) -> Post:
         """주어진 post_data, writer_id 정보를 가지는 post를 생성한다.
@@ -72,7 +76,7 @@ class PostDB:
             Post: 수정된 post 객체를 반환
         """
         if isinstance(post_data, int):
-            post = db.query(Post).filter(Post.id == post_data).first()
+            post = self.get_post(db, post_data)
         else:
             post = post_data
 
@@ -81,7 +85,7 @@ class PostDB:
         else:
             data_to_be_updated = data_to_be_updated.dict(exclude_unset=True)
 
-        for field in jsonable_encoder(post):  # post.dict()
+        for field in jsonable_encoder(post):
             if field in data_to_be_updated:
                 setattr(post, field, data_to_be_updated[field])
 
@@ -98,7 +102,7 @@ class PostDB:
             post_to_be_deleted (Post | int): 삭제할 post 객체 정보로, Post model 또는 id 값으로 전달된다.
         """
         if isinstance(post_to_be_deleted, int):
-            post = db.query(Post).filter(Post.id == post_to_be_deleted).first()
+            post = self.get_post(db, post_to_be_deleted)
         else:
             post = post_to_be_deleted
         db.delete(post)
