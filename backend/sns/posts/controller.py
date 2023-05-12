@@ -4,12 +4,11 @@ from fastapi import APIRouter, Depends, status, HTTPException
 from sqlalchemy.orm import Session
 
 from sns.common.session import db
-from sns.users.service import get_current_user_verified
+from sns.users.service import user_service
 from sns.users.schema import Msg
 from sns.users.model import User
 from sns.posts.schema import Post, PostCreate, PostUpdate
 from sns.posts import model
-from sns.posts.repository import post_crud
 from sns.posts.service import post_service
 
 
@@ -29,7 +28,6 @@ def read_post(post_id: int, db: Session = Depends(db.get_db)) -> model.Post:
         - Post: post_id에 해당되는 post 반환
     """
     post = post_service.get_post(db, post_id=post_id)
-
     return post
 
 
@@ -43,28 +41,13 @@ def read_posts(user_id: int, db: Session = Depends(db.get_db)) -> List[Post]:
 
         - user_id (int): user의 id
 
-    Raises:
-
-        - HTTPException(404 NOT FOUND): 작성자가 user_id인 post를 조회한 결과, 작성된 글이 없을 때 발생하는 에러
-        - HTTPException(403 FORBIDDEN): user_id를 가진 user를 찾지 못하여 등록된 회원이 아님을 보여주는 에러
-
     Returns:
 
         - List[Post]: 여러 post가 list 배열에 담겨져 반환
     """
-    selected_user = db.query(User).filter(User.id == user_id).first()
-    if selected_user:
-        posts = post_crud.get_multi_posts(db, writer_id=user_id)
-        if len(posts) == 0:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND, detail="작성된 글이 없습니다."
-            )
-        else:
-            return posts
-    else:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN, detail="등록된 회원이 아닙니다."
-        )
+    selected_user = user_service.get_user(db, user_id=user_id)
+    posts = post_service.get_multi_posts(db, writer_id=selected_user.id)
+    return posts
 
 
 @router.post(
@@ -73,7 +56,7 @@ def read_posts(user_id: int, db: Session = Depends(db.get_db)) -> List[Post]:
 def create_post(
     user_id: int,
     data_to_be_created: PostCreate,
-    current_user: User = Depends(get_current_user_verified),
+    current_user: User = Depends(user_service.get_current_user_verified),
     db: Session = Depends(db.get_db),
 ) -> Post:
     """user_id가 현재 로그인된 user와 동일할 때 post를 생성한다.
@@ -87,24 +70,18 @@ def create_post(
     Raises:
 
         - HTTPException(401 UNAUTHORIZED): user_id가 로그인된 유저 id와 달라 작성 권한이 없음을 보여주는 에러
-        - HTTPException(403 FORBIDDEN): user_id를 가진 user를 찾지 못하여 등록된 회원이 아님을 보여주는 에러
 
     Returns:
 
        - Post: 생성된 post 정보 반환
     """
-    selected_user = db.query(User).filter(User.id == user_id).first()
-    if selected_user:
-        if user_id == current_user.id:
-            post = post_crud.create(db, post_info=data_to_be_created, writer_id=user_id)
-            return post
-        else:
-            raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED, detail="작성할 권한이 없습니다."
-            )
+    user_service.get_user(db, user_id=user_id)
+    if user_id == current_user.id:
+        post = post_service.create(db, post_data=data_to_be_created, writer_id=user_id)
+        return post
     else:
         raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN, detail="등록된 회원이 아닙니다."
+            status_code=status.HTTP_401_UNAUTHORIZED, detail="작성할 권한이 없습니다."
         )
 
 
@@ -117,7 +94,7 @@ def update_post(
     user_id: int,
     post_id: int,
     data_to_be_updated: PostUpdate,
-    current_user: User = Depends(get_current_user_verified),
+    current_user: User = Depends(user_service.get_current_user_verified),
     db: Session = Depends(db.get_db),
 ) -> Post:
     """user_id가 현재 user id와 동일하여 수정 권한이 있을 때 post_id에 해당되는 post를 수정한다.
@@ -131,34 +108,20 @@ def update_post(
 
     Raises:
 
-        - HTTPException(404 NOT FOUND): 수정 권한은 있지만, 수정할 글이 없음을 보여주는 에러
-        - HTTPException(401 UNAUTHORIZED): user_id가 로그인된 유저 id와 달라서 작성 권한이 없음을 보여주는 에러
-        - HTTPException(403 FORBIDDEN): user_id를 가진 user를 찾지 못하여 등록된 회원이 아님을 보여주는 에러
+        - HTTPException(401 UNAUTHORIZED): user_id가 로그인된 유저 id와 달라 변경 권한이 없음을 보여주는 에러
 
     Returns:
 
         - Post: 수정된 post 정보 반환
     """
-    selected_user = db.query(User).filter(User.id == user_id).first()
-    if selected_user:
-        if selected_user.id == current_user.id:
-            post = post_crud.get_post(db, post_id=post_id)
-            if not post:
-                raise HTTPException(
-                    status_code=status.HTTP_404_NOT_FOUND, detail="해당되는 글이 없습니다."
-                )
-            else:
-                post_crud.update(
-                    db, post_info=post, data_to_be_updated=data_to_be_updated
-                )
-                return post
-        else:
-            raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED, detail="작성할 권한이 없습니다."
-            )
+    user_service.get_user(db, user_id=user_id)
+    if user_id == current_user.id:
+        post = post_service.get_post(db, post_id=post_id)
+        post_service.update(db, post, data_to_be_updated)
+        return post
     else:
         raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN, detail="등록된 회원이 아닙니다."
+            status_code=status.HTTP_401_UNAUTHORIZED, detail="변경할 권한이 없습니다."
         )
 
 
@@ -170,7 +133,7 @@ def update_post(
 def delete_post(
     user_id: int,
     post_id: int,
-    current_user: User = Depends(get_current_user_verified),
+    current_user: User = Depends(user_service.get_current_user_verified),
     db: Session = Depends(db.get_db),
 ) -> Msg:
     """user_id가 current_user의 id와 동일할 때, 해당 post_id를 가진 post를 삭제한다.
@@ -183,15 +146,17 @@ def delete_post(
 
     Raises:
 
-        - HTTPException: post_id에 해당되는 post를 찾을 수 없을 때 발생되는 에러(404 NOT FOUND)
+        - HTTPException(401 UNAUTHORIZED): user_id가 로그인된 유저 id와 달라 삭제 권한이 없음을 보여주는 에러
 
     Returns:
 
         - Msg: 삭제 성공 메세지를 반환
     """
+    user_service.get_user(db, user_id=user_id)
     if user_id == current_user.id:
-        post_crud.remove(db, post_info=post_id)
-        return {"status": "success", "msg": "글이 삭제되었습니다."}
+        post = post_service.get_post(db, post_id=post_id)
+        if post_service.remove(db, post_to_be_deleted=post) is True:
+            return {"status": "success", "msg": "글이 삭제되었습니다."}
     else:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED, detail="삭제할 권한이 없습니다."
