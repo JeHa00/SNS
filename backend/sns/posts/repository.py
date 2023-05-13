@@ -55,13 +55,13 @@ class PostDB:
         Returns:
             Post: 생성된 post 정보를 반환
         """
-        db_obj = Post(content=post_data.content, writer_id=writer_id)
+        new_post = Post(content=post_data.content, writer_id=writer_id)
 
-        db.add(db_obj)
+        db.add(new_post)
         db.commit()
-        db.refresh(db_obj)
+        db.refresh(new_post)
 
-        return db_obj
+        return new_post
 
     def update(
         self, db: Session, post_data: Post | int, data_to_be_updated: PostUpdate
