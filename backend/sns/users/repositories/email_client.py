@@ -52,8 +52,7 @@ class EmailClient:
         if not (self.get_temporary_password or self.get_verification_url):
             raise ValueError("임시 비밀번호 또는 이메일 인증 url 값이 존재하지 않습니다.")
 
-        data = {"message": message, "context": context}
-        return data
+        return {"message": message, "context": context}
 
     def send_email(self, message: EmailMessage, context: dict) -> None:
         """email message를 받아 해당 정보로 발송한다.
