@@ -52,7 +52,7 @@ class UserService:
         return encoded_jwt
 
     def verify_password(cls, plain_password: str, hashed_password: str) -> bool:
-        """plain_password가 hash 화되었을 때 hashed_password와 일치하는지 판단한다.
+        """plain_password가 암호화되었을 때 hashed_password와 일치하는지 판단한다.
 
         Args:
             plain_password (str): 로그인 시 입력하는 패스워드
