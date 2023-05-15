@@ -67,22 +67,6 @@ def test_get_multi_posts(
         assert hasattr(post, "updated_at")
 
 
-def test_update_only_one_by_int(
-    client: TestClient, db_session: Session, fake_post: Post
-):
-    content_before_update = fake_post.content  # 업데이트 전 내용
-    data_to_be_updated = PostUpdate(content="Hello World!")  # 업데이트할 내용
-
-    # 업데이트된 포스트
-    post = post_crud.update(
-        db_session, post_data=fake_post.id, data_to_be_updated=data_to_be_updated
-    )
-    content_after_update = post.content  # 업데이트된 내용
-
-    assert content_after_update == "Hello World!"
-    assert content_before_update != content_after_update
-
-
 def test_update_only_one_by_model_object(
     client: TestClient, db_session: Session, fake_post: Post
 ):
@@ -97,24 +81,6 @@ def test_update_only_one_by_model_object(
 
     assert content_after_update == "Hello World!"
     assert content_before_update != content_after_update
-
-
-def test_update_multi_posts_by_int(
-    client: TestClient,
-    db_session: Session,
-    fake_user: Dict,
-    fake_multi_posts: List[Post],
-):
-    # 생성한 post 목록들
-    user = fake_user.get("user")
-    posts = post_crud.get_multi_posts(db_session, user.id)
-
-    data_to_be_updated = PostUpdate(content="Hello World!")  # 업데이트할 내용
-    for post in posts:
-        post_crud.update(
-            db_session, post_data=post.id, data_to_be_updated=data_to_be_updated
-        )
-        assert post.content == "Hello World!"
 
 
 # FIXME: int를 사용하여 post를 조회 후 업데이트를 여러 post에 시도 시 문제가 없지만, model object를 사용하면 문제가 발생된다.
@@ -138,16 +104,6 @@ def test_update_multi_posts_by_model_object(
         assert post.content == "Hello World!"
 
 
-def test_delete_only_one_by_int(
-    client: TestClient, db_session: Session, fake_post: Post
-):
-    post_id = fake_post.id
-    post_crud.remove(db_session, post_to_be_deleted=post_id)
-    post = post_crud.get_post(db_session, post_id=post_id)
-
-    assert post is None
-
-
 def test_delete_only_one_by_model_object(
     client: TestClient, db_session: Session, fake_post: Post
 ):
@@ -156,26 +112,6 @@ def test_delete_only_one_by_model_object(
     post = post_crud.get_post(db_session, post_id=post_id)
 
     assert post is None
-
-
-def test_delete_multi_posts_by_int(
-    client: TestClient,
-    db_session: Session,
-    fake_user: Dict,
-    fake_multi_posts: List[Post],
-):
-    # 생성한 post 목록들
-    user = fake_user.get("user")
-
-    # fake_post로 생성한 수가 100개
-    posts = post_crud.get_multi_posts(db_session, writer_id=user.id, limit=100)
-
-    for post in posts:
-        post_crud.remove(db_session, post_to_be_deleted=post.id)
-
-    posts = post_crud.get_multi_posts(db_session, writer_id=user.id)
-
-    assert len(posts) == 0
 
 
 def test_delete_multi_posts_by_model_object(

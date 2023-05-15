@@ -166,7 +166,7 @@ def test_update_post_if_user_not_registered(
     headers = get_user_token_headers_and_login_data["headers"]
 
     # 변경할 글 content 정보
-    content = PostCreate(content=random_lower_string(k=1000))
+    content = PostUpdate(content=random_lower_string(k=1000))
 
     # 등록되지 않은 유저 id
     not_registered_user_id = 3
@@ -184,7 +184,7 @@ def test_update_post_if_user_not_registered(
 
 
 @pytest.mark.update_post
-def test_update_post_if_unauthorized(
+def test_update_post_if_try_to_update_not_mine(
     client: TestClient,
     db_session: Session,
     get_user_token_headers_and_login_data: Dict,
@@ -196,19 +196,49 @@ def test_update_post_if_unauthorized(
     authorized_user = user_service.get_user(db_session, email=login_data["email"])
 
     # 변경할 content 정보
-    content = PostCreate(content=random_lower_string(k=1000))
+    content = PostUpdate(content=random_lower_string(k=1000))
 
-    # 글 수정 및 결과
-    response = client.post(
-        f"{settings.API_V1_PREFIX}/users/{authorized_user.id}/posts",
+    # 글 수정 및 결과 - 현재 로그인된 유저가 자신이 작성한 글 이외의 글을 시도할 경우
+    response = client.put(
+        f"{settings.API_V1_PREFIX}/users/{authorized_user.id}/posts/{fake_post.id}",
         headers=headers,
         json=content.dict(),
     )
-    created_post_id = response.json()["id"]
-    post = post_service.get_post(db_session, post_id=created_post_id)
+    result_msg = response.json()["detail"]
 
-    assert response.status_code == status.HTTP_201_CREATED
-    assert post is not None
+    assert response.status_code == status.HTTP_401_UNAUTHORIZED
+    assert result_msg == "수정할 권한이 없습니다."
+
+
+@pytest.mark.update_post
+def test_update_post_if_user_id_is_not_same_as_user_logged_in(
+    client: TestClient,
+    db_session: Session,
+    get_user_token_headers_and_login_data: Dict,
+    fake_post_by_user_logged_in: model.Post,
+    fake_user: dict,
+):
+    # 현재 로그인 상태가 아닌 유저
+    user_id_not_logged_in = fake_user["user"].id
+
+    # 로그인 상태의 유저
+    headers = get_user_token_headers_and_login_data["headers"]
+
+    # 로그인한 유저가 작성한 post id
+    post_id = fake_post_by_user_logged_in.id
+
+    # 변경할 content 정보
+    content = PostUpdate(content=random_lower_string(k=1000))
+
+    response = client.put(
+        f"{settings.API_V1_PREFIX}/users/{user_id_not_logged_in}/posts/{post_id}",
+        headers=headers,
+        json=content.dict(),
+    )
+    result_msg = response.json()["detail"]
+
+    assert response.status_code == status.HTTP_401_UNAUTHORIZED
+    assert result_msg == "수정할 권한이 없습니다."
 
 
 @pytest.mark.update_post
@@ -223,9 +253,12 @@ def test_update_post_if_post_not_exist(
     # 변경할 content 정보
     content = PostUpdate(content=random_lower_string(k=1000))
 
+    # 존재하지 않는 post id
+    post_id = 1
+
     # 글 수정 및 결과
     response = client.put(
-        f"{settings.API_V1_PREFIX}/users/{authorized_user.id}/posts/{1}",
+        f"{settings.API_V1_PREFIX}/users/{authorized_user.id}/posts/{post_id}",
         headers=headers,
         json=content.dict(),
     )
@@ -240,19 +273,22 @@ def test_update_post_only_one_if_authorized(
     client: TestClient,
     db_session: Session,
     get_user_token_headers_and_login_data: Dict,
-    fake_post: model.Post,
+    fake_post_by_user_logged_in: model.Post,
 ):
     # current_user 정보
     headers = get_user_token_headers_and_login_data["headers"]
     login_data = get_user_token_headers_and_login_data["login_data"]
     authorized_user = user_service.get_user(db_session, email=login_data["email"])
 
+    # 로그인한 유저가 작성한 post id
+    post_id = fake_post_by_user_logged_in.id
+
     # 변경할 content 정보
     content = PostUpdate(content=random_lower_string(k=1000))
 
     # 글 수정 및 결과
     response = client.put(
-        f"{settings.API_V1_PREFIX}/users/{authorized_user.id}/posts/{fake_post.id}",
+        f"{settings.API_V1_PREFIX}/users/{authorized_user.id}/posts/{post_id}",
         headers=headers,
         json=content.dict(),
     )
@@ -267,7 +303,7 @@ def test_update_post_multi_posts_if_authorized(
     client: TestClient,
     db_session: Session,
     get_user_token_headers_and_login_data: Dict,
-    fake_multi_posts: None,
+    fake_multi_post_by_user_logged_in: None,
 ):
     # current_user 정보
     headers = get_user_token_headers_and_login_data["headers"]
@@ -298,18 +334,17 @@ def test_delete_post_if_authorized(
     client: TestClient,
     db_session: Session,
     get_user_token_headers_and_login_data: Dict,
-    fake_post: model.Post,
+    fake_post_by_user_logged_in: model.Post,
 ):
     # user 및 post 정보
     headers = get_user_token_headers_and_login_data["headers"]
     login_data = get_user_token_headers_and_login_data["login_data"]
     user = user_service.get_user(db_session, email=login_data["email"])
-    user_id = user.id
-    post_id = fake_post.id
+    post_id = fake_post_by_user_logged_in.id
 
     # 글 삭제 및 결과
     response = client.delete(
-        f"{settings.API_V1_PREFIX}/users/{user_id}/posts/{post_id}", headers=headers
+        f"{settings.API_V1_PREFIX}/users/{user.id}/posts/{post_id}", headers=headers
     )
     result_status_text = response.json()["status"]
     result_msg = response.json()["msg"]
@@ -330,14 +365,17 @@ def test_delete_post_if_not_authorized(
     get_user_token_headers_and_login_data: Dict,
     fake_post: model.Post,
 ):
-    # user 및 post 정보
+    # 로그인 상태의 유저
     headers = get_user_token_headers_and_login_data["headers"]
-    user_id = 2
+    login_data = get_user_token_headers_and_login_data["login_data"]
+    user = user_service.get_user(db_session, email=login_data["email"])
+
+    # 삭제 대상 post의 id
     post_id = fake_post.id
 
     # 글 삭제 및 결과
     response = client.delete(
-        f"{settings.API_V1_PREFIX}/users/{user_id}/posts/{post_id}", headers=headers
+        f"{settings.API_V1_PREFIX}/users/{user.id}/posts/{post_id}", headers=headers
     )
     result_msg = response.json()["detail"]
 
