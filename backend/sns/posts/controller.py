@@ -19,13 +19,17 @@ router = APIRouter()
 def read_post(post_id: int, db: Session = Depends(db.get_db)) -> model.Post:
     """post_id와 일치하는 post.id를 가진 post 정보를 읽어온다.
 
-    Args:
+     Args:
 
-        - post_id (int): 읽어올 post의 id
+    - post_id (int): 읽어올 post의 id
+
+    Raises:
+
+    - HTTPException(404 NOT FOUND): post_id에 해당되는 post를 찾을 수 없을 때 발생
 
     Returns:
 
-        - Post: post_id에 해당되는 post 반환
+    - Post: post_id에 해당되는 post 반환
     """
     post = post_service.get_post(db, post_id=post_id)
     return post
@@ -35,15 +39,21 @@ def read_post(post_id: int, db: Session = Depends(db.get_db)) -> model.Post:
     "/users/{user_id}/posts", response_model=List[Post], status_code=status.HTTP_200_OK
 )
 def read_posts(user_id: int, db: Session = Depends(db.get_db)) -> List[Post]:
-    """user_id에 일치하는 user가 작성한 post들을 조회
+    """user_id에 일치하는 user가 작성한 글들을 조회
 
-    Args:
+     Args:
 
-        - user_id (int): user의 id
+     - user_id (int): user의 id
+
+    Raises:
+
+    - HTTPException(404 NOT FOUND): 다음 2가지 경우에 대해서 발생한다.
+        - post_id에 해당되는 post가 찾을 수 없을 때 발생
+        - writer_id에 해당되는 user가 단 하나의 post도 작성하지 않았을 때 발생
 
     Returns:
 
-        - List[Post]: 여러 post가 list 배열에 담겨져 반환
+     - List[Post]: 여러 post가 list 배열에 담겨져 반환
     """
     selected_user = user_service.get_user(db, user_id=user_id)
     posts = post_service.get_multi_posts(db, writer_id=selected_user.id)
@@ -63,17 +73,19 @@ def create_post(
 
     Args:
 
-        - user_id (int): 글을 작성할 user의 id
-        - data_to_be_created (PostCreate): 생성할 post의 content 정보
-        - current_user (User, optional): 현재 로그인된 user 정보
+    - user_id (int): 글을 작성할 user의 id
+    - data_to_be_created (PostCreate): 생성할 post의 content 정보
+    - current_user (User, optional): 현재 로그인된 user 정보
 
     Raises:
 
-        - HTTPException(401 UNAUTHORIZED): user_id가 로그인된 유저 id와 달라 작성 권한이 없음을 보여주는 에러
+    - HTTPException(404 NOT FOUND): post_id에 해당되는 post가 찾을 수 없을 때 발생
+    - HTTPException(500 INTERNAL SERVER ERROR): post 생성에 실패했을 때 발생
+    - HTTPException(401 UNAUTHORIZED): user_id가 로그인된 user id와 달라 작성 권한이 없음을 보여주는 에러
 
     Returns:
 
-       - Post: 생성된 post 정보 반환
+    - Post: 생성된 post 정보 반환
     """
     user_service.get_user(db, user_id=user_id)
     if user_id == current_user.id:
@@ -101,27 +113,31 @@ def update_post(
 
     Args:
 
-        - user_id (int): 수정할 user의 id
-        - post_id (int): 수정될 post의 id
-        - data_to_be_updated (PostUpdate): 업데이트할 정보
-        - current_user (User, optional): 현재 유저 정보
+    - user_id (int): 수정할 user의 id
+    - post_id (int): 수정될 post의 id
+    - data_to_be_updated (PostUpdate): 업데이트할 정보
+    - current_user (User): 현재 유저 정보
 
     Raises:
 
-        - HTTPException(401 UNAUTHORIZED): user_id가 로그인된 유저 id와 달라 변경 권한이 없음을 보여주는 에러
+    - HTTPException(404 NOT FOUND): 다음 2가지 경우에 대해서 발생한다.
+        - user_id에 해당되는 user를 찾을 수 없을 때 발생
+        - post_id에 해당되는 post를 찾을 수 없을 때 발생
+    - HTTPException(500 INTERNAL SERVER ERROR): post 정보 변경에 실패했을 때 발생
+    - HTTPException(401 UNAUTHORIZED): user_id가 로그인된 유저 id와 달라 수정 권한이 없음을 보여주는 에러
 
     Returns:
 
-        - Post: 수정된 post 정보 반환
+    - Post: 수정된 post 객체 반환
     """
     user_service.get_user(db, user_id=user_id)
-    if user_id == current_user.id:
-        post = post_service.get_post(db, post_id=post_id)
+    post = post_service.get_post(db, post_id=post_id)
+    if user_id == current_user.id and post.writer_id == current_user.id:
         post_service.update(db, post, data_to_be_updated)
         return post
     else:
         raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED, detail="변경할 권한이 없습니다."
+            status_code=status.HTTP_401_UNAUTHORIZED, detail="수정할 권한이 없습니다."
         )
 
 
@@ -140,23 +156,27 @@ def delete_post(
 
     Args:
 
-        - user_id (int): 삭제시킬 user의 id
-        - post_id (int): 삭제될 post의 id
-        - current_user (User): 현재 로그인된 user 정보
+    - user_id (int): 삭제시킬 user의 id
+    - post_id (int): 삭제될 post의 id
+    - current_user (User): 현재 로그인된 user 정보
 
     Raises:
 
-        - HTTPException(401 UNAUTHORIZED): user_id가 로그인된 유저 id와 달라 삭제 권한이 없음을 보여주는 에러
+    - HTTPException(404 NOT FOUND): 다음 2가지 경우에 대해서 발생한다.
+        - user_id에 해당되는 user를 찾을 수 없을 때 발생
+        - post_id에 해당되는 post를 찾을 수 없을 때 발생
+    - HTTPException(500 INTERNAL SERVER ERROR): post 삭제에 실패했을 때 발생
+    - HTTPException(401 UNAUTHORIZED): user_id가 로그인된 유저 id와 달라 삭제 권한이 없음을 보여주는 에러
 
     Returns:
 
-        - Msg: 삭제 성공 메세지를 반환
+    - Msg: 삭제 성공 메세지를 반환
     """
     user_service.get_user(db, user_id=user_id)
-    if user_id == current_user.id:
-        post = post_service.get_post(db, post_id=post_id)
-        if post_service.remove(db, post_to_be_deleted=post) is True:
-            return {"status": "success", "msg": "글이 삭제되었습니다."}
+    post = post_service.get_post(db, post_id=post_id)
+    if user_id == current_user.id and post.writer_id == current_user.id:
+        post_service.remove(db, post_to_be_deleted=post)
+        return {"status": "success", "msg": "글이 삭제되었습니다."}
     else:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED, detail="삭제할 권한이 없습니다."
