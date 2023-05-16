@@ -3,17 +3,18 @@ from typing import Dict, List
 from fastapi.testclient import TestClient
 from sqlalchemy.orm import Session
 
-from sns.users.service import delete
 from sns.users.test.utils import random_lower_string
-from sns.posts import schema
-from sns.posts.model import Post, PostLike
+from sns.users.service import user_service
 from sns.posts.repository import post_crud, post_like_crud
+from sns.posts.schema import PostCreate, PostUpdate
+from sns.posts.model import Post
+from sns.posts import schema
 
 
 def test_create(client: TestClient, db_session: Session, fake_user: Dict):
     writer = fake_user.get("user")
-    post_info = schema.PostCreate(content=random_lower_string(k=1000))
-    post = post_crud.create(db_session, post_info, writer.id)
+    post_data = PostCreate(content=random_lower_string(k=1000))
+    post = post_crud.create(db_session, post_data, writer.id)
 
     assert post
     assert hasattr(post, "id")
@@ -55,7 +56,7 @@ def test_get_multi_posts(
     posts = post_crud.get_multi_posts(db_session, writer.id)
 
     assert posts
-    assert len(posts) == 100
+    assert len(posts) == 10  # query에 사용하는 limit의 기본값이 10
     for post in posts:
         assert hasattr(post, "id")
         assert hasattr(post, "content")
@@ -67,50 +68,20 @@ def test_get_multi_posts(
         assert hasattr(post, "updated_at")
 
 
-def test_update_only_one_by_int(
-    client: TestClient, db_session: Session, fake_post: Post
-):
-    content_before_update = fake_post.content  # 업데이트 전 내용
-    data_to_be_updated = schema.PostUpdate(content="Hello World!")  # 업데이트할 내용
-    post = post_crud.update(
-        db_session, post_info=fake_post.id, data_to_be_updated=data_to_be_updated
-    )  # 업데이트된 포스트
-    content_after_update = post.content  # 업데이트된 내용
-
-    assert content_after_update == "Hello World!"
-    assert content_before_update != content_after_update
-
-
 def test_update_only_one_by_model_object(
     client: TestClient, db_session: Session, fake_post: Post
 ):
     content_before_update = fake_post.content  # 업데이트 전 내용
-    data_to_be_updated = schema.PostUpdate(content="Hello World!")  # 업데이트할 내용
+    data_to_be_updated = PostUpdate(content="Hello World!")  # 업데이트할 내용
+
+    # 업데이트된 포스트
     post = post_crud.update(
-        db_session, post_info=fake_post, data_to_be_updated=data_to_be_updated
-    )  # 업데이트된 포스트
+        db_session, post_data=fake_post, data_to_be_updated=data_to_be_updated
+    )
     content_after_update = post.content  # 업데이트된 내용
 
     assert content_after_update == "Hello World!"
     assert content_before_update != content_after_update
-
-
-def test_update_multi_posts_by_int(
-    client: TestClient,
-    db_session: Session,
-    fake_user: Dict,
-    fake_multi_posts: List[Post],
-):
-    # 생성한 post 목록들
-    user = fake_user.get("user")
-    posts = post_crud.get_multi_posts(db_session, user.id)
-
-    data_to_be_updated = schema.PostUpdate(content="Hello World!")  # 업데이트할 내용
-    for post in posts:
-        post_crud.update(
-            db_session, post_info=post.id, data_to_be_updated=data_to_be_updated
-        )
-        assert post.content == "Hello World!"
 
 
 # FIXME: int를 사용하여 post를 조회 후 업데이트를 여러 post에 시도 시 문제가 없지만, model object를 사용하면 문제가 발생된다.
@@ -128,49 +99,20 @@ def test_update_multi_posts_by_model_object(
     data_to_be_updated = schema.PostUpdate(content="Hello World!")  # 업데이트할 내용
 
     for post in posts:
-        assert hasattr(post, "content")  # NOTE: 이게 없으면 위에 FIXME 문제 발생
         post_crud.update(
-            db_session, post_info=post, data_to_be_updated=data_to_be_updated
+            db_session, post_data=post, data_to_be_updated=data_to_be_updated
         )
         assert post.content == "Hello World!"
-
-
-def test_delete_only_one_by_int(
-    client: TestClient, db_session: Session, fake_post: Post
-):
-    post_id = fake_post.id
-    post_crud.remove(db_session, post_info=post_id)
-    post = post_crud.get_post(db_session, post_id=post_id)
-
-    assert post is None
 
 
 def test_delete_only_one_by_model_object(
     client: TestClient, db_session: Session, fake_post: Post
 ):
     post_id = fake_post.id
-    post_crud.remove(db_session, post_info=fake_post)
+    post_crud.remove(db_session, post_to_be_deleted=fake_post)
     post = post_crud.get_post(db_session, post_id=post_id)
 
     assert post is None
-
-
-def test_delete_multi_posts_by_int(
-    client: TestClient,
-    db_session: Session,
-    fake_user: Dict,
-    fake_multi_posts: List[Post],
-):
-    # 생성한 post 목록들
-    user = fake_user.get("user")
-    posts = post_crud.get_multi_posts(db_session, writer_id=user.id)
-
-    for post in posts:
-        post_crud.remove(db_session, post_info=post.id)
-
-    posts = post_crud.get_multi_posts(db_session, writer_id=user.id)
-
-    assert len(posts) == 0
 
 
 def test_delete_multi_posts_by_model_object(
@@ -181,10 +123,12 @@ def test_delete_multi_posts_by_model_object(
 ):
     # 생성한 post 목록들
     user = fake_user.get("user")
-    posts = post_crud.get_multi_posts(db_session, writer_id=user.id)
+
+    # fake_post로 생성한 수가 100개
+    posts = post_crud.get_multi_posts(db_session, writer_id=user.id, limit=100)
 
     for post in posts:
-        post_crud.remove(db_session, post_info=post)
+        post_crud.remove(db_session, post_to_be_deleted=post)
 
     posts = post_crud.get_multi_posts(db_session, writer_id=user.id)
 
@@ -195,7 +139,7 @@ def test_delete_user_having_multi_posts(
     client: TestClient, db_session: Session, fake_user, fake_multi_posts: None
 ):
     user = fake_user.get("user")
-    delete(db_session, user_info=user)
+    user_service.remove(db_session, user_to_be_deleted=user)
     posts = post_crud.get_multi_posts(db_session, writer_id=user.id)
 
     assert len(posts) == 0
@@ -210,7 +154,7 @@ def test_like(
         like_info = schema.PostLike(who_like_id=user.id, like_target_id=post_id)
         post_like_crud.like(db_session, like_info=like_info)
 
-    posts = db_session.query(PostLike).filter(PostLike.who_like_id == user.id).all()
+    posts = post_like_crud.get_like_targets(db_session, user.id)
 
     assert len(posts) == 100
 
