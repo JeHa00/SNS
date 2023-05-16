@@ -10,7 +10,6 @@ from sns.common.conftest import start_app, app, db_session, client
 from sns.common.config import settings
 from sns.users.test.utils import random_lower_string, random_email
 from sns.users.schema import UserCreate, UserUpdate
-from sns.users.repositories.db import user_crud
 from sns.users.service import user_service
 
 
@@ -21,6 +20,7 @@ def fake_user(client: TestClient, db_session: Session):
         email=random_email(), password=password, password_confirm=password
     )
     login_data = copy.deepcopy(signup_data)
+
     user = user_service.create(db_session, data_for_signup=signup_data)
     return {"user": user, "login_data": login_data}
 
@@ -37,7 +37,7 @@ def get_user_token_headers_and_login_data(
 
     # verified 업데이트
     info_to_be_updated = UserUpdate(verified=True)
-    user_crud.update(db_session, fake_user, info_to_be_updated)
+    user_service.update(db_session, fake_user, info_to_be_updated)
 
     # 로그인
     login_data = {"email": email, "password": password}
