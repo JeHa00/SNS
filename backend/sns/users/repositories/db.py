@@ -27,12 +27,16 @@ class UserDB:
         Returns:
             User: 입력된 값들과 일치하는 유저 객체를 반환한다. 없으면 None을 반환
         """
-        if email is not None:
-            user = db.query(User).filter(email == email).first()
-        elif user_id is not None:
+        if email:
+            user = db.query(User).filter(User.email == email).first()
+        elif user_id:
             user = db.query(User).filter(User.id == user_id).first()
         else:
-            user = db.query(User).filter(verification_code == verification_code).first()
+            user = (
+                db.query(User)
+                .filter(User.verification_code == verification_code)
+                .first()
+            )
 
         return user
 
@@ -48,18 +52,18 @@ class UserDB:
         """
         name = secrets.token_urlsafe(8)  # minimum name length
 
-        db_obj = User(
+        new_user = User(
             email=data_for_signup.email,
             password=data_for_signup.password,
             name=f"user-{name}",
             verified=data_for_signup.verified,
         )
 
-        db.add(db_obj)
+        db.add(new_user)
         db.commit()
-        db.refresh(db_obj)
+        db.refresh(new_user)
 
-        return db_obj
+        return new_user
 
     def update(
         self, db: Session, user: User, data_to_be_updated: schema.UserUpdate | dict
@@ -74,14 +78,12 @@ class UserDB:
         Returns:
             User: 수정된 user 객체
         """
-        obj_data = jsonable_encoder(user)
-
         if isinstance(data_to_be_updated, dict):
             data_to_be_updated = data_to_be_updated
         else:
             data_to_be_updated = data_to_be_updated.dict(exclude_unset=True)
 
-        for field in obj_data:
+        for field in jsonable_encoder(user):
             if field in data_to_be_updated:
                 setattr(user, field, data_to_be_updated[field])
 

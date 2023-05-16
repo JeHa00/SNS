@@ -39,6 +39,7 @@ markers = [
 
 [tool.poetry.group.dev.dependencies]
 black = "^23.1.0"
+pre-commit = "^3.2.2"
 
 [build-system]
 requires = ["poetry-core"]

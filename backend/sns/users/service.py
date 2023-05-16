@@ -52,7 +52,7 @@ class UserService:
         return encoded_jwt
 
     def verify_password(cls, plain_password: str, hashed_password: str) -> bool:
-        """plain_password가 hash 화되었을 때 hashed_password와 일치하는지 판단한다.
+        """plain_password가 암호화되었을 때 hashed_password와 일치하는지 판단한다.
 
         Args:
             plain_password (str): 로그인 시 입력하는 패스워드
@@ -102,8 +102,8 @@ class UserService:
 
     def send_verification_email(
         self,
-        email: str,
         db: Session,
+        email: str,
         background_tasks: BackgroundTasks,
     ) -> None:
         """입력 받은 email 주소로 이메일 인증 메일을 보낸다.
@@ -145,22 +145,22 @@ class UserService:
         Raises:
             HTTPException (500 INTERNAL SERVER ERROR): 이메일 전송과정에서 문제가 생기면 에러를 발생시킨다.
         """
-        # try:
-        temporary_password = secrets.token_urlsafe(8)  # 패스워드의 최소 길이 8
-        selected_user = self.get_user(db, email=email)
-        hashed_password = self.get_password_hash(temporary_password)
+        try:
+            temporary_password = secrets.token_urlsafe(8)  # 패스워드의 최소 길이 8
+            selected_user = self.get_user(db, email=email)
+            hashed_password = self.get_password_hash(temporary_password)
 
-        self.update(
-            db, user=selected_user, data_to_be_updated={"password": hashed_password}
-        )
+            self.update(
+                db, user=selected_user, data_to_be_updated={"password": hashed_password}
+            )
 
-        data = {"email_to": email, "password": temporary_password}
-        background_tasks.add_task(email_client.send_reset_password_email, **data)
-        # except Exception:
-        #     raise HTTPException(
-        #         status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-        #         detail="이메일 발송 과정에서 에러가 발생했습니다. 다시 시도하세요.",
-        #     )
+            data = {"email_to": email, "password": temporary_password}
+            background_tasks.add_task(email_client.send_reset_password_email, **data)
+        except Exception:
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="이메일 발송 과정에서 에러가 발생했습니다. 다시 시도하세요.",
+            )
 
     @staticmethod
     def get_current_user(
@@ -243,7 +243,7 @@ class UserService:
             user = user_crud.get_user(db, verification_code=kwargs["verification_code"])
 
         if user is None:
-            raise HTTPException(status_code=400, detail="해당되는 유저를 찾을 수 없습니다.")
+            raise HTTPException(status_code=404, detail="해당되는 유저를 찾을 수 없습니다.")
 
         if len(kwargs) == 1:
             return user
