@@ -200,8 +200,9 @@ class UserService:
 
         return user
 
+    @staticmethod
     def get_current_user_verified(
-        self, current_user: User = Depends(get_current_user)
+        current_user: User = Depends(get_current_user),
     ) -> User:
         """인증된 현재 유저 정보를 반환한다.
 
@@ -209,14 +210,19 @@ class UserService:
             current_user (Depends): 현재 유저 정보
 
         Raises:
-            HTTPException: 인증되지 않을 경우 발생
+            HTTPException (403 FORBIDDEN): user가 이메일 인증이 완료되지 않으면 발생
 
         Returns:
             User: 인증된 user 정보
         """
 
-        if self.is_verified(current_user):
-            return current_user
+        if not current_user.verified:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="인증 완료되지 못한 이메일입니다. 먼저 이메일 인증을 완료하세요.",
+            )
+
+        return current_user
 
     def get_user(self, db: Session, **kwargs) -> User:
         """입력 받은 정보를 UserDB class에 전달하여 유저 정보를 조회한다.
@@ -326,6 +332,42 @@ class UserService:
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 detail="계정 삭제를 실패하였습니다.",
             )
+
+    def signup(
+        self,
+        db: Session,
+        background_tasks: BackgroundTasks,
+        data_for_signup: schema.UserCreate,
+    ) -> None:
+        """email과 password로 새 user를 등록한다.
+
+        Args:
+
+        - data_for_signup (schema.UserCreate) : 등록할 email과 password 정보
+
+        Raises:
+
+        - HTTPException (403 FORBIDDEN): 다음 2가지 경우에 발생한다.
+            - 회원 가입 시 입력한 이메일이 이미 인증되었을 때
+            - 이미 등록은 되었고, 인증은 안되었을 때
+        - HTTPException (500 INTERNAL SERVER ERROR): 다음 2가지 경우에 발생한다.
+            - 유저 생성에 실패했을 때
+            - 이메일 인증을 위한 이메일 발송에 실패했을 때
+        """
+        user = self.get_user(db, email=data_for_signup.email)
+
+        if user:
+            if self.is_verified(user):
+                raise HTTPException(status_code=403, detail="이미 인증된 이메일입니다.")
+            else:
+                raise HTTPException(status_code=403, detail="이미 등록되었고, 미인증인 유저입니다.")
+
+        self.create(db, data_for_signup)  # 미인증 유저 생성
+
+        # 이메일 인증 메일 발송하기
+        self.send_verification_email(
+            db, email=data_for_signup.email, background_tasks=background_tasks
+        )
 
 
 user_service = UserService()

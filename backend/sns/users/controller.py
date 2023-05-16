@@ -3,7 +3,7 @@ from starlette.background import BackgroundTasks
 from sqlalchemy.orm import Session
 
 from sns.common.session import db
-from sns.users.service import user_service
+from sns.users.service import UserService
 from sns.users.schema import (
     UserPasswordUpdate,
     UserCreate,
@@ -22,6 +22,7 @@ router = APIRouter()
 def signup(
     data_for_signup: UserCreate,
     background_tasks: BackgroundTasks,
+    user_service=Depends(UserService),
     db: Session = Depends(db.get_db),
 ):
     """email과 password로 새 user를 등록한다.
@@ -44,27 +45,18 @@ def signup(
 
     - Msg: 이메일 전송 성공 유무 메세지 반환
     """
-    user = user_service.get_user(db, email=data_for_signup.email)
-
-    if user:
-        if user_service.is_verified(user):
-            raise HTTPException(status_code=403, detail="이미 인증된 이메일입니다.")
-        else:
-            raise HTTPException(status_code=403, detail="이미 등록되었고, 미인증인 유저입니다.")
-
-    user_service.create(db, data_for_signup)  # 미인증 유저 생성
-
-    # 이메일 인증 메일 발송하기
-    user_service.send_verification_email(
-        db, email=data_for_signup.email, background_tasks=background_tasks
-    )
+    user_service.signup(db, background_tasks, data_for_signup)
     return {"status": "success", "msg": "이메일 전송이 완료되었습니다."}
 
 
 @router.patch(
     "/verification-email/{code}", response_model=Msg, status_code=status.HTTP_200_OK
 )
-def verify_email(code: str, db: Session = Depends(db.get_db)):
+def verify_email(
+    code: str,
+    user_service=Depends(UserService),
+    db: Session = Depends(db.get_db),
+):
     """code 정보를 받아 user를 조회하여 해당 user의 인증 상태를 True로 바꾼다.
 
     Args:
@@ -81,7 +73,6 @@ def verify_email(code: str, db: Session = Depends(db.get_db)):
 
     - Msg: 계정 인증 완료 메세지
     """
-    status.HTTP_404_NOT_FOUND
     user = user_service.get_user(db, verification_code=code)
     user_service.update(db, user=user, data_to_be_updated={"verified": True})
     return {"status": "success", "msg": "이메일 인증이 완료되었습니다."}
@@ -89,7 +80,10 @@ def verify_email(code: str, db: Session = Depends(db.get_db)):
 
 @router.post("/login", response_model=Token, status_code=status.HTTP_200_OK)
 def login(
-    email: str = Body(...), password: str = Body(...), db: Session = Depends(db.get_db)
+    email: str = Body(...),
+    password: str = Body(...),
+    user_service=Depends(UserService),
+    db: Session = Depends(db.get_db),
 ):
     """login 정보를 입력하면 access token을 발행한다.
 
@@ -118,7 +112,8 @@ def login(
 @router.post("/password-reset", response_model=Msg, status_code=status.HTTP_200_OK)
 def reset_password(
     email: str = Body(...),
-    background_tasks: BackgroundTasks = BackgroundTasks(),
+    user_service=Depends(UserService),
+    background_tasks=BackgroundTasks(),
     db: Session = Depends(db.get_db),
 ):
     """로그인 시 비밀번호를 잊었을 때, 입력한 이메일 주소로 임시 비밀번호를 보낸다.
@@ -148,7 +143,8 @@ def reset_password(
 @router.patch("/password-change", response_model=Msg, status_code=status.HTTP_200_OK)
 def change_password(
     password_data: UserPasswordUpdate,
-    current_user: UserBase = Depends(user_service.get_current_user_verified),
+    user_service=Depends(UserService),
+    current_user: UserBase = Depends(UserService.get_current_user_verified),
     db: Session = Depends(db.get_db),
 ):
     """임시 비밀번호로 로그인 후, 다른 패스워드로 변경한다.
@@ -162,6 +158,7 @@ def change_password(
 
     Raises:
 
+    - HTTPException (403 FORBIDDEN): user가 이메일 인증이 완료되지 않으면 발생
     - HTTPException (404 NOT FOUND): email에 해당하는 user를 찾지 못할 때 발생
     - HTTPException (400 BAD REQUEST): 입력한 비밀번호가 회원가입 시 입력한 비밀번호와 다를 때 발생
     - HTTPException (500 INTERNAL SERVER ERROR): 비밀번호 변경에 실패했을 때 발생한다.
@@ -187,7 +184,8 @@ def change_password(
 )
 def read_user(
     user_id: int,
-    current_user: UserBase = Depends(user_service.get_current_user_verified),
+    user_service=Depends(UserService),
+    current_user: UserBase = Depends(UserService.get_current_user_verified),
     db: Session = Depends(db.get_db),
 ):
     """user_id가 current_user와의 일치 유무에 따라 다른 user 정보를 반환한다.
@@ -199,6 +197,7 @@ def read_user(
 
     Raises:
 
+    - HTTPException (403 FORBIDDEN): user가 이메일 인증이 완료되지 않으면 발생
     - HTTPException (404 NOT FOUND): email에 해당하는 user를 찾지 못할 때 발생
 
     Returns:
@@ -223,7 +222,8 @@ def read_user(
 def update_user(
     user_id: int,
     data_to_be_updated: UserUpdate,
-    current_user: UserBase = Depends(user_service.get_current_user_verified),
+    user_service=Depends(UserService),
+    current_user: UserBase = Depends(UserService.get_current_user_verified),
     db: Session = Depends(db.get_db),
 ):
     """user_id와 현재 user id와 같으면 유저 자신의 정보를 수정한다.
@@ -236,6 +236,7 @@ def update_user(
 
     Raises:
 
+    - HTTPException (403 FORBIDDEN): user가 이메일 인증이 완료되지 않으면 발생
     - HTTPException (404 NOT FOUND): email에 해당하는 user를 찾지 못할 때 발생
     - HTTPException (500 INTERNAL SERVER ERROR): 유저 정보 변경에 실패했을 때 발생
     - HTTPException (401 UNAUTHORIZED): 변경 권한이 없음을 나타내는 에러
@@ -257,7 +258,8 @@ def update_user(
 @router.delete("/users/{user_id}", response_model=Msg, status_code=status.HTTP_200_OK)
 def delete_user(
     user_id: int,
-    current_user: UserBase = Depends(user_service.get_current_user_verified),
+    user_service=Depends(UserService),
+    current_user: UserBase = Depends(UserService.get_current_user_verified),
     db: Session = Depends(db.get_db),
 ):
     """user_id와 현재 user id와 같으면 유저 자신의 계정을 삭제한다.
@@ -269,6 +271,7 @@ def delete_user(
 
     Raises:
 
+    - HTTPException (403 FORBIDDEN): user가 이메일 인증이 완료되지 않으면 발생
     - HTTPException (404 NOT FOUND): email에 해당하는 user를 찾지 못할 때 발생
     - HTTPException (500 INTERNAL SERVER ERROR): 유저 정보 삭제에 실패했을 때 발생
     - HTTPException (401 UNAUTHORIZED): 삭제 권한이 없음을 나타내는 에러
