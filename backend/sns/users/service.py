@@ -283,7 +283,7 @@ class UserService:
             user (User): user 정보가 존재하는지 판단
 
         Raises:
-            HTTPException: _description_
+            HTTPException (404 NOT FOUND): email에 해당하는 user를 찾지 못할 때 발생
         """
         if user is None:
             raise HTTPException(
