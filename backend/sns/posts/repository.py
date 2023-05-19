@@ -8,7 +8,11 @@ from sns.posts.model import Post
 
 
 class PostDB:
-    def get_post(self, db: Session, post_id: int) -> Post:
+    def get_post(
+        self,
+        db: Session,
+        post_id: int,
+    ) -> Post:
         """post_id에 해당되는 post 정보를 조회한다.
 
         Args:
@@ -21,7 +25,11 @@ class PostDB:
         return post
 
     def get_multi_posts(
-        self, db: Session, writer_id: int, skip: int = 0, limit: int = 10
+        self,
+        db: Session,
+        writer_id: int,
+        skip: int = 0,
+        limit: int = 10,
     ) -> List[Post]:
         """writer_id 값에 해당되는 user가 작성한 여러 post들을 조회하여 생성날짜를 기준으로 최신순으로 정렬하여 반환한다.
 
@@ -44,7 +52,12 @@ class PostDB:
 
         return query.all()
 
-    def create(self, db: Session, post_data: PostCreate, writer_id: int) -> Post:
+    def create(
+        self,
+        db: Session,
+        post_data: PostCreate,
+        writer_id: int,
+    ) -> Post:
         """주어진 post_data, writer_id 정보를 가지는 post를 생성한다.
 
         Args:
@@ -54,7 +67,10 @@ class PostDB:
         Returns:
             Post: 생성된 post 정보를 반환
         """
-        new_post = Post(content=post_data.content, writer_id=writer_id)
+        new_post = Post(
+            content=post_data.content,
+            writer_id=writer_id,
+        )
 
         db.add(new_post)
         db.commit()
@@ -63,7 +79,10 @@ class PostDB:
         return new_post
 
     def update(
-        self, db: Session, post_data: Post, data_to_be_updated: PostUpdate
+        self,
+        db: Session,
+        post_data: Post,
+        data_to_be_updated: PostUpdate,
     ) -> Post:
         """post_info에 해당되는 Post 객체를 data_to_be_updated 정보를 가지도록 수정한다.
 
@@ -89,7 +108,11 @@ class PostDB:
 
         return post_data
 
-    def remove(self, db: Session, post_to_be_deleted: Post) -> bool:
+    def remove(
+        self,
+        db: Session,
+        post_to_be_deleted: Post,
+    ) -> bool:
         """post_to_be_deleted 해당되는 post 객체를 삭제한다.
 
         Args:

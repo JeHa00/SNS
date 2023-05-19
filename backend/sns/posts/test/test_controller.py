@@ -16,7 +16,10 @@ from sns.posts import model
 
 
 @pytest.mark.read_post
-def test_read_post_existed(client: TestClient, fake_multi_posts: None):
+def test_read_post_existed(
+    client: TestClient,
+    fake_multi_posts: None,
+):
     total_post_count = 100
     for post_id in range(1, total_post_count + 1):
         response = client.get(f"{settings.API_V1_PREFIX}/posts/{post_id}")
@@ -28,7 +31,10 @@ def test_read_post_existed(client: TestClient, fake_multi_posts: None):
 
 
 @pytest.mark.read_post
-def test_read_post_not_existed(client: TestClient, fake_post: model.Post):
+def test_read_post_not_existed(
+    client: TestClient,
+    fake_post: model.Post,
+):
     post_id = randint(fake_post.id + 1, 100)
     response = client.get(f"{settings.API_V1_PREFIX}/posts/{post_id}")
     result_msg = response.json()["detail"]
@@ -38,7 +44,9 @@ def test_read_post_not_existed(client: TestClient, fake_post: model.Post):
 
 
 @pytest.mark.read_posts
-def test_read_posts_if_not_registered(client: TestClient):
+def test_read_posts_if_not_registered(
+    client: TestClient,
+):
     # 가짜 유저 id
     user_id = 1
 
@@ -51,7 +59,10 @@ def test_read_posts_if_not_registered(client: TestClient):
 
 
 @pytest.mark.read_posts
-def test_read_posts_if_post_not_exist(client: TestClient, fake_user: Dict):
+def test_read_posts_if_post_not_exist(
+    client: TestClient,
+    fake_user: Dict,
+):
     # 유저 정보
     user = fake_user["user"]
 
@@ -65,7 +76,9 @@ def test_read_posts_if_post_not_exist(client: TestClient, fake_user: Dict):
 
 @pytest.mark.read_posts
 def test_read_posts_if_post_exist(
-    client: TestClient, fake_user: Dict, fake_multi_posts: None
+    client: TestClient,
+    fake_user: Dict,
+    fake_multi_posts: None,
 ):
     # 유저 정보
     user = fake_user["user"]
@@ -81,7 +94,8 @@ def test_read_posts_if_post_exist(
 
 @pytest.mark.create_post
 def test_create_post_if_user_not_registered(
-    client: TestClient, get_user_token_headers_and_login_data: Dict
+    client: TestClient,
+    get_user_token_headers_and_login_data: Dict,
 ):
     # current_user 정보
     headers = get_user_token_headers_and_login_data["headers"]
@@ -133,7 +147,9 @@ def test_create_post_if_unauthorized(
 
 @pytest.mark.create_post
 def test_create_post_if_authorized(
-    client: TestClient, db_session: Session, get_user_token_headers_and_login_data: Dict
+    client: TestClient,
+    db_session: Session,
+    get_user_token_headers_and_login_data: Dict,
 ):
     # current_user 정보
     headers = get_user_token_headers_and_login_data["headers"]
@@ -243,7 +259,9 @@ def test_update_post_if_user_id_is_not_same_as_user_logged_in(
 
 @pytest.mark.update_post
 def test_update_post_if_post_not_exist(
-    client: TestClient, db_session: Session, get_user_token_headers_and_login_data: Dict
+    client: TestClient,
+    db_session: Session,
+    get_user_token_headers_and_login_data: Dict,
 ):
     # current_user 정보
     headers = get_user_token_headers_and_login_data["headers"]
@@ -344,7 +362,8 @@ def test_delete_post_if_authorized(
 
     # 글 삭제 및 결과
     response = client.delete(
-        f"{settings.API_V1_PREFIX}/users/{user.id}/posts/{post_id}", headers=headers
+        f"{settings.API_V1_PREFIX}/users/{user.id}/posts/{post_id}",
+        headers=headers,
     )
     result_status_text = response.json()["status"]
     result_msg = response.json()["msg"]
@@ -375,7 +394,8 @@ def test_delete_post_if_not_authorized(
 
     # 글 삭제 및 결과
     response = client.delete(
-        f"{settings.API_V1_PREFIX}/users/{user.id}/posts/{post_id}", headers=headers
+        f"{settings.API_V1_PREFIX}/users/{user.id}/posts/{post_id}",
+        headers=headers,
     )
     result_msg = response.json()["detail"]
 
