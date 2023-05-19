@@ -40,7 +40,11 @@ class UserDB:
 
         return user
 
-    def create(self, db: Session, data_for_signup: schema.UserCreate) -> User:
+    def create(
+        self,
+        db: Session,
+        data_for_signup: schema.UserCreate,
+    ) -> User:
         """받은 정보로 새 유저를 등록한다.
 
         Args:
@@ -66,7 +70,10 @@ class UserDB:
         return new_user
 
     def update(
-        self, db: Session, user: User, data_to_be_updated: schema.UserUpdate | dict
+        self,
+        db: Session,
+        user: User,
+        data_to_be_updated: schema.UserUpdate | dict,
     ) -> User:
         """user 정보를 수정한다.
 
@@ -93,7 +100,11 @@ class UserDB:
 
         return user
 
-    def remove(self, db: Session, user_to_be_deleted: User | int) -> dict:
+    def remove(
+        self,
+        db: Session,
+        user_to_be_deleted: User | int,
+    ) -> dict:
         """전달받은 해당 user를 삭제한다.
 
         Args:

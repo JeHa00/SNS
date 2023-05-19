@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, status, HTTPException, Body
+from fastapi import APIRouter, Depends, status, Body
 from starlette.background import BackgroundTasks
 from sqlalchemy.orm import Session
 
@@ -45,12 +45,18 @@ def signup(
 
     - Msg: 이메일 전송 성공 유무 메세지 반환
     """
-    user_service.signup(db, background_tasks, data_for_signup)
+    user_service.signup(
+        db,
+        background_tasks,
+        data_for_signup,
+    )
     return {"status": "success", "msg": "이메일 전송이 완료되었습니다."}
 
 
 @router.patch(
-    "/verification-email/{code}", response_model=Msg, status_code=status.HTTP_200_OK
+    "/verification-email/{code}",
+    response_model=Msg,
+    status_code=status.HTTP_200_OK,
 )
 def verify_email(
     code: str,
@@ -73,8 +79,10 @@ def verify_email(
 
     - Msg: 계정 인증 완료 메세지
     """
-    user = user_service.get_user(db, verification_code=code)
-    user_service.update(db, user=user, data_to_be_updated={"verified": True})
+    user_service.verify_email(
+        db,
+        code,
+    )
     return {"status": "success", "msg": "이메일 인증이 완료되었습니다."}
 
 
@@ -102,11 +110,12 @@ def login(
 
     - dict: 입력한 정보가 정확하면 access token을 발행한다.
     """
-    user = user_service.get_user(db, email=email, password=password)
-
-    if user_service.is_verified(user):
-        access_token = user_service.create_access_token(data={"sub": email})
-        return {"access_token": access_token, "token_type": "Bearer"}
+    access_token = user_service.login(
+        db,
+        email,
+        password,
+    )
+    return {"access_token": access_token, "token_type": "Bearer"}
 
 
 @router.post("/password-reset", response_model=Msg, status_code=status.HTTP_200_OK)
@@ -133,11 +142,12 @@ def reset_password(
 
     - Msg: 비밀번호 초기화 이메일 송신 완료 메세지
     """
-    user = user_service.get_user(db, email=email)
-
-    if user_service.is_verified(user):
-        user_service.send_password_reset_email(db, email, background_tasks)
-        return {"status": "success", "msg": "비밀번호 초기화를 위한 이메일 송신이 완료되었습니다."}
+    user_service.reset_password(
+        db,
+        email,
+        background_tasks,
+    )
+    return {"status": "success", "msg": "비밀번호 초기화를 위한 이메일 송신이 완료되었습니다."}
 
 
 @router.patch("/password-change", response_model=Msg, status_code=status.HTTP_200_OK)
@@ -167,15 +177,12 @@ def change_password(
 
      - Msg: 실행 완료 메세지
     """
-    user = user_service.get_user(db, email=current_user.email)
-
-    if user_service.verify_password(password_data.current_password, user.password):
-        user_service.update(
-            db,
-            user,
-            {"password": user_service.get_password_hash(password_data.new_password)},
-        )
-        return {"status": "success", "msg": "비밀번호가 변경되었습니다."}
+    user_service.change_password(
+        db,
+        password_data,
+        current_user,
+    )
+    return {"status": "success", "msg": "비밀번호가 변경되었습니다."}
 
 
 @router.get(
@@ -188,7 +195,10 @@ def read_user(
     current_user: UserBase = Depends(UserService.get_current_user_verified),
     db: Session = Depends(db.get_db),
 ):
-    """user_id가 current_user와의 일치 유무에 따라 다른 user 정보를 반환한다.
+    """user_id가 current_user와의 일치 유무에 따라 user 정보를 반환한다.
+
+    - user_id가 current_user와 동일하면 email을 포함한 current_user의 정보를 전달한다.
+    - user_id와 current_user가 다르면 user_id에 해당되는 name과 profile text를 전달한다.
 
     Args:
 
@@ -202,22 +212,20 @@ def read_user(
 
     Returns:
 
-    - User or dict: 유저 정보
+    - User or dict: 조회된 유저 정보
     """
-    selected_user = user_service.get_user(db, user_id=user_id)
-    if selected_user:
-        if selected_user.email == current_user.email:
-            return selected_user
-        else:
-            data = {
-                "name": selected_user.name,
-                "profile_text": selected_user.profile_text,
-            }
-            return data
+    user_data = user_service.read_user(
+        db,
+        user_id,
+        current_user,
+    )
+    return user_data
 
 
 @router.patch(
-    "/users/{user_id}", response_model=UserRead, status_code=status.HTTP_200_OK
+    "/users/{user_id}",
+    response_model=UserRead,
+    status_code=status.HTTP_200_OK,
 )
 def update_user(
     user_id: int,
@@ -225,7 +233,7 @@ def update_user(
     user_service=Depends(UserService),
     current_user: UserBase = Depends(UserService.get_current_user_verified),
     db: Session = Depends(db.get_db),
-):
+) -> UserRead:
     """user_id와 현재 user id와 같으면 유저 자신의 정보를 수정한다.
 
     Args:
@@ -243,16 +251,15 @@ def update_user(
 
     Returns:
 
-    - Msg: 실행 완료 메세지
+    - UserRead: 업데이트된 user 정보를 반환
     """
-    selected_user = user_service.get_user(db, user_id=user_id)
-    if selected_user.email == current_user.email:
-        user = user_service.update(db, selected_user, data_to_be_updated)
-        return user
-    else:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED, detail="수정할 권한이 없습니다."
-        )
+    updated_user = user_service.update_user(
+        db,
+        user_id,
+        data_to_be_updated,
+        current_user,
+    )
+    return updated_user
 
 
 @router.delete("/users/{user_id}", response_model=Msg, status_code=status.HTTP_200_OK)
@@ -280,11 +287,9 @@ def delete_user(
 
     - Msg: 계정 삭제 완료 메세지
     """
-    selected_user = user_service.get_user(db, user_id=user_id)
-    if selected_user.email == current_user.email:
-        user_service.remove(db, selected_user)
-        return {"status": "success", "msg": "계정이 삭제되었습니다."}
-    else:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED, detail="삭제할 권한이 없습니다."
-        )
+    user_service.delete_user(
+        db,
+        user_id,
+        current_user,
+    )
+    return {"status": "success", "msg": "계정이 삭제되었습니다."}
