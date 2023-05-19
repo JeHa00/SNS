@@ -742,7 +742,10 @@ class UserService:
         self.check_if_user_is_none(selected_user)
 
         if selected_user.email == current_user.email:
-            self.remove(db, selected_user)
+            self.remove(
+                db,
+                selected_user,
+            )
         else:
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
