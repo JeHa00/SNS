@@ -14,3 +14,6 @@ class User(Base, BaseMixin):
     verified = Column(Boolean, default=False)
     verification_code = Column(String(20), nullable=True, unique=True)
     posts = relationship("Post", back_populates="writer", cascade="all, delete-orphan")
+
+    def __repr__(self) -> str:
+        return f"User(id={self.id}, email={self.email}, name={self.name})"

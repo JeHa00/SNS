@@ -1,7 +1,6 @@
 from fastapi import FastAPI
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker, close_all_sessions
-
 import logging
 
 from sns.common.config import settings
@@ -11,10 +10,7 @@ class SQLAlchemy:
     def __init__(self, app: FastAPI = None, **kwargs):
         self._engine = None
         self._session = None
-        self._app = None
-        if app is not None:
-            self._app = app
-            self.init_app(app=self._app, **kwargs)
+        self._app = app
 
     def init_app(self, app: FastAPI, **kwargs):
         """
@@ -27,11 +23,13 @@ class SQLAlchemy:
                 host=settings.DB_HOST,
                 port=settings.DB_PORT,
                 name=settings.DB_NAME,
-            )
+            ),
         )
 
         self._session = sessionmaker(
-            autocommit=False, autoflush=False, bind=self._engine
+            autocommit=False,
+            autoflush=False,
+            bind=self._engine,
         )
 
         @app.on_event("startup")

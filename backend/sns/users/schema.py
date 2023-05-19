@@ -29,7 +29,11 @@ class UserCreate(UserBase):
     verified: bool = False
 
     @validator("password_confirm")
-    def passwords_match(cls, value, values):
+    def passwords_match(
+        cls,
+        value,
+        values,
+    ):
         if "password" in values and value != values["password"]:
             raise ValueError("두 비밀번호가 일치하지 않습니다.")
         return value
@@ -50,7 +54,11 @@ class UserPasswordUpdate(BaseModel):
     new_password: str = Field(min_length=8)
 
     @validator("new_password")
-    def passwords_update_match(cls, value, values):
+    def passwords_update_match(
+        cls,
+        value,
+        values,
+    ):
         if "current_password" in values and value == values["current_password"]:
             raise ValueError("새로 입력한 패스워드가 기존 패스워드와 동일합니다.")
         return value

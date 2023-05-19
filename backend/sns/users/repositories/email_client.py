@@ -13,7 +13,12 @@ class EmailClient:
         self._password = None  # 임시 비밀번호
         self._url = None  # 이메일 인증 코드 url
 
-    def make_massage(self, email_to: str, template_name: str, **kwargs) -> dict:
+    def make_massage(
+        self,
+        email_to: str,
+        template_name: str,
+        **kwargs,
+    ) -> dict:
         """발송될 이메일 메세지와 이메일 템플릿 종류에 따른 렌더링 데이터를 생성한다.
 
         Args:
@@ -39,23 +44,28 @@ class EmailClient:
         if "url" in kwargs:
             self._url = kwargs.get("url")
             message.add_header(
-                "Subject", f"{settings.PROJECT_NAME} - New account for user"
+                "Subject",
+                f"{settings.PROJECT_NAME} - New account for user",
             )
             context.update({"link": self._url})
         else:
             self._password = kwargs.get("password")
             message.add_header(
-                "Subject", f"{settings.PROJECT_NAME} - Reset password for user"
+                "Subject",
+                f"{settings.PROJECT_NAME} - Reset password for user",
             )
             context.update({"password": self._password})
 
         if not (self.get_temporary_password or self.get_verification_url):
             raise ValueError("임시 비밀번호 또는 이메일 인증 url 값이 존재하지 않습니다.")
 
-        data = {"message": message, "context": context}
-        return data
+        return {"message": message, "context": context}
 
-    def send_email(self, message: EmailMessage, context: dict) -> None:
+    def send_email(
+        self,
+        message: EmailMessage,
+        context: dict,
+    ) -> None:
         """email message를 받아 해당 정보로 발송한다.
 
         Args:
@@ -70,7 +80,11 @@ class EmailClient:
             smtp.login(settings.EMAIL_ADDRESS, settings.EMAIL_PASSWORD)
             smtp.send_message(message)
 
-    def send_new_account_email(self, email_to: str, url: str) -> None:
+    def send_new_account_email(
+        self,
+        email_to: str,
+        url: str,
+    ) -> None:
         """새로운 계정 생성 이메일 메세지를 생성하여 send_email에 전달한다.
 
         Args:
@@ -80,7 +94,11 @@ class EmailClient:
         data = self.make_massage(email_to, "new_account", url=url)
         self.send_email(**data)
 
-    def send_reset_password_email(self, email_to: str, password: str) -> None:
+    def send_reset_password_email(
+        self,
+        email_to: str,
+        password: str,
+    ) -> None:
         """비밀번호 초기화 이메일 메세지를 생성하여 send_email에 전달한다.
 
         Args:
@@ -90,7 +108,9 @@ class EmailClient:
         data = self.make_massage(email_to, "reset_password", password=password)
         self.send_email(**data)
 
-    def get_verification_url(self) -> str:
+    def get_verification_url(
+        self,
+    ) -> str:
         """이메일 인증 url를 얻는다.
 
         Returns:
@@ -98,7 +118,9 @@ class EmailClient:
         """
         return self._url
 
-    def get_temporary_password(self) -> str:
+    def get_temporary_password(
+        self,
+    ) -> str:
         """임시 비밀번호를 얻는다.
 
         Returns:
