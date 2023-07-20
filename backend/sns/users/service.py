@@ -345,9 +345,9 @@ class UserService:
     def create(
         self,
         db: Session,
-        data_for_signup: schema.UserCreate,
+        data_for_signup: dict,
     ) -> User:
-        """user_info로 받은 정보를 UserDB class에 전달하여 새로운 user를 생성한다.
+        """data_for_signup로 받은 정보를 UserDB class에 전달하여 새로운 user를 생성한다.
             user 생성 시 패스워드는 암호화하여 저장하기 위해 암호화된 패스워드로 변경한 후 infrastructure layer에 전달한다.
 
         Args:
@@ -361,13 +361,17 @@ class UserService:
             User: 생성된 user 객체
         """
         # password 암호화
-        data_for_signup.password = self.get_password_hash(data_for_signup.password)
-        data_for_signup.password_confirm = data_for_signup.password
+        data_for_signup["password"] = self.get_password_hash(
+            data_for_signup.get("password"),
+        )
+
+        data_for_signup.pop("password_confirm")  # password_confirm key 제거
+        data_for_signup[
+            "name"
+        ] = f"user-{secrets.token_urlsafe(8)}"  # minimum name length
+
         try:
-            new_user = user_crud.create(
-                db,
-                data_for_signup=data_for_signup,
-            )
+            new_user = user_crud.create(db, **data_for_signup)
             return new_user
         except Exception:
             raise HTTPException(
@@ -379,7 +383,7 @@ class UserService:
         self,
         db: Session,
         user: User,
-        data_to_be_updated: schema.UserUpdate | dict,
+        data_to_be_updated: dict,
     ) -> User:
         """user 정보와 업데이트할 정보를 UserDB class에 전달하여 해당 user 정보를 수정한다.
 
@@ -398,7 +402,7 @@ class UserService:
             updated_user = user_crud.update(
                 db,
                 user,
-                data_to_be_updated=data_to_be_updated,
+                **data_to_be_updated,
             )
             return updated_user
         except Exception:
@@ -440,7 +444,7 @@ class UserService:
         self,
         db: Session,
         background_tasks: BackgroundTasks,
-        data_for_signup: schema.UserCreate,
+        data_for_signup: dict,
     ) -> None:
         """email과 password로 새 user를 등록한다.
 
@@ -459,7 +463,7 @@ class UserService:
         """
         user = self.get_user(
             db,
-            email=data_for_signup.email,
+            email=data_for_signup.get("email"),
         )
 
         if user:
@@ -482,7 +486,7 @@ class UserService:
         # 이메일 인증 메일 발송하기
         self.send_verification_email(
             db,
-            email=data_for_signup.email,
+            email=data_for_signup.get("email"),
             background_tasks=background_tasks,
         )
 

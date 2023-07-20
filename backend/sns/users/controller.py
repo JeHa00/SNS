@@ -2,6 +2,7 @@ from fastapi import APIRouter, Depends, status, Body
 from starlette.background import BackgroundTasks
 from sqlalchemy.orm import Session
 
+
 from sns.common.session import db
 from sns.users.service import UserService
 from sns.users.schema import (
@@ -48,7 +49,7 @@ def signup(
     user_service.signup(
         db,
         background_tasks,
-        data_for_signup,
+        data_for_signup.dict(),
     )
     return {"status": "success", "msg": "이메일 전송이 완료되었습니다."}
 
@@ -256,7 +257,7 @@ def update_user(
     updated_user = user_service.update_user(
         db,
         user_id,
-        data_to_be_updated,
+        data_to_be_updated.dict(exclude_unset=True),
         current_user,
     )
     return updated_user
