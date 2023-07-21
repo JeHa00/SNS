@@ -19,10 +19,9 @@ def fake_user(client: TestClient, db_session: Session):
     signup_data = UserCreate(
         email=random_email(), password=password, password_confirm=password
     )
-    login_data = copy.deepcopy(signup_data)
 
-    user = user_service.create(db_session, data_for_signup=signup_data)
-    return {"user": user, "login_data": login_data}
+    user = user_service.create(db_session, signup_data.dict())
+    return {"user": user, "login_data": signup_data}
 
 
 @pytest.fixture(scope="function")
@@ -33,11 +32,11 @@ def get_user_token_headers_and_login_data(
     email = random_email()
     password = random_lower_string(k=8)
     signup_data = UserCreate(email=email, password=password, password_confirm=password)
-    fake_user = user_service.create(db_session, data_for_signup=signup_data)
+    fake_user = user_service.create(db_session, signup_data.dict())
 
     # verified 업데이트
-    info_to_be_updated = UserUpdate(verified=True)
-    user_service.update(db_session, fake_user, info_to_be_updated)
+    data_to_be_updated = UserUpdate(verified=True)
+    user_service.update(db_session, fake_user, data_to_be_updated.dict())
 
     # 로그인
     login_data = {"email": email, "password": password}

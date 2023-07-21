@@ -41,12 +41,10 @@ def test_signup_if_email_is_already_verified(
 
     # verified 정보 업데이트
     data_to_be_updated = UserUpdate(verified=True)
-    user_service.update(db_session, user, data_to_be_updated)
+    user_service.update(db_session, user, data_to_be_updated.dict())
 
     # 회원가입 및 결과
-    response = client.post(
-        f"{settings.API_V1_PREFIX}/signup", json=jsonable_encoder(signup_data)
-    )
+    response = client.post(f"{settings.API_V1_PREFIX}/signup", json=signup_data.dict())
     result_msg = response.json()["detail"]
 
     assert response.status_code == status.HTTP_403_FORBIDDEN
@@ -134,7 +132,7 @@ def test_login_if_user_registered(
 
     # verified 업데이트
     data_to_be_updated = UserUpdate(verified=True)
-    user_service.update(db_session, user, data_to_be_updated)
+    user_service.update(db_session, user, data_to_be_updated.dict())
 
     # 로그인 및 결과
     response = client.post(
@@ -186,8 +184,8 @@ def test_reset_password_if_registered(
     user = fake_user["user"]
 
     # verified 값 true로 변경
-    info_to_be_updated = UserUpdate(verified=True, profile_text=None)
-    user_service.update(db_session, user, info_to_be_updated)
+    data_to_be_updated = UserUpdate(verified=True, profile_text=None)
+    user_service.update(db_session, user, data_to_be_updated.dict())
 
     # 패스워드 초기화 및 결과
     response = client.post(f"{settings.API_V1_PREFIX}/password-reset", json=user.email)
