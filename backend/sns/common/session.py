@@ -7,7 +7,7 @@ from sns.common.config import settings
 
 
 class SQLAlchemy:
-    def __init__(self, app: FastAPI = None, **kwargs):
+    def __init__(self, app: FastAPI, **kwargs):
         self._engine = None
         self._session = None
         self._app = app
@@ -23,11 +23,13 @@ class SQLAlchemy:
                 host=settings.DB_HOST,
                 port=settings.DB_PORT,
                 name=settings.DB_NAME,
-            )
+            ),
         )
 
         self._session = sessionmaker(
-            autocommit=False, autoflush=False, bind=self._engine
+            autocommit=False,
+            autoflush=False,
+            bind=self._engine,
         )
 
         @app.on_event("startup")
