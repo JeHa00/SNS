@@ -1,12 +1,13 @@
 version: "3"
 services:
   db.mysql:
+    container_name: db.mysql
     image: mysql:8.0.32
     command: --authentication_policy=mysql_native_password
     restart: always
     environment:
       MYSQL_ROOT_PASSWORD: a1s2d3f4
-      MYSQL_USER : project
+      MYSQL_USER: project
       MYSQL_PASSWORD: a1s2d3f4
       MYSQL_DATABASE: sns
       TZ: Asia/Seoul
@@ -14,6 +15,8 @@ services:
       - mysql_db:/var/lib/mysql
     ports:
       - 3306:3306
+    expose:
+      - 3306
     healthcheck:
       test:
         [
@@ -25,6 +28,7 @@ services:
       retries: 10
 
   app:
+    container_name: sns
     build: ./backend
     ports:
       - 8000:8000
