@@ -16,7 +16,7 @@ class TokenPayload(BaseModel):
 
 
 class UserBase(BaseModel):
-    email: EmailStr | None
+    email: EmailStr
     verified: bool = True
 
     class Config:
