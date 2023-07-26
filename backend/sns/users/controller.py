@@ -121,9 +121,9 @@ def login(
 
 @router.post("/password-reset", response_model=Msg, status_code=status.HTTP_200_OK)
 def reset_password(
+    background_tasks: BackgroundTasks,
     email: str = Body(...),
     user_service=Depends(UserService),
-    background_tasks=BackgroundTasks(),
     db: Session = Depends(db.get_db),
 ):
     """로그인 시 비밀번호를 잊었을 때, 입력한 이메일 주소로 임시 비밀번호를 보낸다.
