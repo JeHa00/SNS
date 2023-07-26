@@ -1,16 +1,15 @@
 from fastapi import FastAPI
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker, close_all_sessions
-import logging
 
 from sns.common.config import settings
 
 
 class SQLAlchemy:
-    def __init__(self, app: FastAPI, **kwargs):
+    def __init__(self):
         self._engine = None
         self._session = None
-        self._app = app
+        self._app = None
 
     def init_app(self, app: FastAPI, **kwargs):
         """
@@ -35,13 +34,11 @@ class SQLAlchemy:
         @app.on_event("startup")
         def startup():
             self._engine.connect()
-            logging.info("DB connected")
 
         @app.on_event("shutdown")
         def shutdown():
             close_all_sessions()
             self._engine.dispose()
-            logging.info("DB disconnected")
 
     def get_db(self):
         """
@@ -54,10 +51,6 @@ class SQLAlchemy:
             yield db_session
         finally:
             db_session.close()
-
-    @property
-    def session(self):
-        return self.get_db
 
     @property
     def engine(self):
