@@ -44,7 +44,6 @@ class UserRead(UserBase):
 
 
 class UserUpdate(BaseModel):
-    verified: bool = False
     profile_text: str | None
 
 
