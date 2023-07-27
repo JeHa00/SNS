@@ -255,7 +255,7 @@ class UserService:
     @staticmethod
     def get_current_user_verified(
         current_user: User = Depends(get_current_user),
-    ) -> User:
+    ) -> str:
         """인증된 현재 유저 정보를 반환한다.
 
         Args:
@@ -265,7 +265,7 @@ class UserService:
             HTTPException (403 FORBIDDEN): user가 이메일 인증이 완료되지 않으면 발생
 
         Returns:
-            User: 인증된 user 정보
+            str: 인증된 user의 email 정보
         """
 
         if not current_user.verified:
@@ -274,7 +274,7 @@ class UserService:
                 detail="인증 완료되지 못한 이메일입니다. 먼저 이메일 인증을 완료하세요.",
             )
 
-        return current_user
+        return current_user.email
 
     def check_if_user_is_none(self, user: User) -> None:
         """반환된 user 정보가 None이면 404 status error를 발생시킨다.
@@ -390,7 +390,7 @@ class UserService:
         Args:
             db (Session): db session
             user (User): user 정보
-            data_to_be_updated (schema.UserUpdate | dict): 해당 user의 변경될 정보
+            data_to_be_updated (dict): 해당 user의 변경될 정보
 
         Raises:
             HTTPException (500): user 정보 변경 과정에서 문제가 생기면 에러를 발생시킨다.
@@ -475,7 +475,7 @@ class UserService:
             else:
                 raise HTTPException(
                     status_code=403,
-                    detail="이미 등록되었고, 미인증인 유저입니다.",
+                    detail="이미 등록되었지만 미인증인 유저입니다.",
                 )
 
         self.create(
@@ -591,8 +591,9 @@ class UserService:
     def change_password(
         self,
         db: Session,
-        password_data: schema.UserPasswordUpdate,
-        current_user: schema.UserBase,
+        email: str,
+        current_password: str,
+        new_password: str,
     ) -> None:
         """임시 비밀번호로 로그인 후, 다른 패스워드로 변경한다.
             기존 패스워드 정보가 현재 유저의 패스워드 정보와 일치하면 새로운 패스워드로 변경한다.
@@ -600,8 +601,9 @@ class UserService:
 
         Args:
 
-        - password_data (UserPasswordUpdate): 현재 패스워드와 새 패스워드 정보
-        - current_user (UserBase): 현재 유저 정보
+        - email (str): 유저의 email 정보
+        - current_password: 현재 패스워드
+        - new_password: 새 패스워드
 
         Raises:
 
@@ -612,18 +614,16 @@ class UserService:
         """
         user = self.get_user(
             db,
-            email=current_user.email,
+            email=email,
         )
 
         self.check_if_user_is_none(user)
 
         if self.verify_password(
-            password_data.current_password,
+            current_password,
             user.password,
         ):
-            hashed_password = self.get_password_hash(
-                password_data.new_password,
-            )
+            hashed_password = self.get_password_hash(new_password)
             self.update(
                 db,
                 user,
@@ -634,8 +634,8 @@ class UserService:
         self,
         db: Session,
         user_id: int,
-        current_user: schema.UserBase,
-    ) -> User or dict:
+        email: str,
+    ) -> schema.UserRead:
         """user_id가 current_user와의 일치 유무에 따라 다른 user 정보를 반환한다.
         - user_id가 current_user와 동일하면 email을 포함한 current_user의 정보를 전달한다.
         - user_id와 current_user가 다르면 user_id에 해당되는 name과 profile text를 전달한다.
@@ -644,7 +644,7 @@ class UserService:
         Args:
 
         - user_id (int): db에 저장된 user id
-        - current_user (UserBase): 현재 유저 정보
+        - email (str): 유저의 email 정보
 
         Raises:
 
@@ -663,29 +663,32 @@ class UserService:
         self.check_if_user_is_none(selected_user)
 
         if selected_user:
-            if selected_user.email == current_user.email:
-                return selected_user
+            if selected_user.email == email:
+                return schema.UserRead(
+                    email=selected_user.email,
+                    name=selected_user.name,
+                    profile_text=selected_user.profile_text,
+                )
             else:
-                data = {
-                    "name": selected_user.name,
-                    "profile_text": selected_user.profile_text,
-                }
-                return data
+                return schema.UserRead(
+                    name=selected_user.name,
+                    profile_text=selected_user.profile_text,
+                )
 
     def update_user(
         self,
         db: Session,
         user_id: int,
-        data_to_be_updated: schema.UserUpdate,
-        current_user: schema.UserBase,
+        email: str,
+        data_to_be_updated: dict,
     ) -> User:
         """user_id와 현재 user id와 같으면 유저 자신의 정보를 수정한다.
 
         Args:
 
         - user_id (int): db에 저장된 user id
-        - data_to_be_updated (UserUpdate): 업데이트할 user 정보
-        - current_user (UserBase): token에서 가져온 현재 유저 정보
+        - email (str): token에서 가져온 현재 유저의 email 정보
+        - data_to_be_updated (dict): 업데이트할 user 정보
 
         Raises:
 
@@ -705,7 +708,7 @@ class UserService:
 
         self.check_if_user_is_none(selected_user)
 
-        if selected_user.email == current_user.email:
+        if selected_user.email == email:
             updated_user = self.update(
                 db,
                 selected_user,
@@ -722,14 +725,14 @@ class UserService:
         self,
         db: Session,
         user_id: int,
-        current_user: schema.UserBase,
+        email: str,
     ) -> None:
         """user_id와 현재 user id와 같으면 유저 자신의 계정을 삭제한다.
 
         Args:
 
         - user_id (int): db에 저장된 user id
-        - current_user (User, optional): token에서 가져온 현재 유저 정보
+        - email (str): 유저의 이메일 정보
 
         Raises:
 
@@ -745,7 +748,7 @@ class UserService:
 
         self.check_if_user_is_none(selected_user)
 
-        if selected_user.email == current_user.email:
+        if selected_user.email == email:
             self.remove(
                 db,
                 selected_user,

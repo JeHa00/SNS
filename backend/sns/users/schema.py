@@ -38,6 +38,7 @@ class UserCreate(UserBase):
 
 
 class UserRead(UserBase):
+    email: EmailStr | None
     name: str
     profile_text: str | None
 

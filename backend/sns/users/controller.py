@@ -9,7 +9,6 @@ from sns.users.schema import (
     UserPasswordUpdate,
     UserCreate,
     UserUpdate,
-    UserBase,
     UserRead,
     Token,
     Msg,
@@ -23,7 +22,7 @@ router = APIRouter()
 def signup(
     data_for_signup: UserCreate,
     background_tasks: BackgroundTasks,
-    user_service=Depends(UserService),
+    user_service: UserService = Depends(UserService),
     db: Session = Depends(db.get_db),
 ):
     """email과 password로 새 user를 등록한다.
@@ -31,6 +30,9 @@ def signup(
     Args:
 
     - data_for_signup (schema.UserCreate) : 등록할 email과 password 정보
+        - email: 가입 시 입력할 이메일 주소
+        - password: 가입 시 입력할 패스워드
+        - password_confirm: 위 패스워드에 대한 확인 패스워드
 
     Raises:
 
@@ -61,7 +63,7 @@ def signup(
 )
 def verify_email(
     code: str,
-    user_service=Depends(UserService),
+    user_service: UserService = Depends(UserService),
     db: Session = Depends(db.get_db),
 ):
     """code 정보를 받아 user를 조회하여 해당 user의 인증 상태를 True로 바꾼다.
@@ -91,7 +93,7 @@ def verify_email(
 def login(
     email: str = Body(...),
     password: str = Body(...),
-    user_service=Depends(UserService),
+    user_service: UserService = Depends(UserService),
     db: Session = Depends(db.get_db),
 ):
     """login 정보를 입력하면 access token을 발행한다.
@@ -123,7 +125,7 @@ def login(
 def reset_password(
     background_tasks: BackgroundTasks,
     email: str = Body(...),
-    user_service=Depends(UserService),
+    user_service: UserService = Depends(UserService),
     db: Session = Depends(db.get_db),
 ):
     """로그인 시 비밀번호를 잊었을 때, 입력한 이메일 주소로 임시 비밀번호를 보낸다.
@@ -154,18 +156,19 @@ def reset_password(
 @router.patch("/password-change", response_model=Msg, status_code=status.HTTP_200_OK)
 def change_password(
     password_data: UserPasswordUpdate,
-    user_service=Depends(UserService),
-    current_user: UserBase = Depends(UserService.get_current_user_verified),
+    user_service: UserService = Depends(UserService),
+    current_user_email: str = Depends(UserService.get_current_user_verified),
     db: Session = Depends(db.get_db),
 ):
     """임시 비밀번호로 로그인 후, 다른 패스워드로 변경한다.
-        기존 패스워드 정보가 현재 유저의 패스워드 정보와 일치하면 새로운 패스워드로 변경한다.
+        기존 패스워드 정보가 현재 로그인된 유저의 패스워드 정보와 일치하면 새로운 패스워드로 변경한다.
         일치하지 않으면 변경하지 않는다.
 
-     Args:
+    Args:
 
-     - password_data (UserPasswordUpdate): 현재 패스워드와 새 패스워드 정보
-     - current_user (UserBase): 현재 유저 정보
+     - password_data (schema.UserPasswordUpdate): 현재 패스워드와 새 패스워드 정보
+        - current_password: 현재 패스워드
+        - new_password: 새 패스워드
 
     Raises:
 
@@ -180,8 +183,8 @@ def change_password(
     """
     user_service.change_password(
         db,
-        password_data,
-        current_user,
+        current_user_email,
+        **password_data.dict(),
     )
     return {"status": "success", "msg": "비밀번호가 변경되었습니다."}
 
@@ -189,13 +192,15 @@ def change_password(
 @router.get(
     "/users/{user_id}",
     status_code=status.HTTP_200_OK,
+    response_model=UserRead,
+    response_model_exclude_unset=True,
 )
 def read_user(
     user_id: int,
-    user_service=Depends(UserService),
-    current_user: UserBase = Depends(UserService.get_current_user_verified),
+    user_service: UserService = Depends(UserService),
+    current_user_email: str = Depends(UserService.get_current_user_verified),
     db: Session = Depends(db.get_db),
-):
+) -> UserRead:
     """user_id가 current_user와의 일치 유무에 따라 user 정보를 반환한다.
 
     - user_id가 current_user와 동일하면 email을 포함한 current_user의 정보를 전달한다.
@@ -204,7 +209,6 @@ def read_user(
     Args:
 
     - user_id (int): db에 저장된 user id
-    - current_user (UserBase): 현재 유저 정보
 
     Raises:
 
@@ -213,12 +217,19 @@ def read_user(
 
     Returns:
 
-    - User or dict: 조회된 유저 정보
+    - UserRead: 조회된 유저 정보
+        -  user_id와 current_user 가 동일할 때 전달되는 정보
+            - email: 로그인 시 사용하는 email
+            - name: 현재 로그인된 user의 name
+            - profile_text: 현재 로그인된 user의 profile text
+        - user_id와 current_user가 동일하지 않을 때 전달되는 정보
+            - name: user_id에 해당되는 user의 name
+            - profile_text: user_id에 해당되는 user의 profile text
     """
     user_data = user_service.read_user(
         db,
         user_id,
-        current_user,
+        current_user_email,
     )
     return user_data
 
@@ -231,8 +242,8 @@ def read_user(
 def update_user(
     user_id: int,
     data_to_be_updated: UserUpdate,
-    user_service=Depends(UserService),
-    current_user: UserBase = Depends(UserService.get_current_user_verified),
+    user_service: UserService = Depends(UserService),
+    current_user_email: str = Depends(UserService.get_current_user_verified),
     db: Session = Depends(db.get_db),
 ) -> UserRead:
     """user_id와 현재 user id와 같으면 유저 자신의 정보를 수정한다.
@@ -240,8 +251,7 @@ def update_user(
     Args:
 
     - user_id (int): db에 저장된 user id
-    - data_to_be_updated (UserUpdate): 업데이트할 user 정보
-    - current_user (UserBase): token에서 가져온 현재 유저 정보
+    - data_to_be_updated (schema.UserUpdate): 업데이트할 user 정보
 
     Raises:
 
@@ -257,8 +267,8 @@ def update_user(
     updated_user = user_service.update_user(
         db,
         user_id,
+        current_user_email,
         data_to_be_updated.dict(exclude_unset=True),
-        current_user,
     )
     return updated_user
 
@@ -266,8 +276,8 @@ def update_user(
 @router.delete("/users/{user_id}", response_model=Msg, status_code=status.HTTP_200_OK)
 def delete_user(
     user_id: int,
-    user_service=Depends(UserService),
-    current_user: UserBase = Depends(UserService.get_current_user_verified),
+    user_service: UserService = Depends(UserService),
+    current_user_email: str = Depends(UserService.get_current_user_verified),
     db: Session = Depends(db.get_db),
 ):
     """user_id와 현재 user id와 같으면 유저 자신의 계정을 삭제한다.
@@ -275,7 +285,6 @@ def delete_user(
     Args:
 
     - user_id (int): db에 저장된 user id
-    - current_user (User, optional): token에서 가져온 현재 유저 정보
 
     Raises:
 
@@ -291,6 +300,6 @@ def delete_user(
     user_service.delete_user(
         db,
         user_id,
-        current_user,
+        current_user_email,
     )
     return {"status": "success", "msg": "계정이 삭제되었습니다."}
