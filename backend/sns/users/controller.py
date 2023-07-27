@@ -56,7 +56,7 @@ def signup(
     return {"status": "success", "msg": "이메일 전송이 완료되었습니다."}
 
 
-@router.patch(
+@router.post(
     "/verification-email/{code}",
     response_model=Msg,
     status_code=status.HTTP_200_OK,
