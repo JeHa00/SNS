@@ -121,7 +121,7 @@ def login(
     return {"access_token": access_token, "token_type": "Bearer"}
 
 
-@router.post("/password-reset", response_model=Msg, status_code=status.HTTP_200_OK)
+@router.patch("/password-reset", response_model=Msg, status_code=status.HTTP_200_OK)
 def reset_password(
     background_tasks: BackgroundTasks,
     email: str = Body(...),
