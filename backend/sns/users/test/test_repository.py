@@ -20,9 +20,9 @@ def test_create_user_if_success(client: TestClient, db_session: Session):
         email=email,
         password=hashed_password,
         password_confirm=hashed_password,
-        verified=False,
-    )
-    user = user_crud.create(db_session, data_for_signup=data_for_signup)
+    ).dict()
+    data_for_signup.pop("password_confirm")
+    user = user_crud.create(db_session, **data_for_signup)
     assert user.email == email
     assert user.verified is False
     assert hasattr(user, "name")
@@ -56,7 +56,8 @@ def test_create_user_if_password_is_not_same_as_password_confirm(client: TestCli
 
 
 def test_create_user_if_password_length_is_below_minimum_length(
-    client: TestClient, db_session: Session
+    client: TestClient,
+    db_session: Session,
 ):
     email = random_email()
 
@@ -76,11 +77,14 @@ def test_get_user(client: TestClient, db_session: Session):
     email = random_email()
     password = random_lower_string(k=8)
     data_for_signup = UserCreate(
-        email=email, password=password, password_confirm=password
-    )
-    user_created = user_crud.create(db_session, data_for_signup=data_for_signup)
+        email=email,
+        password=password,
+        password_confirm=password,
+    ).dict()
+    data_for_signup.pop("password_confirm")
+    user_created = user_crud.create(db_session, **data_for_signup)
 
-    user_by_only_email = user_crud.get_user(db_session, email=data_for_signup.email)
+    user_by_only_email = user_crud.get_user(db_session, email=data_for_signup["email"])
     assert user_by_only_email == user_created
 
 
@@ -92,8 +96,9 @@ def test_update_user_on_being_verified(fake_user: Dict, db_session: Session):
 
     previous_is_verified = False
 
-    info_to_be_updated = UserUpdate(verified=True, profile_text=None)
-    user_crud.update(db_session, user_01, info_to_be_updated)
+    data_to_be_updated = {"verified": True}
+
+    user_crud.update(db_session, user_01, **data_to_be_updated)
     user_02 = user_crud.get_user(db_session, email=user_01.email)
 
     assert user_02
@@ -106,10 +111,8 @@ def test_update_user_on_password(fake_user: Dict, db_session: Session):
     user_01 = fake_user.get("user")
     old_password = user_01.password
 
-    info_to_be_updated = {
-        "password": user_service.get_password_hash(random_lower_string(k=8))
-    }
-    user_crud.update(db_session, user_01, info_to_be_updated)
+    password_to_be_updated = {"password": random_lower_string(k=8)}
+    user_crud.update(db_session, user_01, **password_to_be_updated)
 
     user_02 = user_crud.get_user(db_session, email=user_01.email)
     new_password = user_02.password
@@ -135,10 +138,8 @@ def test_update_user_on_profile_text(fake_user: Dict, db_session: Session):
     user_01 = fake_user.get("user")
     old_profile_text = user_01.profile_text
 
-    info_to_be_updated = UserUpdate(
-        verified=True, profile_text=f"{random_lower_string(k=10)}"
-    )
-    user_crud.update(db_session, user_01, info_to_be_updated)
+    data_to_be_updated = UserUpdate(profile_text=f"{random_lower_string(k=10)}")
+    user_crud.update(db_session, user_01, **data_to_be_updated.dict())
 
     user_02 = user_crud.get_user(db_session, email=user_01.email)
     new_profile_text = user_02.profile_text
