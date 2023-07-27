@@ -13,7 +13,13 @@ class Base:
 
 class BaseMixin:
     id = Column(Integer, primary_key=True, index=True)
-    created_at = Column(TIMESTAMP, nullable=False, default=func.now())
+    created_at = Column(
+        TIMESTAMP,
+        default=func.now(),
+    )
     updated_at = Column(
-        TIMESTAMP, nullable=True, default=func.now(), onupdate=func.now()
+        TIMESTAMP,
+        nullable=True,
+        default=func.now(),
+        onupdate=func.now(),
     )

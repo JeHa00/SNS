@@ -5,7 +5,7 @@ from sns.common.base import Base, BaseMixin
 
 class User(Base, BaseMixin):
     email = Column(String(50), unique=True)
-    password = Column(String(200), nullable=False)
+    password = Column(String(200))
     name = Column(String(20), unique=True)
     profile_text = Column(String(300), nullable=True)
     profile_image_name = Column(String(50), nullable=True)
