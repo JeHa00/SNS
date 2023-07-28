@@ -274,7 +274,7 @@ class UserService:
                 detail="인증 완료되지 못한 이메일입니다. 먼저 이메일 인증을 완료하세요.",
             )
 
-        return current_user.email
+        return current_user
 
     def check_if_user_is_none(self, user: User) -> None:
         """반환된 user 정보가 None이면 404 status error를 발생시킨다.

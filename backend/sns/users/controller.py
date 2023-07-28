@@ -10,6 +10,7 @@ from sns.users.schema import (
     UserCreate,
     UserUpdate,
     UserRead,
+    UserBase,
     Token,
     Msg,
 )
@@ -157,7 +158,7 @@ def reset_password(
 def change_password(
     password_data: UserPasswordUpdate,
     user_service: UserService = Depends(UserService),
-    current_user_email: str = Depends(UserService.get_current_user_verified),
+    current_user: UserBase = Depends(UserService.get_current_user_verified),
     db: Session = Depends(db.get_db),
 ):
     """임시 비밀번호로 로그인 후, 다른 패스워드로 변경한다.
@@ -183,7 +184,7 @@ def change_password(
     """
     user_service.change_password(
         db,
-        current_user_email,
+        current_user.email,
         **password_data.dict(),
     )
     return {"status": "success", "msg": "비밀번호가 변경되었습니다."}
@@ -198,7 +199,7 @@ def change_password(
 def read_user(
     user_id: int,
     user_service: UserService = Depends(UserService),
-    current_user_email: str = Depends(UserService.get_current_user_verified),
+    current_user: UserBase = Depends(UserService.get_current_user_verified),
     db: Session = Depends(db.get_db),
 ) -> UserRead:
     """user_id가 current_user와의 일치 유무에 따라 user 정보를 반환한다.
@@ -229,7 +230,7 @@ def read_user(
     user_data = user_service.read_user(
         db,
         user_id,
-        current_user_email,
+        current_user.email,
     )
     return user_data
 
@@ -243,7 +244,7 @@ def update_user(
     user_id: int,
     data_to_be_updated: UserUpdate,
     user_service: UserService = Depends(UserService),
-    current_user_email: str = Depends(UserService.get_current_user_verified),
+    current_user: UserBase = Depends(UserService.get_current_user_verified),
     db: Session = Depends(db.get_db),
 ) -> UserRead:
     """user_id와 현재 user id와 같으면 유저 자신의 정보를 수정한다.
@@ -267,7 +268,7 @@ def update_user(
     updated_user = user_service.update_user(
         db,
         user_id,
-        current_user_email,
+        current_user.email,
         data_to_be_updated.dict(exclude_unset=True),
     )
     return updated_user
@@ -277,7 +278,7 @@ def update_user(
 def delete_user(
     user_id: int,
     user_service: UserService = Depends(UserService),
-    current_user_email: str = Depends(UserService.get_current_user_verified),
+    current_user: UserBase = Depends(UserService.get_current_user_verified),
     db: Session = Depends(db.get_db),
 ):
     """user_id와 현재 user id와 같으면 유저 자신의 계정을 삭제한다.
@@ -300,6 +301,6 @@ def delete_user(
     user_service.delete_user(
         db,
         user_id,
-        current_user_email,
+        current_user.email,
     )
     return {"status": "success", "msg": "계정이 삭제되었습니다."}
