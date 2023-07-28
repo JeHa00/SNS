@@ -1,12 +1,9 @@
 from typing import List
 
-from fastapi.encoders import jsonable_encoder
 from sqlalchemy.orm import Session
 
 from sns.users.model import User
 from sns.posts.model import Post, PostLike
-from sns.posts import schema
-from sns.posts.schema import PostCreate, PostUpdate
 
 
 class PostDB:
@@ -59,7 +56,7 @@ class PostDB:
     def create(
         self,
         db: Session,
-        post_data: PostCreate,
+        post_data: dict,
         writer_id: int,
     ) -> Post:
         """주어진 post_data, writer_id 정보를 가지는 post를 생성한다.
@@ -73,7 +70,7 @@ class PostDB:
             Post: 생성된 post 정보를 반환
         """
         new_post = Post(
-            content=post_data.content,
+            content=post_data["content"],
             writer_id=writer_id,
         )
 
@@ -86,8 +83,8 @@ class PostDB:
     def update(
         self,
         db: Session,
-        post_data: Post,
-        data_to_be_updated: PostUpdate,
+        post: Post,
+        **kwargs,
     ) -> Post:
         """post_info에 해당되는 Post 객체를 data_to_be_updated 정보를 가지도록 수정한다.
 
@@ -99,48 +96,61 @@ class PostDB:
         Returns:
             Post: 수정된 post 객체를 반환
         """
-        if isinstance(data_to_be_updated, dict):
-            data_to_be_updated = data_to_be_updated
-        else:
-            data_to_be_updated = data_to_be_updated.dict(exclude_unset=True)
+        data_to_be_updated = {
+            key: value
+            for key, value in kwargs.items()
+            if hasattr(post, key) and value is not None
+        }
 
-        for field in jsonable_encoder(post_data):
-            if field in data_to_be_updated:
-                setattr(post_data, field, data_to_be_updated[field])
+        for key, value in data_to_be_updated.items():
+            setattr(post, key, value)
 
-        db.add(post_data)
+        db.add(post)
         db.commit()
-        db.refresh(post_data)
+        db.refresh(post)
 
-        return post_data
+        return post
 
     def remove(
         self,
         db: Session,
-        post_to_be_deleted: Post,
+        post_to_be_deleted: Post | int,
     ) -> bool:
-        """post_to_be_deleted 해당되는 post 객체를 삭제한다.
+        """전달받은 해당 post를 삭제한다.
 
         Args:
             db (Session): db session
             post_to_be_deleted (Post): 삭제할 post 객체 정보로, Post model 또는 id 값으로 전달된다.
         """
-        db.delete(post_to_be_deleted)
+        if isinstance(post_to_be_deleted, int):
+            post = self.get_post(db, user_id=post_to_be_deleted)
+        else:
+            post = post_to_be_deleted
+
+        db.delete(post)
         db.commit()
 
+        return {"status": "success"}
 
-class PostLikeDB:
-    def get_like(self, db: Session, post_like_data: schema.PostLikeBase) -> PostLike:
+    def get_like(
+        self,
+        db: Session,
+        post_like_data: dict,
+    ) -> PostLike:
         return (
             db.query(PostLike)
             .filter(
-                PostLike.like_target_id == post_like_data.like_target_id,
-                PostLike.who_like_id == post_like_data.who_like_id,
+                PostLike.like_target_id == post_like_data["like_target_id"],
+                PostLike.who_like_id == post_like_data["who_like_id"],
             )
             .first()
         )
 
-    def get_users_who_like(self, db: Session, like_target_id: int) -> List[User]:
+    def get_users_who_like(
+        self,
+        db: Session,
+        like_target_id: int,
+    ) -> List[User]:
         """like_target_id에 일치하는 post를 좋아요한 liker 유저들을 조회한다.
 
         Args:
@@ -159,7 +169,11 @@ class PostLikeDB:
             .all()
         )
 
-    def get_like_targets(self, db: Session, who_like_id: int) -> List[Post]:
+    def get_like_targets(
+        self,
+        db: Session,
+        who_like_id: int,
+    ) -> List[Post]:
         """who_like_id에 해당하는 user가 좋아요를 표시한 likee인 다수의 post를 조회한다.
 
         Args:
@@ -177,7 +191,11 @@ class PostLikeDB:
             .all()
         )
 
-    def like(self, db: Session, like_data: schema.PostLike) -> PostLike:
+    def like(
+        self,
+        db: Session,
+        like_data: dict,
+    ) -> PostLike:
         """like_data 를 토대로 post에 좋아요를 실행한다.
 
         Args:
@@ -190,10 +208,10 @@ class PostLikeDB:
         selected_post_like = self.get_like(db, like_data)
 
         if selected_post_like and not selected_post_like.is_liked:
-            setattr(selected_post_like, "is_liked", like_data.is_liked)
+            setattr(selected_post_like, "is_liked", like_data["is_liked"])
             new_like = selected_post_like
         else:
-            new_like = PostLike(**like_data.dict())
+            new_like = PostLike(**like_data)
 
         db.add(new_like)
         db.commit()
@@ -201,7 +219,11 @@ class PostLikeDB:
 
         return new_like
 
-    def unlike(self, db: Session, unlike_data: schema.PostUnlike) -> PostLike:
+    def unlike(
+        self,
+        db: Session,
+        unlike_data: dict,
+    ) -> PostLike:
         """like_data 를 토대로 post에 좋아요를 취소한다.
 
         Args:
@@ -215,7 +237,7 @@ class PostLikeDB:
             PostLike: is_liked 값이 변경된 PostLike 객체를 반환
         """
         selected_like = self.get_like(db, unlike_data)
-        setattr(selected_like, "is_liked", unlike_data.is_liked)
+        setattr(selected_like, "is_liked", unlike_data["is_liked"])
 
         db.add(selected_like)
         db.commit()
@@ -225,4 +247,3 @@ class PostLikeDB:
 
 
 post_crud = PostDB()
-post_like_crud = PostLikeDB()
