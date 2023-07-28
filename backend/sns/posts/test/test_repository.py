@@ -3,11 +3,12 @@ from typing import Dict, List
 from fastapi.testclient import TestClient
 from sqlalchemy.orm import Session
 
-from sns.users.service import user_service
 from sns.users.test.utils import random_lower_string
+from sns.users.service import user_service
+from sns.posts.repository import post_crud, post_like_crud
 from sns.posts.schema import PostCreate, PostUpdate
 from sns.posts.model import Post
-from sns.posts.repository import post_crud
+from sns.posts import schema
 
 
 def test_create(
@@ -115,7 +116,7 @@ def test_update_multi_posts_by_model_object(
         user.id,
     )
 
-    data_to_be_updated = PostUpdate(content="Hello World!")  # 업데이트할 내용
+    data_to_be_updated = schema.PostUpdate(content="Hello World!")  # 업데이트할 내용
 
     for post in posts:
         post_crud.update(
@@ -191,3 +192,74 @@ def test_delete_user_having_multi_posts(
     )
 
     assert len(posts) == 0
+
+
+def test_like(
+    client: TestClient,
+    db_session: Session,
+    fake_user: dict,
+    fake_multi_posts: None,
+):
+    user = fake_user.get("user")
+
+    for post_id in range(1, 101):
+        like_info = schema.PostLike(who_like_id=user.id, like_target_id=post_id)
+        post_like_crud.like(db_session, like_info=like_info)
+
+    posts = post_like_crud.get_like_targets(db_session, user.id)
+
+    assert len(posts) == 100
+
+
+def test_get_users_who_like(
+    client: TestClient,
+    db_session: Session,
+    fake_postlike: None,
+):
+    users_about_post_one = post_like_crud.get_users_who_like(
+        db_session,
+        like_target_id=1,
+    )
+    users_about_post_second = post_like_crud.get_users_who_like(
+        db_session,
+        like_target_id=51,
+    )
+
+    assert users_about_post_one is not None
+    assert len(users_about_post_one) == 2
+    assert users_about_post_second is not None
+    assert len(users_about_post_second) == 1
+
+
+def test_get_like_targets(client: TestClient, db_session: Session, fake_postlike: None):
+    posts_on_user_one = post_like_crud.get_like_targets(db_session, who_like_id=1)
+    posts_on_user_two = post_like_crud.get_like_targets(db_session, who_like_id=2)
+
+    assert posts_on_user_one is not None
+    assert len(posts_on_user_one) == 50
+    assert posts_on_user_two is not None
+    assert len(posts_on_user_two) == 100
+
+
+def test_unlike(
+    client: TestClient,
+    db_session: Session,
+    fake_user: dict,
+    fake_postlike: None,
+):
+    user = fake_user.get("user")
+
+    for post_id in range(1, 51):
+        unlike_info = schema.PostUnlike(who_like_id=user.id, like_target_id=post_id)
+        post_like_crud.unlike(db_session, unlike_info=unlike_info)
+
+        who_like = post_like_crud.get_users_who_like(db_session, like_target_id=post_id)
+        assert len(who_like) == 1  # who_like_id=2 인 유저 정보만 조회
+
+    for post_id in range(1, 101):
+        unlike_info = schema.PostUnlike(who_like_id=2, like_target_id=post_id)
+        post_like_crud.unlike(db_session, unlike_info=unlike_info)
+
+        who_like = post_like_crud.get_users_who_like(db_session, like_target_id=post_id)
+
+        assert len(who_like) == 0

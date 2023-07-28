@@ -5,8 +5,9 @@ from sqlalchemy.orm import Session
 
 from sns.users.model import User
 from sns.posts.schema import PostCreate, PostUpdate
-from sns.posts.repository import post_crud
-from sns.posts.model import Post
+from sns.posts.repository import post_crud, post_like_crud
+from sns.posts.model import Post, PostLike
+from sns.posts import schema
 
 
 class PostService:
@@ -280,4 +281,129 @@ class PostService:
             )
 
 
+class PostLikeService:
+    def get_like(self, db: Session, post_like_data: schema.PostLikeBase) -> PostLike:
+        """입력받은 정보를 PostLikeDB class에 전달하여 post_like_data를 가지고 있는 PostLike 모델 객체를 조회한다.
+
+        Args:
+            - db (Session): db session.
+            - post_like_data (schema.PostLikeBase): PostLike 모델 객체 정보
+
+        Raises:
+            - HTTPException (404 NOT FOUND): 해당 data에  해당되는 객체를 찾을 수 없으면 발생
+
+        Returns:
+            - PostLike: 조회된 PostLike 객체를 반환
+        """
+        like = post_like_crud.get_like(db, post_like_data)
+
+        if not like:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="주어진 정보에 해당되는 Postlike 객체를 찾을 수 없습니다.",
+            )
+
+        return like
+
+    def get_users_who_like(self, db: Session, like_target_id: int) -> List[User]:
+        """입력받은 정보를 PostLikeDB class에 전달하여 주어진 post id에 해당하는 post를 좋아요한 user들을 조회한다.
+
+        Args:
+            - db (Session): db session.
+            - like_target_id (int): 좋아요를 받은 post의 id
+
+        Raises:
+            - HTTPException (404 NOT FOUND): 해당 post에 좋아요를 한 user들이 없으면 발생
+
+        Returns:
+            - List[User]: 해당 post에 좋아요를 유저들을 반환
+        """
+        users = post_like_crud.get_users_who_like(db, like_target_id)
+
+        if len(users) == 0:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="해당 글에 좋아요를 한 유저가 없습니다.",
+            )
+        else:
+            return users
+
+    def get_like_targets(self, db: Session, who_like_id: int) -> List[Post]:
+        """입력받은 정보를 PostLikeDB class에 전달하여 who_like_id에 해당하는 user가 좋아요를 한 post들을 조회한다.
+
+        Args:
+            - db (Session): db session
+            - who_like_id (int): user의 id
+
+        Raises:
+            - HTTPException (404 NOT FOUND): 해당 유저가 좋아요를 한 글이 없으면 발생
+
+        Returns:
+            - List[Post]: 좋아요를 받은 post들을 반환
+        """
+        posts = post_like_crud.get_like_targets(db, who_like_id)
+
+        if len(posts) == 0:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="해당 유저가 좋아요를 한 글이 없습니다.",
+            )
+        else:
+            return posts
+
+    def like(self, db: Session, like_data: schema.PostLike) -> PostLike:
+        """입력받은 정보를 PostLikeDB class에 전달하여 해당되는 PostLike 객체가 존재하지 않으면 새로 생성한다.
+           하지만, 객체는 존재하지만 is_liked 정보가 False이면 True로 수정한다.
+
+        Args:
+            - db (Session): db session
+            - like_data (schema.PostLike): 이미 존재하거나 새로 생성할 PostLike 객체 정보
+
+        Raises:
+            - HTTPException(500 INTERNAL SERVER ERROR): post 좋아요 작업에 실패하면 발생
+
+        Returns:
+            - PostLike: 새로 생성되거나 변경된 PostLike 객체를 반환
+        """
+        try:
+            new_post_like = post_like_crud.like(db, like_data)
+            return new_post_like
+        except Exception:
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="post 좋아요에 실패했습니다.",
+            )
+
+    def unlike(self, db: Session, unlike_data: schema.PostUnlike) -> bool:
+        """입력받은 정보를 PostLikeDB class에 전달하여 is_liked를 False로 상태 변경하여 좋아요를 취소한다.
+
+        Args:
+            - db (Session): db session
+            - unlike_data (schema.PostUnlike): PostLike 객체 정보
+
+        Raises:
+            - HTTPException (400 BAD REQUEST): 이미 is_liked 상태 값이 False이면 발생
+            - HTTPException (500 INTERNAL SERVER ERROR): post 좋아요 취소 작업에 실패하면 발생
+
+        Returns:
+            - bool: 취소 작업을 완료하면 True를 반환
+        """
+        try:
+            post_like = self.get_like(db, unlike_data)
+            if post_like.is_liked:
+                post_like_crud.unlike(db, post_like)
+                return True
+            else:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail="is_liked가 이미 False 입니다.",
+                )
+        except Exception:
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="post 좋아요 취소에 실패했습니다.",
+            )
+
+
 post_service = PostService()
+post_like_service = PostLikeService()

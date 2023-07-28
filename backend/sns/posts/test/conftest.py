@@ -8,12 +8,12 @@ from sqlalchemy.orm import Session
 from sns.common.conftest import start_app, app, db_session, client
 
 # flake8: noqa
-from sns.users.test.conftest import get_user_token_headers_and_user_info, fake_user
-from sns.users.test.utils import random_lower_string
+from sns.users.test.conftest import fake_user, get_user_token_headers_and_login_data
+from sns.users.test.utils import random_lower_string, random_email
 from sns.users.repositories.db import user_crud
-from sns.users.schema import UserUpdate
-from sns.posts.repository import post_crud
-from sns.posts.schema import PostCreate
+from sns.users.schema import UserCreate, UserUpdate
+from sns.posts.repository import post_crud, post_like_crud
+from sns.posts.schema import PostCreate, PostLike
 from sns.posts.model import Post
 
 
@@ -141,3 +141,31 @@ def fake_multi_post_by_user_logged_in(
             writer_id=user.id,
         )
         post_total_count_to_make -= 1
+
+
+@pytest.fixture(scope="function")
+def fake_postlike(
+    client: TestClient,
+    db_session: Session,
+    fake_user: dict,
+    fake_multi_posts,
+):
+    # fake_user 정보 가져오기
+    user = fake_user.get("user")
+
+    # 또 다른 fake_user 생성
+    password = random_lower_string(k=8)
+    user_info = UserCreate(
+        email=random_email(),
+        password=password,
+        password_confirm=password,
+    )
+    another_user = user_crud.create(db_session, user_info=user_info)
+
+    for post_id in range(1, 51):
+        like_info = PostLike(who_like_id=user.id, like_target_id=post_id)
+        post_like_crud.like(db_session, like_info=like_info)
+
+    for post_id in range(1, 101):
+        like_info = PostLike(who_like_id=another_user.id, like_target_id=post_id)
+        post_like_crud.like(db_session, like_info=like_info)
