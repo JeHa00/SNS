@@ -10,7 +10,6 @@ import pytest
 from sns.common.config import settings
 from sns.users.test.utils import random_lower_string
 from sns.users.service import user_service
-from sns.users.schema import UserUpdate
 from sns.posts.schema import PostCreate, PostUpdate
 from sns.posts.service import post_service
 from sns.posts import model
@@ -436,9 +435,9 @@ def test_read_likees_if_likees_not_exist(
 
     # likees 조회 및 결과
     response = client.get(f"{settings.API_V1_PREFIX}/posts/likees", headers=headers)
-    result = response.json()
+    result_msg = response.json()["detail"]
 
-    assert len(result) == 0
+    assert result_msg == "해당 유저가 좋아요를 한 글이 없습니다."
 
 
 @pytest.mark.read_likees
@@ -453,13 +452,16 @@ def test_read_likees_if_likees_exist(
     login_data = fake_user.get("login_data")
 
     # verified 업데이트
-    data_to_be_updated = UserUpdate(verified=True)
-    user_service.update(db_session, user, login_data)
+    user_service.update(
+        db_session,
+        user,
+        {"verified": True},
+    )
 
     # token 발행
     response = client.post(
         f"{settings.API_V1_PREFIX}/login",
-        json=data_to_be_updated.dict(),
+        json=login_data,
     )
     token = response.json().get("access_token")
     headers = {"Authorization": f"Bearer {token}"}
