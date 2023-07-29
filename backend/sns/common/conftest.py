@@ -19,7 +19,7 @@ TestingSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engin
 
 
 @pytest.fixture(scope="function")
-def start_app(start_app: FastAPI) -> Generator[FastAPI, Any, None]:
+def start_app() -> Generator[FastAPI, Any, None]:
     """
     test db와 연결된 app을 생성하여 기존에 만들었던 router를 연결한다.
     """
