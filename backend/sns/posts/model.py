@@ -10,7 +10,9 @@ class Post(Base, BaseMixin):
     writer = relationship("User", back_populates="posts")
 
     likee = relationship(
-        "PostLike", back_populates="like_target", cascade="all, delete-orphan"
+        "PostLike",
+        back_populates="like_target",
+        cascade="all, delete-orphan",
     )
 
     def __repr__(self) -> str:
