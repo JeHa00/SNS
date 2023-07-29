@@ -1,14 +1,16 @@
 from typing import List
 
-from fastapi.encoders import jsonable_encoder
 from sqlalchemy.orm import Session
 
 from sns.comments.model import Comment
-from sns.comments.schema import CommentCreate, CommentUpdate
 
 
 class CommentDB:
-    def get_comment(self, db: Session, comment_id: int) -> Comment:
+    def get_comment(
+        self,
+        db: Session,
+        comment_id: int,
+    ) -> Comment:
         """comment_id에 해당되는 comment 객체를 조회한다.
 
         Args:
@@ -21,7 +23,12 @@ class CommentDB:
         return comment
 
     def get_multi_comments(
-        self, db: Session, skip: int = 0, limit: int = 100, **kwargs
+        self,
+        db: Session,
+        post_id: int,
+        writer_id: int,
+        skip: int = 0,
+        limit: int = 100,
     ) -> List[Comment]:
         """writer_id에 해당되는 writer가 작성한 comment들,
           또는 post_id에 해당되는 post에 작성된 comment들을 조회한다.
@@ -34,18 +41,19 @@ class CommentDB:
         Returns:
             List[Comment]: comment 객체들을 list 배열에 담아 반환
         """
-        if kwargs.get("writer_id"):
+        if post_id and not writer_id:
             return (
                 db.query(Comment)
-                .filter(Comment.writer_id == kwargs["writer_id"])
+                .filter(Comment.post_id == post_id)
                 .offset(skip)
                 .limit(limit)
                 .all()
             )
-        else:
+
+        elif writer_id and not post_id:
             return (
                 db.query(Comment)
-                .filter(Comment.post_id == kwargs["post_id"])
+                .filter(Comment.writer_id == writer_id)
                 .offset(skip)
                 .limit(limit)
                 .all()
@@ -54,9 +62,9 @@ class CommentDB:
     def create(
         self,
         db: Session,
-        data_to_be_created: CommentCreate,
         writer_id: int,
         post_id: int,
+        **data_to_be_created: dict,
     ) -> Comment:
         """주어진 정보를 토대로 comment를 생성한다.
 
@@ -68,67 +76,66 @@ class CommentDB:
         Returns:
             Comment: 생성된 comment 객체를 반환
         """
-        db_obj = Comment(
-            content=data_to_be_created.content,
+        new_comment = Comment(
             writer_id=writer_id,
             post_id=post_id,
+            **data_to_be_created,
         )
 
-        db.add(db_obj)
+        db.add(new_comment)
         db.commit()
-        db.refresh(db_obj)
+        db.refresh(new_comment)
 
-        return db_obj
+        return new_comment
 
     def update(
         self,
         db: Session,
-        comment_info: Comment | int,
-        data_to_be_updated: CommentUpdate,
+        comment: Comment | int,
+        **kwargs,
     ) -> Comment:
         """Comment 모델 객체 또는 comment_id 로 주어진 comment 객체를
            data_to_be_updated로 받은 내용으로 수정한다.
 
         Args:
-            comment_info (Comment | int): Comment 객체 정보
-            data_to_be_updated (CommentUpdate): 수정에 반영될 내용
+            comment_data (Comment | int): Comment 객체 정보
+            kwargs: 수정에 반영될 내용
 
         Returns:
             Comment: 수정된 Comment 객체를 반환
         """
-        if isinstance(comment_info, int):
-            post = db.query(Comment).filter(Comment.id == comment_info).first()
-        else:
-            post = comment_info
+        data_to_be_updated = {
+            key: value
+            for key, value in kwargs.items()
+            if hasattr(comment, key) and value is not None
+        }
 
-        if isinstance(data_to_be_updated, dict):
-            data_to_be_updated = data_to_be_updated
-        else:
-            data_to_be_updated = data_to_be_updated.dict(exclude_unset=True)
+        for key, value in data_to_be_updated.items():
+            setattr(comment, key, value)
 
-        for field in jsonable_encoder(post):
-            if field in data_to_be_updated:
-                setattr(post, field, data_to_be_updated[field])
-
-        db.add(post)
+        db.add(comment)
         db.commit()
-        db.refresh(post)
+        db.refresh(comment)
 
-        return post
+        return comment
 
-    def remove(self, db: Session, comment_info: Comment | int):
+    def remove(self, db: Session, comment_to_be_deleted: Comment | int):
         """Comment 모델 객체 또는 comment_id 로 주어진 comment 객체를 삭제한다.
 
         Args:
-            comment_info (Comment | int): Comment 객체 정보
+            comment_to_be_deleted (Comment | int): 삭제될 Comment 객체 정보
         """
-        if isinstance(comment_info, int):
-            comment = db.query(Comment).filter(Comment.id == comment_info).first()
+        if isinstance(comment_to_be_deleted, int):
+            comment = (
+                db.query(Comment).filter(Comment.id == comment_to_be_deleted).first()
+            )
         else:
-            comment = comment_info
+            comment = comment_to_be_deleted
 
         db.delete(comment)
         db.commit()
+
+        return {"status": "success"}
 
 
 comment_crud = CommentDB()
