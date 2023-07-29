@@ -26,19 +26,3 @@ class PostCreate(BaseModel):
 
 class PostUpdate(PostCreate):
     pass
-
-
-class PostLikeBase(BaseModel):
-    who_like_id: int
-    like_target_id: int
-
-    class Config:
-        orm_mode = True
-
-
-class PostLike(PostLikeBase):
-    is_liked: bool = True
-
-
-class PostUnlike(PostLikeBase):
-    is_liked: bool = False
