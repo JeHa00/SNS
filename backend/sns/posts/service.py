@@ -6,7 +6,6 @@ from sqlalchemy.orm import Session
 from sns.users.model import User
 from sns.posts.repository import post_crud
 from sns.posts.model import Post, PostLike
-from sns.posts import schema
 
 
 class PostService:
@@ -372,21 +371,20 @@ class PostService:
         Returns:
             - PostLike: 새로 생성되거나 변경된 PostLike 객체를 반환
         """
-        like_data = schema.PostLike(
-            like_target_id=post_id,
-            who_like_id=current_user_id,
-        )
+        post_like_data = {
+            "like_target_id": post_id,
+            "who_like_id": current_user_id,
+        }
+        post_like_object = self.get_like(db, post_like_data)
 
-        like_object = self.get_like(db, like_data)
-
-        if like_object and like_object.is_liked:
+        if post_like_object and post_like_object.is_liked:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="이미 좋아요 처리된 post 입니다.",
             )
 
         try:
-            post_crud.like(db, like_data)
+            post_crud.like(db, post_like_object, **post_like_data)
             return True
         except Exception:
             raise HTTPException(
@@ -413,23 +411,23 @@ class PostService:
         Returns:
             - bool: 취소 작업을 완료하면 True를 반환
         """
-        unlike_data = schema.PostLike(
-            like_target_id=post_id,
-            who_like_id=current_user_id,
+        post_like_object = self.get_like(
+            db,
+            {
+                "like_target_id": post_id,
+                "who_like_id": current_user_id,
+            },
         )
 
-        post_like = self.get_like(db, unlike_data)
-
-        if post_like and not post_like.is_liked:
+        if post_like_object and not post_like_object.is_liked:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="is_liked가 이미 False 입니다.",
             )
 
         try:
-            if post_like.is_liked:
-                post_crud.unlike(db, post_like)
-                return True
+            post_crud.unlike(db, post_like_object)
+            return True
         except Exception:
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
