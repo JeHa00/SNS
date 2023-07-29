@@ -429,10 +429,10 @@ def test_read_likers(client: TestClient, db_session: Session, fake_postlike: Non
 def test_read_likees_if_likees_not_exist(
     client: TestClient,
     db_session: Session,
-    get_user_token_headers_and_user_info: dict,
+    get_user_token_headers_and_login_data: dict,
 ):
     # current user 정보
-    headers = get_user_token_headers_and_user_info.get("headers")
+    headers = get_user_token_headers_and_login_data.get("headers")
 
     # likees 조회 및 결과
     response = client.get(f"{settings.API_V1_PREFIX}/posts/likees", headers=headers)
@@ -475,10 +475,10 @@ def test_read_likees_if_likees_exist(
 def test_like_post(
     client: TestClient,
     db_session: Session,
-    get_user_token_headers_and_user_info: dict,
+    get_user_token_headers_and_login_data: dict,
     fake_multi_posts: None,
 ):
-    headers = get_user_token_headers_and_user_info.get("headers")
+    headers = get_user_token_headers_and_login_data.get("headers")
 
     for post_id in range(1, 101):
         response = client.post(
@@ -498,10 +498,10 @@ def test_like_post(
 def test_unlike_post(
     client: TestClient,
     db_session: Session,
-    get_user_token_headers_and_user_info: dict,
+    get_user_token_headers_and_login_data: dict,
     fake_multi_posts: None,
 ):
-    headers = get_user_token_headers_and_user_info.get("headers")
+    headers = get_user_token_headers_and_login_data.get("headers")
 
     for post_id in range(1, 101):
         response = client.post(
