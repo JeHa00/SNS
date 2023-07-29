@@ -12,9 +12,9 @@ from sns.users.test.conftest import fake_user, get_user_token_headers_and_login_
 from sns.users.test.utils import random_lower_string, random_email
 from sns.users.repositories.db import user_crud
 from sns.users.schema import UserCreate, UserUpdate
-from sns.posts.repository import post_crud, post_like_crud
-from sns.posts.schema import PostCreate, PostLike
+from sns.posts.repository import post_crud
 from sns.posts.model import Post
+from sns.posts import schema
 
 
 @pytest.fixture(scope="function")
@@ -46,11 +46,11 @@ def fake_post(
 
     # 생성할 post 정보
     content = random_lower_string(k=1000)
-    post_data = PostCreate(content=content)
+    post_data = schema.PostCreate(content=content)
     post = post_crud.create(
         db_session,
-        post_data=post_data,
-        writer_id=user.id,
+        user.id,
+        **post_data.dict(),
     )
     return post
 
@@ -72,12 +72,12 @@ def fake_multi_posts(
 
     while post_total_count_to_make > 0:
         content = random_lower_string(k=1000)
-        post_data = PostCreate(content=content)
+        post_data = schema.PostCreate(content=content)
         user = fake_user.get("user")
         post_crud.create(
             db_session,
-            post_data=post_data,
-            writer_id=user.id,
+            user.id,
+            **post_data.dict(),
         )
         post_total_count_to_make -= 1
 
@@ -103,11 +103,11 @@ def fake_post_by_user_logged_in(
 
     # 생성할 post 정보
     content = random_lower_string(k=1000)
-    post_data = PostCreate(content=content)
+    post_data = schema.PostCreate(content=content)
     post = post_crud.create(
         db_session,
-        post_data=post_data,
-        writer_id=user.id,
+        user.id,
+        **post_data.dict(),
     )
     return post
 
@@ -134,11 +134,11 @@ def fake_multi_post_by_user_logged_in(
 
     while post_total_count_to_make > 0:
         content = random_lower_string(k=1000)
-        post_data = PostCreate(content=content)
+        post_data = schema.PostCreate(content=content)
         post_crud.create(
             db_session,
-            post_data=post_data,
-            writer_id=user.id,
+            user.id,
+            **post_data.dict(),
         )
         post_total_count_to_make -= 1
 
@@ -148,24 +148,35 @@ def fake_postlike(
     client: TestClient,
     db_session: Session,
     fake_user: dict,
-    fake_multi_posts,
+    fake_multi_posts: None,
 ):
+    """PostLike 객체를 생성한다.
+    user 와 another user가 있다.
+    user는 50개의 post에 좋아요를, another user는 100개의 post에 좋아요를 한다.
+
+    Args:
+        client (TestClient): test용 db url에 연결된 client를 생성
+        db_session (Session): db session.
+        fake_user (dict): test 전용 user 생성
+        fake_multi_posts (None): test 전용 post 생성
+
+    """
     # fake_user 정보 가져오기
     user = fake_user.get("user")
 
     # 또 다른 fake_user 생성
     password = random_lower_string(k=8)
-    user_info = UserCreate(
+    data_for_signup = UserCreate(
         email=random_email(),
         password=password,
         password_confirm=password,
     )
-    another_user = user_crud.create(db_session, user_info=user_info)
+    another_user = user_crud.create(db_session, data_for_signup)
 
     for post_id in range(1, 51):
-        like_info = PostLike(who_like_id=user.id, like_target_id=post_id)
-        post_like_crud.like(db_session, like_info=like_info)
+        like_data = schema.PostLike(who_like_id=user.id, like_target_id=post_id)
+        post_crud.like(db_session, like_data.dict())
 
     for post_id in range(1, 101):
-        like_info = PostLike(who_like_id=another_user.id, like_target_id=post_id)
-        post_like_crud.like(db_session, like_info=like_info)
+        like_data = schema.PostLike(who_like_id=another_user.id, like_target_id=post_id)
+        post_crud.like(db_session, like_data.dict())

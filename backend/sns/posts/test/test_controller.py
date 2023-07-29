@@ -143,7 +143,7 @@ def test_create_post_if_unauthorized(
     result_msg = response.json()["detail"]
 
     assert response.status_code == status.HTTP_401_UNAUTHORIZED
-    assert result_msg == "Could not validate credentials"
+    assert result_msg == "작성할 권한이 없습니다."
 
 
 @pytest.mark.create_post
@@ -167,7 +167,7 @@ def test_create_post_if_authorized(
         json=content.dict(),
     )
     created_post_id = response.json()["id"]
-    post = post_service.get_post(db_session, post_id=created_post_id)
+    post = post_service.get_post_and_check_none(db_session, post_id=created_post_id)
 
     assert response.status_code == status.HTTP_201_CREATED
     assert post is not None
@@ -189,7 +189,7 @@ def test_update_post_if_user_not_registered(
     not_registered_user_id = 3
 
     # 글 수정 및 결과
-    response = client.put(
+    response = client.patch(
         f"{settings.API_V1_PREFIX}/users/{not_registered_user_id}/posts/{fake_post.id}",
         headers=headers,
         json=content.dict(),
@@ -216,7 +216,7 @@ def test_update_post_if_try_to_update_not_mine(
     content = PostUpdate(content=random_lower_string(k=1000))
 
     # 글 수정 및 결과 - 현재 로그인된 유저가 자신이 작성한 글 이외의 글을 시도할 경우
-    response = client.put(
+    response = client.patch(
         f"{settings.API_V1_PREFIX}/users/{authorized_user.id}/posts/{fake_post.id}",
         headers=headers,
         json=content.dict(),
@@ -247,7 +247,7 @@ def test_update_post_if_user_id_is_not_same_as_user_logged_in(
     # 변경할 content 정보
     content = PostUpdate(content=random_lower_string(k=1000))
 
-    response = client.put(
+    response = client.patch(
         f"{settings.API_V1_PREFIX}/users/{user_id_not_logged_in}/posts/{post_id}",
         headers=headers,
         json=content.dict(),
@@ -276,7 +276,7 @@ def test_update_post_if_post_not_exist(
     post_id = 1
 
     # 글 수정 및 결과
-    response = client.put(
+    response = client.patch(
         f"{settings.API_V1_PREFIX}/users/{authorized_user.id}/posts/{post_id}",
         headers=headers,
         json=content.dict(),
@@ -306,7 +306,7 @@ def test_update_post_only_one_if_authorized(
     content = PostUpdate(content=random_lower_string(k=1000))
 
     # 글 수정 및 결과
-    response = client.put(
+    response = client.patch(
         f"{settings.API_V1_PREFIX}/users/{authorized_user.id}/posts/{post_id}",
         headers=headers,
         json=content.dict(),
@@ -334,7 +334,7 @@ def test_update_post_multi_posts_if_authorized(
         content = PostUpdate(content=random_lower_string(k=1000))
 
         # 글 수정 및 결과
-        response = client.put(
+        response = client.patch(
             f"{settings.API_V1_PREFIX}/users/{authorized_user.id}/posts/{post_id}",
             headers=headers,
             json=content.dict(),
@@ -375,7 +375,7 @@ def test_delete_post_if_authorized(
 
     # 결과 확인
     with pytest.raises(HTTPException):
-        post_service.get_post(db_session, post_id=post_id)
+        post_service.get_post_and_check_none(db_session, post_id=post_id)
 
 
 @pytest.mark.delete_post
@@ -401,7 +401,7 @@ def test_delete_post_if_not_authorized(
     result_msg = response.json()["detail"]
 
     # 결과 확인
-    post = post_service.get_post(db_session, post_id=post_id)
+    post = post_service.get_post_and_check_none(db_session, post_id=post_id)
 
     assert response.status_code == status.HTTP_401_UNAUTHORIZED
     assert result_msg == "삭제할 권한이 없습니다."
@@ -450,16 +450,16 @@ def test_read_likees_if_likees_exist(
 ):
     # login 정보
     user = fake_user.get("user")
-    user_info = fake_user.get("user_info")
+    login_data = fake_user.get("login_data")
 
     # verified 업데이트
-    info_to_be_updated = UserUpdate(verified=True)
-    user_service.update(db_session, user, user_info)
+    data_to_be_updated = UserUpdate(verified=True)
+    user_service.update(db_session, user, login_data)
 
     # token 발행
     response = client.post(
         f"{settings.API_V1_PREFIX}/login",
-        json=info_to_be_updated.dict(),
+        json=data_to_be_updated.dict(),
     )
     token = response.json().get("access_token")
     headers = {"Authorization": f"Bearer {token}"}

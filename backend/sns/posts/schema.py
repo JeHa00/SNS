@@ -16,16 +16,16 @@ class PostInDB(PostBase):
     updated_at: datetime
 
 
+class Post(PostInDB):
+    content: str = Field(max_length=1000)
+
+
 class PostCreate(BaseModel):
     content: str = Field(max_length=1000)
 
 
 class PostUpdate(PostCreate):
     pass
-
-
-class Post(PostInDB):
-    content: str = Field(max_length=1000)
 
 
 class PostLikeBase(BaseModel):

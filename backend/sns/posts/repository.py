@@ -56,8 +56,8 @@ class PostDB:
     def create(
         self,
         db: Session,
-        post_data: dict,
         writer_id: int,
+        **post_data: dict,
     ) -> Post:
         """주어진 post_data, writer_id 정보를 가지는 post를 생성한다.
 
@@ -70,8 +70,8 @@ class PostDB:
             Post: 생성된 post 정보를 반환
         """
         new_post = Post(
-            content=post_data["content"],
             writer_id=writer_id,
+            **post_data,
         )
 
         db.add(new_post)
@@ -200,7 +200,7 @@ class PostDB:
 
         Args:
             db (Session): db session
-            like_data (schema.PostLike): who_like_id, like_target_id, is_liked 값 정보
+            like_data (dict): who_like_id, like_target_id, is_liked 값 정보
 
         Returns:
             PostLike: is_liked 값이 True로 생성된 PostLike 객체를 반환
@@ -210,7 +210,8 @@ class PostDB:
         if selected_post_like and not selected_post_like.is_liked:
             setattr(selected_post_like, "is_liked", like_data["is_liked"])
             new_like = selected_post_like
-        else:
+
+        else:  # selected_post_like가 None일 경우
             new_like = PostLike(**like_data)
 
         db.add(new_like)
@@ -228,7 +229,7 @@ class PostDB:
 
         Args:
             db (Session): db session
-            unlike_data (schema.PostLike): who_like_id, like_target_id, is_liked 값 정보
+            unlike_data (dict): who_like_id, like_target_id, is_liked 값 정보
 
         Raises:
             ValueError: is_liked 값이 이미 False인 경우 발생되는 에러
