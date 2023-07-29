@@ -10,9 +10,9 @@ from sns.common.conftest import start_app, app, db_session, client
 # flake8: noqa
 from sns.users.test.conftest import fake_user, get_user_token_headers_and_login_data
 from sns.users.test.utils import random_lower_string, random_email
-from sns.users.repositories.db import user_crud
+from sns.users.service import user_service
 from sns.users.schema import UserCreate, UserUpdate
-from sns.posts.repository import post_crud
+from sns.posts.service import post_service
 from sns.posts.model import Post
 from sns.posts import schema
 
@@ -38,19 +38,19 @@ def fake_post(
 
     # verified 상태 변경
     data_to_be_updated = UserUpdate(verified=True)
-    user_crud.update(
+    user_service.update(
         db_session,
-        user=user,
-        data_to_be_updated=data_to_be_updated,
+        user,
+        data_to_be_updated.dict(),
     )
 
     # 생성할 post 정보
     content = random_lower_string(k=1000)
     post_data = schema.PostCreate(content=content)
-    post = post_crud.create(
+    post = post_service.create(
         db_session,
         user.id,
-        **post_data.dict(),
+        post_data.dict(),
     )
     return post
 
@@ -74,10 +74,10 @@ def fake_multi_posts(
         content = random_lower_string(k=1000)
         post_data = schema.PostCreate(content=content)
         user = fake_user.get("user")
-        post_crud.create(
+        post_service.create(
             db_session,
             user.id,
-            **post_data.dict(),
+            post_data.dict(),
         )
         post_total_count_to_make -= 1
 
@@ -99,15 +99,15 @@ def fake_post_by_user_logged_in(
         Post: 생성된 Post 객체를 반환
     """
     login_data = get_user_token_headers_and_login_data["login_data"]
-    user = user_crud.get_user(db_session, login_data["email"])
+    user = user_service.get_user(db_session, login_data["email"])
 
     # 생성할 post 정보
     content = random_lower_string(k=1000)
     post_data = schema.PostCreate(content=content)
-    post = post_crud.create(
+    post = post_service.create(
         db_session,
         user.id,
-        **post_data.dict(),
+        post_data.dict(),
     )
     return post
 
@@ -126,7 +126,7 @@ def fake_multi_post_by_user_logged_in(
         get_user_token_headers_and_login_data (dict): 로그인된 user를 생성
     """
     login_data = get_user_token_headers_and_login_data["login_data"]
-    user = user_crud.get_user(
+    user = user_service.get_user(
         db_session,
         login_data["email"],
     )
@@ -135,10 +135,10 @@ def fake_multi_post_by_user_logged_in(
     while post_total_count_to_make > 0:
         content = random_lower_string(k=1000)
         post_data = schema.PostCreate(content=content)
-        post_crud.create(
+        post_service.create(
             db_session,
             user.id,
-            **post_data.dict(),
+            post_data.dict(),
         )
         post_total_count_to_make -= 1
 
@@ -171,12 +171,10 @@ def fake_postlike(
         password=password,
         password_confirm=password,
     )
-    another_user = user_crud.create(db_session, data_for_signup)
+    another_user = user_service.create(db_session, data_for_signup.dict())
 
     for post_id in range(1, 51):
-        like_data = schema.PostLike(who_like_id=user.id, like_target_id=post_id)
-        post_crud.like(db_session, like_data.dict())
+        post_service.like(db_session, post_id, user.id)
 
     for post_id in range(1, 101):
-        like_data = schema.PostLike(who_like_id=another_user.id, like_target_id=post_id)
-        post_crud.like(db_session, like_data.dict())
+        post_service.like(db_session, post_id, another_user.id)
