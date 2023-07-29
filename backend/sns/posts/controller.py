@@ -26,6 +26,10 @@ def read_likees(
 ) -> List[schema.Post]:
     """current_user에게 좋아요를 받은 likee인 post들을 조회한다.
 
+    Raises:
+
+    - HTTPException (404 NOT FOUND): 해당 유저가 좋아요를 한 글이 없으면 발생
+
     Returns:
 
     - List[Post]: like를 받은 post 목록을 반환
@@ -48,6 +52,11 @@ def read_likers(
     Args:
 
     - post_id (int): 좋아요를 받은 post
+
+
+    Raises:
+
+    - HTTPException (404 NOT FOUND): 해당 post에 좋아요를 한 user들이 없으면 발생
 
     Returns:
 
@@ -74,8 +83,9 @@ def like_post(
     - post_id (int): current_user로부터 like를 받을 post의 id
 
     Raises:
-        - HTTPException (400 BAD REQUEST): 이미 is_liked 상태 값이 True이면 발생
-        - HTTPException (500 INTERNAL SERVER ERROR): post 좋아요 작업에 실패하면 발생
+
+    - HTTPException (400 BAD REQUEST): 이미 is_liked 상태 값이 True이면 발생
+    - HTTPException (500 INTERNAL SERVER ERROR): post 좋아요 작업에 실패하면 발생
 
     Returns:
 
@@ -104,8 +114,9 @@ def unlike_post(
     - post_id (int): current_user로부터 like를 취소받을 post의 id
 
     Raises:
-        - HTTPException (400 BAD REQUEST): 이미 is_liked 상태 값이 False이면 발생
-        - HTTPException (500 INTERNAL SERVER ERROR): post 좋아요 취소 작업에 실패하면 발생
+
+    - HTTPException (400 BAD REQUEST): 이미 is_liked 상태 값이 False이면 발생
+    - HTTPException (500 INTERNAL SERVER ERROR): post 좋아요 취소 작업에 실패하면 발생
 
     Returns:
 
@@ -246,6 +257,7 @@ def update_post(
     - user_id (int): 수정할 user의 id
     - post_id (int): 수정될 post의 id
     - data_to_be_updated (PostUpdate): 업데이트할 정보
+        - content
 
     Raises:
 
