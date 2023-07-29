@@ -69,7 +69,9 @@ class CommentDB:
             Comment: 생성된 comment 객체를 반환
         """
         db_obj = Comment(
-            content=data_to_be_created.content, writer_id=writer_id, post_id=post_id
+            content=data_to_be_created.content,
+            writer_id=writer_id,
+            post_id=post_id,
         )
 
         db.add(db_obj)

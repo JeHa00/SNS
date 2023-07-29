@@ -18,18 +18,21 @@ TestingSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engin
 
 
 @pytest.fixture(scope="function")
-def start_app() -> FastAPI:
+def start_app() -> Generator[FastAPI, Any, None]:
+    """
+    test db와 연결된 app을 생성하여 기존에 만들었던 router를 연결한다.
+    """
     app = FastAPI()
-    app.include_router(users, tags=["Users"], prefix=settings.API_V1_STR)
-    app.include_router(posts, tags=["Posts"], prefix=settings.API_V1_STR)
-    app.include_router(comments, tags=["Comments"], prefix=settings.API_V1_STR)
+    app.include_router(users, tags=["Users"], prefix=settings.API_V1_PREFIX)
+    app.include_router(posts, tags=["Posts"], prefix=settings.API_V1_PREFIX)
+    app.include_router(comments, tags=["Comments"], prefix=settings.API_V1_PREFIX)
     return app
 
 
 @pytest.fixture(scope="function")
 def app(start_app: FastAPI) -> Generator[FastAPI, Any, None]:
     """
-    Create a fresh database on each test case
+    각 테스트 케이스마다 테스트용 database와 table을 새로 생성하고 삭제한다.
     """
     Base.metadata.create_all(bind=engine)
     yield start_app
@@ -38,6 +41,9 @@ def app(start_app: FastAPI) -> Generator[FastAPI, Any, None]:
 
 @pytest.fixture(scope="function")
 def db_session() -> Generator[TestingSessionLocal, Any, None]:
+    """
+    test db에 연결된 connection을 생성하고, session을 반환한다.
+    """
     connection = engine.connect()
     transaction = connection.begin()
     session = TestingSessionLocal(bind=connection)
@@ -50,8 +56,8 @@ def db_session() -> Generator[TestingSessionLocal, Any, None]:
 @pytest.fixture(scope="function")
 def client(app: FastAPI, db_session: TestingSessionLocal):
     """
-    Create a new FastAPI TestClient that uses the `db_session` fixture to override
-    the `get_db` dependency that is injected into routes.
+    테스트 전용 db fixture를 사용하는 FastAPI의 TestClient를 생성한다.
+    테스트 전용 db를 사용하기 위해서 기존에 'get_db'를 오버라이딩하여 매 테스트 케이스마다 db_session을 호출한다.
     """
 
     def _get_test_db():

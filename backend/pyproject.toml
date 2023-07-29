@@ -17,6 +17,7 @@ pydantic = {extras = ["email"], version = "^1.10.5"}
 emails = "^0.6"
 jinja2 = "^3.1.2"
 alembic = "^1.10.2"
+add-trailing-comma = "^2.4.0"
 
 
 [tool.poetry.group.test.dependencies]
@@ -39,6 +40,10 @@ markers = [
     "create_post",
     "update_post",
     "delete_post",
+    "read_likers",
+    "read_likees",
+    "like_post",
+    "unlike_post",
     "get_comments_on_a_post",
     "get_comments_of_a_user",
     "create_comment",
@@ -49,6 +54,7 @@ markers = [
 
 [tool.poetry.group.dev.dependencies]
 black = "^23.1.0"
+pre-commit = "^3.2.2"
 
 [build-system]
 requires = ["poetry-core"]

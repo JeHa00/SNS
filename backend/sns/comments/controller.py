@@ -22,7 +22,8 @@ router = APIRouter()
     status_code=status.HTTP_200_OK,
 )
 def get_comments_on_a_post(
-    post_id: int, db: Session = Depends(db.get_db)
+    post_id: int,
+    db: Session = Depends(db.get_db),
 ) -> List[model.Comment]:
     """**한 개의 post에 대한 모든 comment를 조회한다.**
 
@@ -41,7 +42,8 @@ def get_comments_on_a_post(
         return comments
     else:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="해당 id의 포스트를 찾을 수 없습니다."
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="해당 id의 포스트를 찾을 수 없습니다.",
         )
 
 
@@ -51,7 +53,8 @@ def get_comments_on_a_post(
     status_code=status.HTTP_200_OK,
 )
 def get_comments_of_a_user(
-    user_id: int, db: Session = Depends(db.get_db)
+    user_id: int,
+    db: Session = Depends(db.get_db),
 ) -> List[Comment]:
     """**한 user가 작성한 모든 comment를 조회한다.**
 
@@ -70,13 +73,15 @@ def get_comments_of_a_user(
         comments = comment_crud.get_multi_comments(db, writer_id=user_id)
         if len(comments) == 0:
             raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND, detail="작성된 댓글이 없습니다."
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="작성된 댓글이 없습니다.",
             )
         else:
             return comments
     else:
         raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN, detail="등록된 회원이 아닙니다."
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="등록된 회원이 아닙니다.",
         )
 
 
@@ -119,11 +124,13 @@ def create_comment(
             return comment
         else:
             raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED, detail="작성할 권한이 없습니다."
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="작성할 권한이 없습니다.",
             )
     else:
         raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN, detail="등록된 회원이 아닙니다."
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="등록된 회원이 아닙니다.",
         )
 
 
@@ -158,16 +165,20 @@ def update_comment(
     if selected_user:
         if selected_user.id == current_user.id:
             comment = comment_crud.update(
-                db, comment_info=comment_id, data_to_be_updated=data_to_be_updated
+                db,
+                comment_info=comment_id,
+                data_to_be_updated=data_to_be_updated,
             )
             return comment
         else:
             raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED, detail="수정할 권한이 없습니다."
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="수정할 권한이 없습니다.",
             )
     else:
         raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN, detail="등록된 회원이 아닙니다."
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="등록된 회원이 아닙니다.",
         )
 
 
@@ -203,9 +214,11 @@ def delete_comment(
             return {"status": "success", "msg": "댓글이 삭제되었습니다."}
         else:
             raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED, detail="삭제할 권한이 없습니다."
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="삭제할 권한이 없습니다.",
             )
     else:
         raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN, detail="등록된 회원이 아닙니다."
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="등록된 회원이 아닙니다.",
         )

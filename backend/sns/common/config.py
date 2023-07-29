@@ -5,12 +5,13 @@ from sns.common.path import BASE_DIR
 
 
 class Settings(BaseSettings):
-    PJT_NAME: str = "SNS"
-    API_V1_STR: str = "/api/v1"
+    PROJECT_NAME: str = "SNS"
+    API_V1_PREFIX: str = "/api/v1"
 
-    DB_USERNAME: str = "pjt"
+    DB_USERNAME: str = "project"
     DB_PASSWORD: SecretStr = "a1s2d3f4"
     DB_HOST: str = "db.mysql"
+    DB_HOST: str = "0.0.0.0"
     DB_PORT: int = "3306"
     DB_NAME: str = "sns"
 
@@ -25,9 +26,9 @@ class Settings(BaseSettings):
     BACKEND_CORS_ORIGINS: List[AnyHttpUrl] = []
 
     SMTP_SERVER: str = "smtp.gmail.com"
-    SMTP_TLS: str = True
+    SMTP_TLS: bool = True
     SMTP_PORT: int = 587 if SMTP_TLS else 465
-    EMAIL_ADDR = "only.for.pjt@gmail.com"
+    EMAIL_ADDRESS = "only.for.pjt@gmail.com"
     EMAIL_PASSWORD = "wngvlgolokntjpas"
 
     def get_test_db_url(self):
