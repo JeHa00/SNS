@@ -194,7 +194,8 @@ class PostDB:
     def like(
         self,
         db: Session,
-        like_data: dict,
+        selected_post_like: None | PostLike,
+        **like_data: dict,
     ) -> PostLike:
         """like_data 를 토대로 post에 좋아요를 실행한다.
 
@@ -205,14 +206,12 @@ class PostDB:
         Returns:
             PostLike: is_liked 값이 True로 생성된 PostLike 객체를 반환
         """
-        selected_post_like = self.get_like(db, like_data)
-
         if selected_post_like and not selected_post_like.is_liked:
-            setattr(selected_post_like, "is_liked", like_data["is_liked"])
+            setattr(selected_post_like, "is_liked", True)
             new_like = selected_post_like
 
         else:  # selected_post_like가 None일 경우
-            new_like = PostLike(**like_data)
+            new_like = PostLike(is_liked=True, **like_data)
 
         db.add(new_like)
         db.commit()
@@ -223,7 +222,7 @@ class PostDB:
     def unlike(
         self,
         db: Session,
-        unlike_data: dict,
+        selected_like: PostLike,
     ) -> PostLike:
         """like_data 를 토대로 post에 좋아요를 취소한다.
 
@@ -237,8 +236,7 @@ class PostDB:
         Returns:
             PostLike: is_liked 값이 변경된 PostLike 객체를 반환
         """
-        selected_like = self.get_like(db, unlike_data)
-        setattr(selected_like, "is_liked", unlike_data["is_liked"])
+        setattr(selected_like, "is_liked", False)
 
         db.add(selected_like)
         db.commit()
