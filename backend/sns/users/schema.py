@@ -16,8 +16,7 @@ class TokenPayload(BaseModel):
 
 
 class UserBase(BaseModel):
-    email: EmailStr | None
-    verified: bool = True
+    email: EmailStr
 
     class Config:
         orm_mode = True
@@ -26,7 +25,6 @@ class UserBase(BaseModel):
 class UserCreate(UserBase):
     password: str = Field(min_length=8)
     password_confirm: str = Field(min_length=8)
-    verified: bool = False
 
     @validator("password_confirm")
     def passwords_match(
@@ -40,12 +38,12 @@ class UserCreate(UserBase):
 
 
 class UserRead(UserBase):
+    email: EmailStr | None
     name: str
     profile_text: str | None
 
 
 class UserUpdate(BaseModel):
-    verified: bool = False
     profile_text: str | None
 
 

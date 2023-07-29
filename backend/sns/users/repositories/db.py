@@ -1,10 +1,6 @@
-import secrets
-
-from fastapi.encoders import jsonable_encoder
 from sqlalchemy.orm import Session
 
 from sns.users.model import User
-from sns.users import schema
 
 
 class UserDB:
@@ -40,28 +36,17 @@ class UserDB:
 
         return user
 
-    def create(
-        self,
-        db: Session,
-        data_for_signup: schema.UserCreate,
-    ) -> User:
+    def create(self, db: Session, **kwargs: dict) -> User:
         """받은 정보로 새 유저를 등록한다.
 
         Args:
             db (Session): db session
-            data_for_signup (UserCreate): 새로 등록한 유저의 email과 password
+            kwargs (dict): 새로 등록한 유저의 email과 password
 
         Returns:
             User: 새로 생성한 유저 객체
         """
-        name = secrets.token_urlsafe(8)  # minimum name length
-
-        new_user = User(
-            email=data_for_signup.email,
-            password=data_for_signup.password,
-            name=f"user-{name}",
-            verified=data_for_signup.verified,
-        )
+        new_user = User(**kwargs)
 
         db.add(new_user)
         db.commit()
@@ -73,7 +58,7 @@ class UserDB:
         self,
         db: Session,
         user: User,
-        data_to_be_updated: schema.UserUpdate | dict,
+        **kwargs,
     ) -> User:
         """user 정보를 수정한다.
 
@@ -85,14 +70,14 @@ class UserDB:
         Returns:
             User: 수정된 user 객체
         """
-        if isinstance(data_to_be_updated, dict):
-            data_to_be_updated = data_to_be_updated
-        else:
-            data_to_be_updated = data_to_be_updated.dict(exclude_unset=True)
+        data_to_be_updated = {
+            key: value
+            for key, value in kwargs.items()
+            if hasattr(user, key) and value is not None
+        }
 
-        for field in jsonable_encoder(user):
-            if field in data_to_be_updated:
-                setattr(user, field, data_to_be_updated[field])
+        for key, value in data_to_be_updated.items():
+            setattr(user, key, value)
 
         db.add(user)
         db.commit()
