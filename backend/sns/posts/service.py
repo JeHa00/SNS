@@ -36,13 +36,12 @@ class PostService:
             )
         return post
 
-    # NOTE: 10개씩 이어서 가져오는지 확인
     def get_multi_posts_and_check_none(
         self,
         db: Session,
         writer_id: int,
         skip: int = 0,
-        limit: int = 10,
+        limit: int = 5,
     ) -> List[Post]:
         """입력받은 정보를 PostDB class에 전달하여 writer_id 값에 해당되는 user가 작성한 여러 post들을 조회한다.
 

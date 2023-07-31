@@ -29,7 +29,7 @@ class PostDB:
         db: Session,
         writer_id: int,
         skip: int = 0,
-        limit: int = 10,
+        limit: int = 5,
     ) -> List[Post]:
         """writer_id 값에 해당되는 user가 작성한 여러 post들을 조회하여 생성날짜를 기준으로 최신순으로 정렬하여 반환한다.
 
@@ -208,6 +208,7 @@ class PostDB:
         """
         if selected_post_like and not selected_post_like.is_liked:
             setattr(selected_post_like, "is_liked", True)
+
             new_like = selected_post_like
 
         else:  # selected_post_like가 None일 경우

@@ -153,7 +153,6 @@ def read_post(
     return post_service.get_post_and_check_none(db, post_id=post_id)
 
 
-# NOTE: 10개씩 이어서 가져오는지 확인
 @router.get(
     "/users/{user_id}/posts",
     response_model=List[schema.Post],
@@ -161,6 +160,7 @@ def read_post(
 )
 def read_posts(
     user_id: int,
+    page: int,
     user_service: UserService = Depends(UserService),
     post_service: PostService = Depends(PostService),
     db: Session = Depends(db.get_db),
@@ -170,6 +170,7 @@ def read_posts(
     Args:
 
      - user_id (int): user의 id
+     - page (int): page 번호
 
     Raises:
 
@@ -180,6 +181,8 @@ def read_posts(
 
      - List[Post]: 여러 post가 list 배열에 담겨져 반환
     """
+    post_size_per_page = 5
+
     selected_user = user_service.get_user(
         db,
         user_id=user_id,
@@ -188,6 +191,7 @@ def read_posts(
     posts = post_service.get_multi_posts_and_check_none(
         db,
         writer_id=selected_user.id,
+        skip=page * post_size_per_page,
     )
     return posts
 
