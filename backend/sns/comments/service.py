@@ -39,16 +39,16 @@ class CommentService:
     def get_multi_comments_and_check_none(
         self,
         db: Session,
+        page: int,
         post_id: int = None,
         writer_id: int = None,
-        skip: int = 0,
         limit: int = 30,
     ) -> List[Comment]:
         """입력받은 정보를 CommentDB class에 전달하여 post_id 값에 해당되는 여러 comment들을 조회한다.
 
         Args:
             - post_id (int): post의 id
-            - skip (int): 쿼리 조회 시 건너띌 갯수. 기본 값은 0
+            - page (int): page number
             - limit (int): 쿼리 조회 시 가져올 최대 갯수. 기본 값은 10
 
         Raises:
@@ -58,11 +58,13 @@ class CommentService:
         Returns:
             - List[Comment]: comment 객체 정보들이 list 배열에 담겨져 반환
         """
+        comment_size_per_page = 30
+
         comments = comment_crud.get_multi_comments(
             db,
             post_id,
             writer_id,
-            skip=skip,
+            skip=page * comment_size_per_page,
             limit=limit,
         )
 

@@ -40,15 +40,14 @@ def get_comments_on_a_post(
     Returns:
         - List[schema.Comment]: 해당되는 여러 comment를 list에 담겨 반환
     """
-    comment_size_per_page = 30
     post_service.get_post_and_check_none(
         db,
         post_id=post_id,
     )
     comments = comment_service.get_multi_comments_and_check_none(
         db,
+        page,
         post_id=post_id,
-        skip=page * comment_size_per_page,
     )
     return comments
 
@@ -79,7 +78,6 @@ def get_comments_of_a_user(
     Returns:
         - List[schema.Comment]: 해당되는 여러 comment를 list에 담겨 반환
     """
-    comment_size_per_page = 30
     selected_user = user_service.get_user(
         db,
         user_id=user_id,
@@ -87,8 +85,8 @@ def get_comments_of_a_user(
     user_service.check_if_user_is_none(selected_user)
     comments = comment_service.get_multi_comments_and_check_none(
         db,
+        page,
         writer_id=user_id,
-        skip=page * comment_size_per_page,
     )
     return comments
 
