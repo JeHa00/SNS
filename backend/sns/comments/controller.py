@@ -21,6 +21,7 @@ router = APIRouter()
 )
 def get_comments_on_a_post(
     post_id: int,
+    page: int,
     post_service: PostService = Depends(PostService),
     comment_service: CommentService = Depends(CommentService),
     db: Session = Depends(db.get_db),
@@ -29,6 +30,7 @@ def get_comments_on_a_post(
 
     Args:
         - post_id (int): comment가 달린 post의 id
+        - page (int): page 번호
 
     Raises:
         - HTTPException (404 NOT FOUND): 다음 2가지 경우에 발생한다.
@@ -38,6 +40,7 @@ def get_comments_on_a_post(
     Returns:
         - List[schema.Comment]: 해당되는 여러 comment를 list에 담겨 반환
     """
+    comment_size_per_page = 30
     post_service.get_post_and_check_none(
         db,
         post_id=post_id,
@@ -45,6 +48,7 @@ def get_comments_on_a_post(
     comments = comment_service.get_multi_comments_and_check_none(
         db,
         post_id=post_id,
+        skip=page * comment_size_per_page,
     )
     return comments
 
@@ -56,6 +60,7 @@ def get_comments_on_a_post(
 )
 def get_comments_of_a_user(
     user_id: int,
+    page: int,
     user_service: UserService = Depends(UserService),
     comment_service: CommentService = Depends(CommentService),
     db: Session = Depends(db.get_db),
@@ -64,6 +69,7 @@ def get_comments_of_a_user(
 
     Args:
         - user_id (int): comment를 작성한 user의 id
+        - page (int): page 번호
 
     Raises:
         - HTTPException (404 NOT FOUND): 다음 2가지 경우일 때 발생된다.
@@ -73,6 +79,7 @@ def get_comments_of_a_user(
     Returns:
         - List[schema.Comment]: 해당되는 여러 comment를 list에 담겨 반환
     """
+    comment_size_per_page = 30
     selected_user = user_service.get_user(
         db,
         user_id=user_id,
@@ -81,12 +88,13 @@ def get_comments_of_a_user(
     comments = comment_service.get_multi_comments_and_check_none(
         db,
         writer_id=user_id,
+        skip=page * comment_size_per_page,
     )
     return comments
 
 
 @router.post(
-    "/users/{user_id}/posts/{post_id}/comments",
+    "/users/{writer_id}/posts/{post_id}/comments",
     response_model=schema.Comment,
     status_code=status.HTTP_201_CREATED,
 )
@@ -109,11 +117,10 @@ def create_comment(
         - current_user (User, optional): 현재 로그인된 user의 정보
 
     Raises:
-        - HTTPException (401 UNAUTHORIZED): writer_id current_user의 id가 다를 경우
-        - HTTPException (403 FORBIDDEN): writer_id 등록된 회원이 없는 경우
+        - HTTPException (401 UNAUTHORIZED): writer_id와 current_user의 id가 다를 경우
         - HTTPException (404 NOT FOUND): 다음 2가지 경우에 발생한다.
             - post_id에 해당되는 post가 존재하지 않는 경우
-            - user_id에 해당되는 회원이 없을 경우
+            - writer_id에 해당되는 회원이 없을 경우
         - HTTPException (500 INTERNAL SERVER ERROR): comment 생성에 실패할 경우
 
     Returns:
@@ -139,7 +146,7 @@ def create_comment(
 
 
 @router.put(
-    "/users/{user_id}/comments/{comment_id}",
+    "/users/{writer_id}/comments/{comment_id}",
     response_model=schema.Comment,
     status_code=status.HTTP_200_OK,
 )
@@ -185,7 +192,7 @@ def update_comment(
 
 
 @router.delete(
-    "/users/{user_id}/comments/{comment_id}",
+    "/users/{writer_id}/comments/{comment_id}",
     response_model=Msg,
     status_code=status.HTTP_200_OK,
 )
