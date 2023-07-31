@@ -12,3 +12,8 @@ class Comment(Base, BaseMixin):
 
     post_id = Column(Integer, ForeignKey("post.id", ondelete="CASCADE"))
     post = relationship("Post", back_populates="comments")
+
+    def __repr__(self) -> str:
+        return (
+            f"Comment(id={self.id}, writer_id={self.writer_id}, post_id={self.post_id})"
+        )
