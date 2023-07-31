@@ -42,7 +42,7 @@ class CommentService:
         post_id: int = None,
         writer_id: int = None,
         skip: int = 0,
-        limit: int = 10,
+        limit: int = 30,
     ) -> List[Comment]:
         """입력받은 정보를 CommentDB class에 전달하여 post_id 값에 해당되는 여러 comment들을 조회한다.
 
@@ -67,10 +67,17 @@ class CommentService:
         )
 
         if len(comments) == 0:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="해당 포스트에 작성된 댓글이 없습니다.",
-            )
+            if post_id and not writer_id:
+                raise HTTPException(
+                    status_code=status.HTTP_404_NOT_FOUND,
+                    detail="해당 글에 작성된 댓글이 없습니다.",
+                )
+            elif writer_id and not post_id:
+                raise HTTPException(
+                    status_code=status.HTTP_404_NOT_FOUND,
+                    detail="해당 유저가 작성한 댓글이 없습니다.",
+                )
+
         else:
             return comments
 
