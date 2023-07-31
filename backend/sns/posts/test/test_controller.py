@@ -50,8 +50,11 @@ def test_read_posts_if_not_registered(
     # 가짜 유저 id
     user_id = 1
 
+    # page number
+    page = 1
+
     # 글 조회 및 결과
-    response = client.get(f"{settings.API_V1_PREFIX}/users/{user_id}/posts")
+    response = client.get(f"{settings.API_V1_PREFIX}/users/{user_id}/posts?page={page}")
     result_msg = response.json()["detail"]
 
     assert response.status_code == status.HTTP_404_NOT_FOUND
@@ -66,8 +69,11 @@ def test_read_posts_if_post_not_exist(
     # 유저 정보
     user = fake_user["user"]
 
+    # page number
+    page = 1
+
     # 글 조회 및 결과
-    response = client.get(f"{settings.API_V1_PREFIX}/users/{user.id}/posts")
+    response = client.get(f"{settings.API_V1_PREFIX}/users/{user.id}/posts?page={page}")
     result_msg = response.json()["detail"]
 
     assert response.status_code == status.HTTP_404_NOT_FOUND
@@ -83,13 +89,15 @@ def test_read_posts_if_post_exist(
     # 유저 정보
     user = fake_user["user"]
 
-    # 글 조회 및 결과
-    response = client.get(f"{settings.API_V1_PREFIX}/users/{user.id}/posts")
-    result = response.json()
+    for page in range(20):
+        # 글 조회 및 결과
+        response = client.get(
+            f"{settings.API_V1_PREFIX}/users/{user.id}/posts?page={page}",
+        )
+        result = response.json()
 
-    assert response.status_code == status.HTTP_200_OK
-    assert response is not None
-    assert len(result) == 10
+        assert response.status_code == status.HTTP_200_OK
+        assert len(result) == 5
 
 
 @pytest.mark.create_post

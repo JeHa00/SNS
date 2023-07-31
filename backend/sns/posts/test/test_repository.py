@@ -5,8 +5,9 @@ from sqlalchemy.orm import Session
 
 from sns.users.test.utils import random_lower_string
 from sns.users.service import user_service
+from sns.users.model import User
 from sns.posts.repository import post_crud
-from sns.posts.model import Post
+from sns.posts.model import Post, PostLike
 from sns.posts import schema
 
 
@@ -66,22 +67,25 @@ def test_get_multi_posts(
     fake_user: dict,
 ):
     writer = fake_user.get("user")
-    posts = post_crud.get_multi_posts(
-        db_session,
-        writer.id,
-    )
+    for page in range(20):
+        posts = post_crud.get_multi_posts(
+            db_session,
+            writer.id,
+            skip=page * 5,
+        )
 
-    assert posts
-    assert len(posts) == 10  # query에 사용하는 limit의 기본값이 10
-    for post in posts:
-        assert hasattr(post, "id")
-        assert hasattr(post, "content")
-        assert hasattr(post, "writer_id")
-        assert post.writer_id == writer.id
-        assert hasattr(post, "writer")
-        assert post.writer == writer
-        assert hasattr(post, "created_at")
-        assert hasattr(post, "updated_at")
+        assert posts
+        assert len(posts) == 5  # query에 사용하는 limit의 기본값이 5
+
+        for post in posts:
+            assert hasattr(post, "id")
+            assert hasattr(post, "content")
+            assert hasattr(post, "writer_id")
+            assert post.writer_id == writer.id
+            assert hasattr(post, "writer")
+            assert post.writer == writer
+            assert hasattr(post, "created_at")
+            assert hasattr(post, "updated_at")
 
 
 def test_update_only_one_by_model_object(
@@ -104,8 +108,6 @@ def test_update_only_one_by_model_object(
     assert content_before_update != content_after_update
 
 
-# FIXME: int를 사용하여 post를 조회 후 업데이트를 여러 post에 시도 시 문제가 없지만, model object를 사용하면 문제가 발생된다.
-# FIXME: post model 객체는 넘어가지만, update 내부 jsonable_encoder가 반환 시 첫 번째 model object만 반환한다.
 def test_update_multi_posts_by_model_object(
     client: TestClient,
     db_session: Session,
@@ -120,6 +122,7 @@ def test_update_multi_posts_by_model_object(
     )
 
     data_to_be_updated = schema.PostUpdate(content="Hello World!")  # 업데이트할 내용
+
     for post in posts:
         post_crud.update(
             db_session,
@@ -196,7 +199,7 @@ def test_delete_user_having_multi_posts(
     assert len(posts) == 0
 
 
-def test_like(
+def test_like_if_post_like_not_exist(
     client: TestClient,
     db_session: Session,
     fake_user: dict,
@@ -205,13 +208,14 @@ def test_like(
     user = fake_user.get("user")
 
     for post_id in range(1, 101):
-        like_data = schema.PostLike(
-            who_like_id=user.id,
-            like_target_id=post_id,
-        )
+        like_data = {
+            "who_like_id": user.id,
+            "like_target_id": post_id,
+        }
         post_crud.like(
             db_session,
-            like_data.dict(),
+            None,
+            **like_data,
         )
 
     posts = post_crud.get_like_targets(
@@ -259,34 +263,81 @@ def test_unlike(
     user = fake_user.get("user")
 
     for post_id in range(1, 51):
-        unlike_data = schema.PostUnlike(
-            who_like_id=user.id,
-            like_target_id=post_id,
-        )
+        post_like_data = {
+            "who_like_id": user.id,  # id = 1
+            "like_target_id": post_id,
+        }
+        post_like_object: PostLike = post_crud.get_like(db_session, post_like_data)
         post_crud.unlike(
             db_session,
-            unlike_data.dict(),
+            post_like_object,
         )
 
-        who_like = post_crud.get_users_who_like(
+        who_like: List[PostLike] = post_crud.get_users_who_like(
             db_session,
             post_id,
         )
+
+        # fake_user와 fake_postlike에서 another user를 생성하여 총 user id가 2까지 존재하는 상황
         assert len(who_like) == 1  # who_like_id=2 인 유저 정보만 조회
 
     for post_id in range(1, 101):
-        unlike_data = schema.PostUnlike(
-            who_like_id=2,
-            like_target_id=post_id,
+        post_like_data = {
+            "who_like_id": 2,
+            "like_target_id": post_id,
+        }
+        post_like_object: PostLike = post_crud.get_like(
+            db_session,
+            post_like_data,
         )
         post_crud.unlike(
             db_session,
-            unlike_data.dict(),
+            post_like_object,
         )
 
-        who_like = post_crud.get_users_who_like(
+        who_like: List[PostLike] = post_crud.get_users_who_like(
             db_session,
             post_id,
         )
 
         assert len(who_like) == 0
+
+
+def test_like_if_post_like_already_exist(
+    client: TestClient,
+    db_session: Session,
+    fake_user: dict,
+    fake_postlike: None,
+):
+    user = fake_user.get("user")
+
+    for post_id in range(1, 51):
+        post_like_data = {
+            "who_like_id": user.id,  # id = 1
+            "like_target_id": post_id,
+        }
+        post_like_object: PostLike = post_crud.get_like(db_session, post_like_data)
+
+        # unlike 실행하기
+        post_crud.unlike(
+            db_session,
+            post_like_object,
+        )
+
+        who_like: List[PostLike] = post_crud.get_users_who_like(
+            db_session,
+            post_id,
+        )
+
+        # fake_user와 fake_postlike에서 another user를 생성하여 총 user id가 2까지 존재하는 상황
+        assert len(who_like) == 1  # who_like_id=2 인 유저 정보만 조회
+
+        # 다시 like 실행하기
+        post_crud.like(db_session, post_like_object)
+
+        who_like: List[User] = post_crud.get_users_who_like(
+            db_session,
+            post_id,
+        )
+
+        assert len(who_like) == 2
