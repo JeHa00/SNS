@@ -91,7 +91,7 @@ class CommentDB:
     def update(
         self,
         db: Session,
-        comment: Comment | int,
+        comment: Comment,
         **kwargs,
     ) -> Comment:
         """Comment 모델 객체 또는 comment_id 로 주어진 comment 객체를
