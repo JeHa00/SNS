@@ -37,11 +37,10 @@ def fake_post(
     user = fake_user.get("user")
 
     # verified 상태 변경
-    data_to_be_updated = UserUpdate(verified=True)
     user_service.update(
         db_session,
         user,
-        data_to_be_updated.dict(),
+        {"verified": True},
     )
 
     # 생성할 post 정보
