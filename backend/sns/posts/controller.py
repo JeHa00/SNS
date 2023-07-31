@@ -181,8 +181,6 @@ def read_posts(
 
      - List[Post]: 여러 post가 list 배열에 담겨져 반환
     """
-    post_size_per_page = 5
-
     selected_user = user_service.get_user(
         db,
         user_id=user_id,
@@ -191,7 +189,7 @@ def read_posts(
     posts = post_service.get_multi_posts_and_check_none(
         db,
         writer_id=selected_user.id,
-        skip=page * post_size_per_page,
+        skip=page,
     )
     return posts
 

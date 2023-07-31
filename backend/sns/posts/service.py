@@ -40,7 +40,7 @@ class PostService:
         self,
         db: Session,
         writer_id: int,
-        skip: int = 0,
+        page: int,
         limit: int = 5,
     ) -> List[Post]:
         """입력받은 정보를 PostDB class에 전달하여 writer_id 값에 해당되는 user가 작성한 여러 post들을 조회한다.
@@ -57,10 +57,12 @@ class PostService:
         Returns:
             - List[Post]: post 객체 정보들이 list 배열에 담겨져 반환
         """
+        post_size_per_page = 5
+
         posts = post_crud.get_multi_posts(
             db,
             writer_id,
-            skip=skip,
+            skip=page * post_size_per_page,
             limit=limit,
         )
 
