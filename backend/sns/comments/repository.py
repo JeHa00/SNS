@@ -28,7 +28,7 @@ class CommentDB:
         post_id: int,
         writer_id: int,
         skip: int = 0,
-        limit: int = 100,
+        limit: int = 30,
     ) -> List[Comment]:
         """writer_id에 해당되는 writer가 작성한 comment들,
           또는 post_id에 해당되는 post에 작성된 comment들을 조회한다.
