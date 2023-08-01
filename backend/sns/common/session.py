@@ -16,7 +16,7 @@ class SQLAlchemy:
         db 초기화 함수
         """
         self._engine = create_engine(
-            settings.SQLAlCHEMY_DATABASE_URI.format(
+            settings.SQLALCHEMY_DATABASE_URI.format(
                 username=settings.DB_USERNAME,
                 pw=settings.DB_PASSWORD.get_secret_value(),
                 host=settings.DB_HOST,

@@ -22,6 +22,20 @@ add-trailing-comma = "^2.4.0"
 
 [tool.poetry.group.test.dependencies]
 pytest = "^7.2.1"
+httpx = "^0.23.3"
+
+
+[tool.pytest.ini_options]
+markers = [
+    "signup",
+    "verify_email",
+    "login",
+    "reset_password",
+    "change_password",
+    "read_user",
+    "update_user",
+    "delete_user",
+]
 
 
 [tool.poetry.group.dev.dependencies]

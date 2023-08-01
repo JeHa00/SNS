@@ -1,5 +1,5 @@
 from sqlalchemy import Column, Integer, TIMESTAMP, func
-from sqlalchemy.ext.declarative import as_declarative, declared_attr
+from sqlalchemy.orm import as_declarative, declared_attr
 
 
 @as_declarative()

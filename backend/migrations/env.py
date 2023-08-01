@@ -27,7 +27,7 @@ target_metadata = Base.metadata
 # can be acquired:
 # my_important_option = config.get_main_option("my_important_option")
 # ... etc.
-db_url = settings.SQLAlCHEMY_DATABASE_URI.format(
+db_url = settings.SQLALCHEMY_DATABASE_URI.format(
     username=settings.DB_USERNAME,
     pw=settings.DB_PASSWORD.get_secret_value(),
     host=settings.DB_HOST,
@@ -75,7 +75,9 @@ def run_migrations_online() -> None:
 
     with connectable.connect() as connection:
         context.configure(
-            url=db_url, connection=connection, target_metadata=target_metadata
+            url=db_url,
+            connection=connection,
+            target_metadata=target_metadata,
         )
 
         with context.begin_transaction():
