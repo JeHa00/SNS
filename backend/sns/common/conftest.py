@@ -14,7 +14,15 @@ from sns.posts.controller import router as posts
 
 # from sns.comments.controller import router as comments
 
-engine = create_engine(settings.get_test_db_url())
+db_url = settings.SQLALCHEMY_DATABASE_URI.format(
+    username="root",
+    pw=settings.DB_PASSWORD.get_secret_value(),
+    host="0.0.0.0",
+    port="3310",
+    name="test",
+)
+
+engine = create_engine(db_url)
 TestingSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
 
