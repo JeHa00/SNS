@@ -8,12 +8,16 @@ class Settings(BaseSettings):
     PROJECT_NAME: str = "SNS"
     API_V1_PREFIX: str = "/api/v1"
 
+    # Mysql
     DB_USERNAME: str = "project"
     DB_PASSWORD: SecretStr = "a1s2d3f4"
     DB_HOST: str = "db.mysql"
-    DB_HOST: str = "0.0.0.0"
-    DB_PORT: int = "3306"
+    DB_PORT: str = "3306"
     DB_NAME: str = "sns"
+
+    # REDIS
+    REDIS_DB_HOST: str = "db.redis"
+    REDIS_DB_PORT: str = "6379"
 
     SQLALCHEMY_DATABASE_URI: str = (
         "mysql+pymysql://{username}:{pw}@{host}:{port}/{name}?charset=utf8mb4"
