@@ -1,10 +1,12 @@
 from typing import List
 
 from fastapi import APIRouter, Depends, status
+from starlette.background import BackgroundTasks
 from sqlalchemy.orm import Session
+from redis.client import Redis
 
 from sns.common.session import db
-from sns.users.schema import Msg, UserBase
+from sns.users.schema import Msg, UserRead
 from sns.users.service import UserService
 from sns.users.model import User
 from sns.posts.service import PostService
@@ -39,14 +41,16 @@ def read_likees(
 
 @router.get(
     "/posts/{post_id}/likers",
-    response_model=List[UserBase],
+    response_model=List[UserRead],
     status_code=status.HTTP_200_OK,
 )
 def read_likers(
     post_id: int,
+    background_tasks: BackgroundTasks,
     post_service: PostService = Depends(PostService),
+    redis_db: Redis = Depends(db.get_redis_db),
     db: Session = Depends(db.get_db),
-) -> List[UserBase]:
+) -> List[UserRead]:
     """post_id에 해당하는 post를 좋아요한 liker들인 user를 조회한다.
 
     Args:
@@ -60,9 +64,14 @@ def read_likers(
 
     Returns:
 
-    - List[UserBase]: post를 좋아요한 유저 목록을 반환
+    - List[UserRead]: post를 좋아요한 유저 목록을 반환
     """
-    return post_service.get_users_who_like(db, post_id)
+    return post_service.get_users_who_like(
+        db,
+        redis_db,
+        post_id,
+        background_tasks,
+    )
 
 
 @router.post(
