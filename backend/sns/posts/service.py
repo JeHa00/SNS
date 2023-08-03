@@ -1,10 +1,12 @@
 from typing import List
 
+from starlette.background import BackgroundTasks
 from fastapi import HTTPException, status
 from sqlalchemy.orm import Session
+from redis.client import Redis
 
 from sns.users.model import User
-from sns.posts.repository import post_crud
+from sns.posts.repository import post_crud, post_redis_crud
 from sns.posts.model import Post, PostLike
 
 
@@ -284,7 +286,11 @@ class PostService:
                 detail="삭제할 권한이 없습니다.",
             )
 
-    def get_like(self, db: Session, post_like_data: dict) -> PostLike | None:
+    def get_like(
+        self,
+        db: Session,
+        post_like_data: dict,
+    ) -> PostLike | None:
         """입력받은 정보를 PostLikeDB class에 전달하여 post_like_data를 가지고 있는 PostLike 모델 객체를 조회한다.
             없으면 None을 반환한다.
 
@@ -301,12 +307,15 @@ class PostService:
     def get_users_who_like(
         self,
         db: Session,
+        redis_db: Redis,
         like_target_id: int,
+        background_tasks: BackgroundTasks,
     ) -> List[User]:
         """입력받은 정보를 PostLikeDB class에 전달하여 주어진 post id에 해당하는 post를 좋아요한 user들을 조회한다.
 
         Args:
             - db (Session): db session.
+            - redis_db (Redis): Redis db
             - like_target_id (int): 좋아요를 받은 post의 id
 
         Raises:
@@ -315,15 +324,31 @@ class PostService:
         Returns:
             - List[User]: 해당 post에 좋아요를 유저들을 반환
         """
-        users = post_crud.get_users_who_like(db, like_target_id)
+        cache = post_redis_crud.get_cache(redis_db, f"post::{like_target_id}")
 
-        if len(users) == 0:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="해당 글에 좋아요를 한 유저가 없습니다.",
+        if cache is None:
+            users = post_crud.get_users_who_like(db, like_target_id)
+
+            if len(users) == 0:
+                raise HTTPException(
+                    status_code=status.HTTP_404_NOT_FOUND,
+                    detail="해당 글에 좋아요를 한 유저가 없습니다.",
+                )
+
+            data = {
+                "redis_db": redis_db,
+                "key": f"post::{like_target_id}",
+                "value": users,
+            }
+
+            background_tasks.add_task(
+                post_redis_crud.set_cache,
+                **data,
             )
-        else:
+
             return users
+
+        return cache
 
     def get_like_targets(
         self,
