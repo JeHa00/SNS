@@ -1,6 +1,9 @@
-from typing import List
+from typing import List, Any
+import json
 
+from fastapi.encoders import jsonable_encoder
 from sqlalchemy.orm import Session
+from redis.client import Redis
 
 from sns.users.model import User
 from sns.posts.model import Post, PostLike
@@ -246,4 +249,66 @@ class PostDB:
         return selected_like
 
 
+class PostRedisDB:
+    def get_cache(
+        self,
+        redis_db: Redis,
+        key: str,
+    ) -> Any:
+        """key를 통해 redis에 저장된 value를 얻는다.
+        value가 None이면 그대로 반환하고, None이 아니면 역직렬화를 한 후 값을 반환한다.
+
+        Args:
+            redis_db (Redis): redis db session
+            key (str): redis_db에 저장된 key
+
+        Returns:
+            Any: None 이거나 역직렬화를 거친 value
+        """
+        cache = redis_db.get(key)
+        if not cache:
+            return cache
+        return json.loads(cache)
+
+    def set_cache(
+        self,
+        redis_db: Redis,
+        key: str,
+        value: Any,
+    ) -> bool:
+        """redis_db에 key - value로 저장한다.
+
+        Args:
+            redis_db (Redis): redis db session
+            key (str): redis_db에 저장된 key
+            value (Any): redis_db에 key로 저장된 value
+
+        Returns:
+            bool: cache에 저장되면 True
+        """
+        serialized_value = json.dumps(jsonable_encoder(value))
+        redis_db.set(key, serialized_value)
+        redis_db.expire(key, 300)
+
+        return True
+
+    def delete_cache(
+        self,
+        redis_db: Redis,
+        key: str,
+    ) -> bool:
+        """redis_db에 해당 key 값을 삭제한다.
+
+        Args:
+            redis_db (Redis): redis db session
+            key (str): redis_db에 저장된 key
+
+        Returns:
+            bool: 삭제하면 True를 반환
+        """
+        redis_db.delete(key)
+        return True
+
+
 post_crud = PostDB()
+post_redis_crud = PostRedisDB()
