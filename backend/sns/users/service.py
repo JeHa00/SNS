@@ -20,6 +20,8 @@ class UserService:
     __pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
     __oauth2_scheme = OAuth2PasswordBearer(tokenUrl=f"{settings.API_V1_PREFIX}/token")
 
+    USER_NOT_FOUND_ERROR = HTTPException(status_code=404, detail="해당되는 유저를 찾을 수 없습니다.")
+
     def get_pwd_context(
         cls,
     ) -> CryptContext:
@@ -276,21 +278,6 @@ class UserService:
 
         return current_user
 
-    def check_if_user_is_none(self, user: User) -> None:
-        """반환된 user 정보가 None이면 404 status error를 발생시킨다.
-
-        Args:
-            user (User): user 정보가 존재하는지 판단
-
-        Raises:
-            HTTPException (404 NOT FOUND): email에 해당하는 user를 찾지 못할 때 발생
-        """
-        if user is None:
-            raise HTTPException(
-                status_code=404,
-                detail="해당되는 유저를 찾을 수 없습니다.",
-            )
-
     def get_user(
         self,
         db: Session,
@@ -505,7 +492,8 @@ class UserService:
             verification_code=code,
         )
 
-        self.check_if_user_is_none(user)
+        if not user:
+            raise self.USER_NOT_FOUND_ERROR
 
         self.update(
             db,
@@ -542,7 +530,8 @@ class UserService:
             password=password,
         )
 
-        self.check_if_user_is_none(user)
+        if not user:
+            raise self.USER_NOT_FOUND_ERROR
 
         if self.is_verified(user):
             access_token = self.create_access_token({"sub": email})
@@ -572,7 +561,8 @@ class UserService:
             email=email,
         )
 
-        self.check_if_user_is_none(user)
+        if not user:
+            raise self.USER_NOT_FOUND_ERROR
 
         if self.is_verified(user):
             self.send_password_reset_email(
@@ -610,7 +600,8 @@ class UserService:
             email=email,
         )
 
-        self.check_if_user_is_none(user)
+        if not user:
+            raise self.USER_NOT_FOUND_ERROR
 
         if self.verify_password(
             current_password,
@@ -653,7 +644,8 @@ class UserService:
             user_id=user_id,
         )
 
-        self.check_if_user_is_none(selected_user)
+        if not selected_user:
+            raise self.USER_NOT_FOUND_ERROR
 
         if selected_user:
             if selected_user.email == email:
@@ -699,7 +691,8 @@ class UserService:
             user_id=user_id,
         )
 
-        self.check_if_user_is_none(selected_user)
+        if not selected_user:
+            raise self.USER_NOT_FOUND_ERROR
 
         if selected_user.email == email:
             updated_user = self.update(
@@ -739,7 +732,8 @@ class UserService:
             user_id=user_id,
         )
 
-        self.check_if_user_is_none(selected_user)
+        if not selected_user:
+            raise self.USER_NOT_FOUND_ERROR
 
         if selected_user.email == email:
             self.remove(
