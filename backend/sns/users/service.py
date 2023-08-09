@@ -454,9 +454,8 @@ class UserService:
 
         Raises:
 
-        - HTTPException (403 FORBIDDEN): 다음 2가지 경우에 발생한다.
-            - 회원 가입 시 입력한 이메일이 이미 인증되었을 때
-            - 이미 등록은 되었고, 인증은 안되었을 때
+        - HTTPException (400 BAD REQUEST): 이미 인증된 이메일인 경우
+        - HTTPException (403 FORBIDDEN): 등록은 되었지만 이메일 미인증일 경우
         - HTTPException (500 INTERNAL SERVER ERROR): 다음 2가지 경우에 발생한다.
             - 유저 생성에 실패했을 때
             - 이메일 인증을 위한 이메일 발송에 실패했을 때
@@ -466,17 +465,11 @@ class UserService:
             email=data_for_signup.get("email"),
         )
 
-        if user:
-            if self.is_verified(user):
-                raise HTTPException(
-                    status_code=403,
-                    detail="이미 인증된 이메일입니다.",
-                )
-            else:
-                raise HTTPException(
-                    status_code=403,
-                    detail="이미 등록되었지만 미인증인 유저입니다.",
-                )
+        if user and self.is_verified(user):
+            raise HTTPException(
+                status_code=400,
+                detail="이미 인증된 이메일입니다.",
+            )
 
         self.create(
             db,
@@ -535,8 +528,8 @@ class UserService:
 
         Raises:
 
-        - HTTPException (404 NOT FOUND): email에 해당하는 user를 찾지 못할 때 발생
         - HTTPException (400 BAD REQUEST): 입력한 비밀번호가 회원가입 시 입력한 비밀번호와 다를 때 발생
+        - HTTPException (404 NOT FOUND): email에 해당하는 user를 찾지 못할 때 발생
         - HTTPException (403 FORBIDDEN): 등록은 했지만 이메일 인증이 완료되지 못한 계정일 때 발생
 
         Returns:
@@ -569,8 +562,8 @@ class UserService:
 
         Raises:
 
-        - HTTPException (404 NOT FOUND): email에 해당하는 user를 찾지 못할 때 발생
         - HTTPException (403 FORBIDDEN): 등록은 했지만 이메일 인증이 완료되지 못한 계정일 때 발생
+        - HTTPException (404 NOT FOUND): email에 해당하는 user를 찾지 못할 때 발생
         - HTTPException (500 INTERNAL SERVER ERROR): 다음 경우에 발생한다.
             - 비밀번호 초기화를 위한 이메일 발송에 실패했을 때
         """
@@ -607,9 +600,9 @@ class UserService:
 
         Raises:
 
+        - HTTPException (400 BAD REQUEST): 입력한 비밀번호가 회원가입 시 입력한 비밀번호와 다를 때 발생
         - HTTPException (403 FORBIDDEN): user가 이메일 인증이 완료되지 않으면 발생
         - HTTPException (404 NOT FOUND): email에 해당하는 user를 찾지 못할 때 발생
-        - HTTPException (400 BAD REQUEST): 입력한 비밀번호가 회원가입 시 입력한 비밀번호와 다를 때 발생
         - HTTPException (500 INTERNAL SERVER ERROR): 비밀번호 변경에 실패했을 때 발생한다.
         """
         user = self.get_user(
@@ -692,10 +685,10 @@ class UserService:
 
         Raises:
 
+        - HTTPException (401 UNAUTHORIZED): 변경 권한이 없음을 나타내는 에러
         - HTTPException (403 FORBIDDEN): user가 이메일 인증이 완료되지 않으면 발생
         - HTTPException (404 NOT FOUND): email에 해당하는 user를 찾지 못할 때 발생
         - HTTPException (500 INTERNAL SERVER ERROR): 유저 정보 변경에 실패했을 때 발생
-        - HTTPException (401 UNAUTHORIZED): 변경 권한이 없음을 나타내는 에러
 
         Returns:
 
@@ -736,10 +729,10 @@ class UserService:
 
         Raises:
 
+        - HTTPException (401 UNAUTHORIZED): 삭제 권한이 없음을 나타내는 에러
         - HTTPException (403 FORBIDDEN): user가 이메일 인증이 완료되지 않으면 발생
         - HTTPException (404 NOT FOUND): email에 해당하는 user를 찾지 못할 때 발생
         - HTTPException (500 INTERNAL SERVER ERROR): 유저 정보 삭제에 실패했을 때 발생
-        - HTTPException (401 UNAUTHORIZED): 삭제 권한이 없음을 나타내는 에러
         """
         selected_user = self.get_user(
             db,

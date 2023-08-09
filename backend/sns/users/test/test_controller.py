@@ -50,7 +50,7 @@ def test_signup_if_email_is_already_verified(
     response = client.post(f"{settings.API_V1_PREFIX}/signup", json=signup_data)
     result_msg = response.json()["detail"]
 
-    assert response.status_code == status.HTTP_403_FORBIDDEN
+    assert response.status_code == status.HTTP_400_BAD_REQUEST
     assert result_msg == "이미 인증된 이메일입니다."
 
 
