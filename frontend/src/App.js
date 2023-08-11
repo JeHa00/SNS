@@ -25,6 +25,7 @@ const Container = styled.div`
 `;
 
 const Login = lazy(() => import("./pages/Login"));
+const Signup = lazy(() => import("./pages/Signup"));
 
 function App() {
   return (
@@ -34,7 +35,8 @@ function App() {
         <div className='App'>
           <Container>
             <Routes>
-              <Route path='/' element={<Login />}></Route>
+              <Route path='/' element={<Login />} />
+              <Route path='/signup' element={<Signup />} />
             </Routes>
           </Container>
         </div>
