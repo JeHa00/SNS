@@ -9,7 +9,8 @@ from sqlalchemy.orm import Session
 from sns.common.conftest import start_app, app, db_session, client
 from sns.common.config import settings
 from sns.users.test.utils import random_lower_string, random_email
-from sns.users.schema import UserCreate
+from sns.users.schema import UserCreate, UserUpdate
+from sns.users.repositories.db import user_crud
 from sns.users.service import user_service
 
 

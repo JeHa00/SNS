@@ -1,8 +1,10 @@
 from fastapi import FastAPI
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker, close_all_sessions
+import redis
 
 from sns.common.config import settings
+from sns.common.base import Base
 
 
 class SQLAlchemy:
@@ -10,6 +12,8 @@ class SQLAlchemy:
         self._engine = None
         self._session = None
         self._app = None
+        self._redis_engine = None
+        self._redis_session = None
 
     def init_app(self, app: FastAPI, **kwargs):
         """
@@ -31,6 +35,15 @@ class SQLAlchemy:
             bind=self._engine,
         )
 
+        self._redis_engine = redis.ConnectionPool(
+            host=settings.REDIS_DB_HOST,
+            port=settings.REDIS_DB_PORT,
+        )
+
+        self._redis_session = redis.Redis(
+            connection_pool=self._redis_engine,
+        )
+
         @app.on_event("startup")
         def startup():
             self._engine.connect()
@@ -39,6 +52,8 @@ class SQLAlchemy:
         def shutdown():
             close_all_sessions()
             self._engine.dispose()
+
+        Base.metadata.create_all(bind=self._engine)
 
     def get_db(self):
         """
@@ -51,6 +66,15 @@ class SQLAlchemy:
             yield db_session
         finally:
             db_session.close()
+
+    def get_redis_db(self):
+        if self._redis_session is None:
+            self.init_app(self._app)
+        try:
+            redis_db_session = self._redis_session
+            yield redis_db_session
+        finally:
+            redis_db_session.close()
 
     @property
     def engine(self):

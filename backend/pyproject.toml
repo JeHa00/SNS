@@ -18,6 +18,7 @@ emails = "^0.6"
 jinja2 = "^3.1.2"
 alembic = "^1.10.2"
 add-trailing-comma = "^2.4.0"
+redis = "^4.6.0"
 
 
 [tool.poetry.group.test.dependencies]
@@ -35,7 +36,17 @@ markers = [
     "read_user",
     "update_user",
     "delete_user",
+    "read_post",
+    "read_posts",
+    "create_post",
+    "update_post",
+    "delete_post",
+    "read_likers",
+    "read_likees",
+    "like_post",
+    "unlike_post",
 ]
+
 
 
 [tool.poetry.group.dev.dependencies]
