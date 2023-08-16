@@ -118,12 +118,15 @@ class PostDB:
         self,
         db: Session,
         post_to_be_deleted: Post | int,
-    ) -> bool:
+    ) -> dict:
         """전달받은 해당 post를 삭제한다.
 
         Args:
             db (Session): db session
             post_to_be_deleted (Post): 삭제할 post 객체 정보로, Post model 또는 id 값으로 전달된다.
+
+        Returns:
+            Dict: 성공 시, 성공 메세지를 반환
         """
         if isinstance(post_to_be_deleted, int):
             post = self.get_post(db, user_id=post_to_be_deleted)
@@ -140,6 +143,15 @@ class PostDB:
         db: Session,
         post_like_data: dict,
     ) -> PostLike:
+        """post_like_data에 해당되는 PostLike 객체 정보를 얻는다.
+
+        Args:
+            db (Session): db session
+            post_like_data (dict): like_target_id, who_like_id 정보
+
+        Returns:
+            PostLike: _description_
+        """
         return (
             db.query(PostLike)
             .filter(
@@ -204,16 +216,15 @@ class PostDB:
 
         Args:
             db (Session): db session
-            like_data (dict): who_like_id, like_target_id, is_liked 값 정보
-
+            selected_like (PostLike): 다음 2가지 중 하나에 해당된다.
+                - 새로 생성할 경우: None
+                - 존재하는 PostLike model 수정: who_like_id, like_target_id, is_liked 값 정보
         Returns:
             PostLike: is_liked 값이 True로 생성된 PostLike 객체를 반환
         """
         if selected_post_like and not selected_post_like.is_liked:
             setattr(selected_post_like, "is_liked", True)
-
             new_like = selected_post_like
-
         else:  # selected_post_like가 None일 경우
             new_like = PostLike(is_liked=True, **like_data)
 
@@ -232,10 +243,7 @@ class PostDB:
 
         Args:
             db (Session): db session
-            unlike_data (dict): who_like_id, like_target_id, is_liked 값 정보
-
-        Raises:
-            ValueError: is_liked 값이 이미 False인 경우 발생되는 에러
+            selected_like (PostLike): who_like_id, like_target_id, is_liked 값 정보
 
         Returns:
             PostLike: is_liked 값이 변경된 PostLike 객체를 반환
