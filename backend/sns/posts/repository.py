@@ -175,7 +175,6 @@ class PostDB:
         Returns:
             List[User]: list 데이터 타입에 담겨진 User 객체
         """
-        # like_target_id에 해당되는 post에 좋아요를 누른 다수의 user 조회
         subquery = (
             db.query(PostLike)
             .filter(PostLike.like_target_id == like_target_id, PostLike.is_liked)
@@ -199,13 +198,14 @@ class PostDB:
         Returns:
             List[Post]: list 데이터 타입에 담겨진 Post 객체 정보들
         """
-        return (
-            db.query(Post)
-            .join(Post.likee)
+        subquery = (
+            db.query(PostLike)
             .filter(PostLike.who_like_id == who_like_id, PostLike.is_liked)
             .order_by(PostLike.updated_at.desc())
-            .all()
+            .subquery()
         )
+
+        return db.query(Post).join(subquery, Post.id == subquery.c.like_target_id).all()
 
     def like(
         self,
