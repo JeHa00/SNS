@@ -218,15 +218,15 @@ class PostDB:
             db (Session): db session
             selected_like (PostLike): 다음 2가지 중 하나에 해당된다.
                 - 새로 생성할 경우: None
-                - 존재하는 PostLike model 수정: who_like_id, like_target_id, is_liked 값 정보
+                - 존재하는 PostLike 객체
+            like_data: who_like_id, like_target_id 값 정보
+
         Returns:
             PostLike: is_liked 값이 True로 생성된 PostLike 객체를 반환
         """
-        if selected_post_like and not selected_post_like.is_liked:
-            setattr(selected_post_like, "is_liked", True)
-            new_like = selected_post_like
-        else:  # selected_post_like가 None일 경우
-            new_like = PostLike(is_liked=True, **like_data)
+        new_like = selected_post_like or PostLike(is_liked=True, **like_data)
+        if not new_like.is_liked:
+            new_like.is_liked = True
 
         db.add(new_like)
         db.commit()
@@ -248,7 +248,7 @@ class PostDB:
         Returns:
             PostLike: is_liked 값이 변경된 PostLike 객체를 반환
         """
-        setattr(selected_like, "is_liked", False)
+        selected_like.is_liked = False
 
         db.add(selected_like)
         db.commit()

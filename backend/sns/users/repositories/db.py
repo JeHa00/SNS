@@ -195,10 +195,9 @@ class UserDB:
         Returns:
             Follow: 생성된 Follow 객체를 반환
         """
-        if selected_follow_data and not selected_follow_data.is_followed:
-            setattr(selected_follow_data, "is_followed", True)
-        else:
-            new_follow = Follow(is_followed=True, **follow_data)
+        new_follow = selected_follow_data or Follow(is_followed=True, **follow_data)
+        if not new_follow.is_followed:
+            new_follow.is_followed = True
 
         db.add(new_follow)
         db.commit()
@@ -220,7 +219,7 @@ class UserDB:
         Returns:
             Follow: follow 관계가 끊어진 Follow 객체 정보를 반환
         """
-        setattr(selected_follow_data, "is_followed", False)
+        selected_follow_data.is_followed = False
 
         db.add(selected_follow_data)
         db.commit()
