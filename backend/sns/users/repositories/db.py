@@ -152,12 +152,11 @@ class UserDB:
         Returns:
             List[User]: following_id로부터 follow 신청을 받은 user 목록
         """
-        return (
-            db.query(User)
-            .join(User.to_user)
-            .filter(Follow.following_id == following_id)
-            .all()
+        subquery = (
+            db.query(Follow).filter(Follow.following_id == following_id).subquery()
         )
+
+        return db.query(User).join(subquery, User.id == subquery.c.follower_id).all()
 
     def get_followings(
         self,
@@ -173,12 +172,9 @@ class UserDB:
         Returns:
             List[User]: follower_id를 따르는 user 목록
         """
-        return (
-            db.query(User)
-            .join(User.from_user)
-            .filter(Follow.follower_id == follower_id)
-            .all()
-        )
+        subquery = db.query(Follow).filter(Follow.follower_id == follower_id).subquery()
+
+        return db.query(User).join(subquery, User.id == subquery.c.following_id).all()
 
     def follow(
         self,
