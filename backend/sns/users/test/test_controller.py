@@ -29,7 +29,7 @@ def test_signup_if_email_is_not_verified(
     )
     result_msg = response.json()["detail"]
 
-    assert response.status_code == status.HTTP_403_FORBIDDEN
+    assert response.status_code == status.HTTP_401_UNAUTHORIZED
     assert result_msg == "인증 완료되지 못한 이메일입니다. 먼저 이메일 인증을 완료하세요."
 
 
@@ -50,7 +50,7 @@ def test_signup_if_email_is_already_verified(
     response = client.post(f"{settings.API_V1_PREFIX}/signup", json=signup_data)
     result_msg = response.json()["detail"]
 
-    assert response.status_code == status.HTTP_403_FORBIDDEN
+    assert response.status_code == status.HTTP_400_BAD_REQUEST
     assert result_msg == "이미 인증된 이메일입니다."
 
 
@@ -103,7 +103,7 @@ def test_login_if_user_is_not_verified(client: TestClient, fake_user: Dict):
     )
     result_msg = response.json()["detail"]
 
-    assert response.status_code == status.HTTP_403_FORBIDDEN
+    assert response.status_code == status.HTTP_401_UNAUTHORIZED
     assert result_msg == "인증 완료되지 못한 이메일입니다. 먼저 이메일 인증을 완료하세요."
 
 
@@ -163,7 +163,7 @@ def test_reset_password_if_not_verified_email(client: TestClient, fake_user: Dic
     response = client.patch(f"{settings.API_V1_PREFIX}/password-reset", json=user.email)
     result_msg = response.json()["detail"]
 
-    assert response.status_code == status.HTTP_403_FORBIDDEN
+    assert response.status_code == status.HTTP_401_UNAUTHORIZED
     assert result_msg == "인증 완료되지 못한 이메일입니다. 먼저 이메일 인증을 완료하세요."
 
 
@@ -358,7 +358,7 @@ def test_update_user_on_profile_text_if_not_authorized(
     result_msg = response.json()["detail"]
 
     assert current_user_email != email_of_not_authorized_user
-    assert response.status_code == status.HTTP_401_UNAUTHORIZED
+    assert response.status_code == status.HTTP_403_FORBIDDEN
     assert result_msg == "수정할 권한이 없습니다."
 
 
@@ -403,7 +403,7 @@ def test_delete_user_if_not_authorized(
     )
     result_msg = response.json()["detail"]
 
-    assert response.status_code == status.HTTP_401_UNAUTHORIZED
+    assert response.status_code == status.HTTP_403_FORBIDDEN
     assert result_msg == "삭제할 권한이 없습니다."
 
 
