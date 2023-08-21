@@ -180,7 +180,8 @@ class UserDB:
         self,
         db: Session,
         selected_follow_data: None | Follow,
-        **follow_data: dict,
+        follower_id: int,
+        following_id: int,
     ) -> Follow:
         """follow_data 를 토대로 follow 관계를 맺기 위해 Follow 객체를 생성한다.
 
@@ -191,7 +192,11 @@ class UserDB:
         Returns:
             Follow: 생성된 Follow 객체를 반환
         """
-        new_follow = selected_follow_data or Follow(is_followed=True, **follow_data)
+        new_follow = selected_follow_data or Follow(
+            is_followed=True,
+            follower_id=follower_id,
+            following_id=following_id,
+        )
         if not new_follow.is_followed:
             new_follow.is_followed = True
 
