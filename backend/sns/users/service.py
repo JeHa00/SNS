@@ -270,7 +270,7 @@ class UserService:
 
         if not current_user.verified:
             raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
+                status_code=status.HTTP_401_UNAUTHORIZED,
                 detail="인증 완료되지 못한 이메일입니다. 먼저 이메일 인증을 완료하세요.",
             )
 
@@ -355,7 +355,7 @@ class UserService:
             data_for_signup (schema.UserCreate): 등록할 user의 가입 정보
 
         Raises:
-            HTTPException (500 INTERNAL SERVER ERROR): user 등록 과정에서 문제가 생기면 에러를 발생시킨다.
+            HTTPException (500 INTERNAL SERVER ERROR): user 등록 실패 시
 
         Returns:
             User: 생성된 user 객체
@@ -393,8 +393,7 @@ class UserService:
             data_to_be_updated (dict): 해당 user의 변경될 정보
 
         Raises:
-            HTTPException (500): user 정보 변경 과정에서 문제가 생기면 에러를 발생시킨다.
-
+            HTTPException (500 INTERNAL SERVER ERROR): user 정보 변경 실패 시
         Returns:
             User: 수정된 user 객체
         """
@@ -423,7 +422,7 @@ class UserService:
             user_to_be_deleted (User | int): 삭제될 user 정보
 
         Raises:
-            HTTPException (500): user 정보 삭제 과정에서 문제가 생기면 에러를 발생시킨다.
+            HTTPException (500 INTERNAL SERVER ERROR): user 정보 삭제 실패 시
 
         Returns:
             dict: 작업 성공 메세지
