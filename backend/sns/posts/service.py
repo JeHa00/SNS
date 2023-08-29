@@ -289,7 +289,8 @@ class PostService:
     def get_like(
         self,
         db: Session,
-        post_like_data: dict,
+        who_like_id: int,
+        like_target_id: int,
     ) -> PostLike | None:
         """입력받은 정보를 PostLikeDB class에 전달하여 post_like_data를 가지고 있는 PostLike 모델 객체를 조회한다.
             없으면 None을 반환한다.
@@ -302,7 +303,11 @@ class PostService:
             - PostLike: 조회된 PostLike 객체를 반환
             - 없으면 None을 반환
         """
-        return post_crud.get_like(db, post_like_data)
+        return post_crud.get_like(
+            db,
+            who_like_id,
+            like_target_id,
+        )
 
     def get_users_who_like(
         self,
@@ -397,11 +402,11 @@ class PostService:
         Returns:
             - PostLike: 새로 생성되거나 변경된 PostLike 객체를 반환
         """
-        post_like_data = {
-            "like_target_id": post_id,
-            "who_like_id": current_user_id,
-        }
-        post_like_object = self.get_like(db, post_like_data)
+        post_like_object = self.get_like(
+            db,
+            current_user_id,
+            post_id,
+        )
 
         if post_like_object and post_like_object.is_liked:
             raise HTTPException(
@@ -410,7 +415,12 @@ class PostService:
             )
 
         try:
-            post_crud.like(db, post_like_object, **post_like_data)
+            post_crud.like(
+                db,
+                post_like_object,
+                current_user_id,
+                post_id,
+            )
             return True
         except Exception:
             raise HTTPException(
@@ -439,10 +449,8 @@ class PostService:
         """
         post_like_object = self.get_like(
             db,
-            {
-                "like_target_id": post_id,
-                "who_like_id": current_user_id,
-            },
+            current_user_id,
+            post_id,
         )
 
         if post_like_object and not post_like_object.is_liked:

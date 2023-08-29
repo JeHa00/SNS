@@ -141,7 +141,8 @@ class PostDB:
     def get_like(
         self,
         db: Session,
-        post_like_data: dict,
+        who_like_id: int,
+        like_target_id: int,
     ) -> PostLike:
         """post_like_data에 해당되는 PostLike 객체 정보를 얻는다.
 
@@ -155,8 +156,8 @@ class PostDB:
         return (
             db.query(PostLike)
             .filter(
-                PostLike.like_target_id == post_like_data["like_target_id"],
-                PostLike.who_like_id == post_like_data["who_like_id"],
+                PostLike.who_like_id == who_like_id,
+                PostLike.like_target_id == like_target_id,
             )
             .first()
         )
@@ -211,7 +212,8 @@ class PostDB:
         self,
         db: Session,
         selected_post_like: None | PostLike,
-        **like_data: dict,
+        who_like_id: int,
+        like_target_id: int,
     ) -> PostLike:
         """like_data 를 토대로 post에 좋아요를 실행한다.
 
@@ -220,12 +222,17 @@ class PostDB:
             selected_like (PostLike): 다음 2가지 중 하나에 해당된다.
                 - 새로 생성할 경우: None
                 - 존재하는 PostLike 객체
-            like_data: who_like_id, like_target_id 값 정보
+            who_like_id (int): like를 할 user의 id
+            like_target_id (int): like를 받을 post의 id
 
         Returns:
             PostLike: is_liked 값이 True로 생성된 PostLike 객체를 반환
         """
-        new_like = selected_post_like or PostLike(is_liked=True, **like_data)
+        new_like = selected_post_like or PostLike(
+            is_liked=True,
+            who_like_id=who_like_id,
+            like_target_id=like_target_id,
+        )
         if not new_like.is_liked:
             new_like.is_liked = True
 

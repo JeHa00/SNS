@@ -6,9 +6,8 @@ from sqlalchemy.orm import Session
 from redis.client import Redis
 
 from sns.common.session import db
-from sns.users.schema import Msg, UserRead
+from sns.users.schema import Message, UserRead, UserBase
 from sns.users.service import UserService
-from sns.users.model import User
 from sns.posts.service import PostService
 from sns.posts import schema
 
@@ -23,7 +22,7 @@ router = APIRouter()
 )
 def read_likees(
     post_service: PostService = Depends(PostService),
-    current_user: User = Depends(UserService.get_current_user_verified),
+    current_user: UserBase = Depends(UserService.get_current_user_verified),
     db: Session = Depends(db.get_db),
 ) -> List[schema.Post]:
     """current_user에게 좋아요를 받은 likee인 post들을 조회한다.
@@ -76,15 +75,15 @@ def read_likers(
 
 @router.post(
     "/posts/{post_id}/like",
-    response_model=Msg,
+    response_model=Message,
     status_code=status.HTTP_200_OK,
 )
 def like_post(
     post_id: int,
     post_service: PostService = Depends(PostService),
-    current_user: User = Depends(UserService.get_current_user_verified),
+    current_user: UserBase = Depends(UserService.get_current_user_verified),
     db: Session = Depends(db.get_db),
-) -> Msg:
+) -> Message:
     """현재 로그인되어있는 user가 post_id에 해당하는 post를 like 한다.
 
     Args:
@@ -98,23 +97,23 @@ def like_post(
 
     Returns:
 
-    - Msg: post 좋아요 성공 메세지를 반환
+    - Message: post 좋아요 성공 메세지를 반환
     """
     post_service.like(db, post_id, current_user.id)
-    return {"status": "success", "msg": "post 좋아요가 완료되었습니다."}
+    return {"status": "success", "Message": "post 좋아요가 완료되었습니다."}
 
 
 @router.post(
     "/posts/{post_id}/unlike",
-    response_model=Msg,
+    response_model=Message,
     status_code=status.HTTP_200_OK,
 )
 def unlike_post(
     post_id: int,
     post_service: PostService = Depends(PostService),
-    current_user: User = Depends(UserService.get_current_user_verified),
+    current_user: UserBase = Depends(UserService.get_current_user_verified),
     db: Session = Depends(db.get_db),
-) -> Msg:
+) -> Message:
     """현재 로그인되어있는 user가 post_id에 해당하는 post의 like를 취소한다.
         이는 is_liked 값을 false로 바꾼다.
 
@@ -129,10 +128,10 @@ def unlike_post(
 
     Returns:
 
-    - Msg: post 좋아요 취소 성공 메세지를 반환
+    - Message: post 좋아요 취소 성공 메세지를 반환
     """
     post_service.unlike(db, post_id, current_user.id)
-    return {"status": "success", "msg": "post 좋아요가 취소되었습니다"}
+    return {"status": "success", "Message": "post 좋아요가 취소되었습니다"}
 
 
 @router.get(
@@ -213,7 +212,7 @@ def create_post(
     data_to_be_created: schema.PostCreate,
     user_service: UserService = Depends(UserService),
     post_service: PostService = Depends(PostService),
-    current_user: User = Depends(UserService.get_current_user_verified),
+    current_user: UserBase = Depends(UserService.get_current_user_verified),
     db: Session = Depends(db.get_db),
 ) -> schema.Post:
     """user_id가 현재 로그인된 user와 동일할 때 post를 생성한다.
@@ -258,7 +257,7 @@ def update_post(
     data_to_be_updated: schema.PostUpdate,
     user_service: UserService = Depends(UserService),
     post_service: PostService = Depends(PostService),
-    current_user: User = Depends(UserService.get_current_user_verified),
+    current_user: UserBase = Depends(UserService.get_current_user_verified),
     db: Session = Depends(db.get_db),
 ) -> schema.Post:
     """user_id가 현재 user id와 동일하여 수정 권한이 있을 때 post_id에 해당되는 post를 수정한다.
@@ -299,7 +298,7 @@ def update_post(
 
 @router.delete(
     "/users/{user_id}/posts/{post_id}",
-    response_model=Msg,
+    response_model=Message,
     status_code=status.HTTP_200_OK,
 )
 def delete_post(
@@ -307,9 +306,9 @@ def delete_post(
     post_id: int,
     user_service: UserService = Depends(UserService),
     post_service: PostService = Depends(PostService),
-    current_user: User = Depends(UserService.get_current_user_verified),
+    current_user: UserBase = Depends(UserService.get_current_user_verified),
     db: Session = Depends(db.get_db),
-) -> Msg:
+) -> Message:
     """user_id가 current_user의 id와 동일할 때, 해당 post_id를 가진 post를 삭제한다.
 
     Args:
@@ -327,7 +326,7 @@ def delete_post(
 
     Returns:
 
-    - Msg: 삭제 성공 메세지를 반환
+    - Message: 삭제 성공 메세지를 반환
     """
     user = user_service.get_user(
         db,
@@ -340,4 +339,4 @@ def delete_post(
         post_id,
         current_user,
     )
-    return {"status": "success", "msg": "글이 삭제되었습니다."}
+    return {"status": "success", "message": "글이 삭제되었습니다."}
