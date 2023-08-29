@@ -13,14 +13,18 @@ from sns.users.schema import (
     UserRead,
     UserBase,
     Token,
-    Msg,
+    Message,
 )
 
 
 router = APIRouter()
 
 
-@router.post("/signup", response_model=Msg, status_code=status.HTTP_201_CREATED)
+@router.post(
+    "/signup",
+    response_model=Message,
+    status_code=status.HTTP_201_CREATED,
+)
 def signup(
     data_for_signup: UserCreate,
     background_tasks: BackgroundTasks,
@@ -48,19 +52,19 @@ def signup(
 
     Returns:
 
-    - Msg: 이메일 전송 성공 유무 메세지 반환
+    - Message: 이메일 전송 성공 유무 메세지 반환
     """
     user_service.signup(
         db,
         background_tasks,
         data_for_signup.dict(),
     )
-    return {"status": "success", "msg": "이메일 전송이 완료되었습니다."}
+    return {"status": "success", "message": "이메일 전송이 완료되었습니다."}
 
 
 @router.post(
     "/verification-email/{code}",
-    response_model=Msg,
+    response_model=Message,
     status_code=status.HTTP_200_OK,
 )
 def verify_email(
@@ -82,13 +86,13 @@ def verify_email(
 
     Returns:
 
-    - Msg: 계정 인증 완료 메세지
+    - Message: 계정 인증 완료 메세지
     """
     user_service.verify_email(
         db,
         code,
     )
-    return {"status": "success", "msg": "이메일 인증이 완료되었습니다."}
+    return {"status": "success", "message": "이메일 인증이 완료되었습니다."}
 
 
 @router.post("/login", response_model=Token, status_code=status.HTTP_200_OK)
@@ -123,7 +127,11 @@ def login(
     return {"access_token": access_token, "token_type": "Bearer"}
 
 
-@router.patch("/password-reset", response_model=Msg, status_code=status.HTTP_200_OK)
+@router.patch(
+    "/password-reset",
+    response_model=Message,
+    status_code=status.HTTP_200_OK,
+)
 def reset_password(
     background_tasks: BackgroundTasks,
     email: str = Body(...),
@@ -145,17 +153,24 @@ def reset_password(
 
     Returns:
 
-    - Msg: 비밀번호 초기화 이메일 송신 완료 메세지
+    - Message: 비밀번호 초기화 이메일 송신 완료 메세지
     """
     user_service.reset_password(
         db,
         email,
         background_tasks,
     )
-    return {"status": "success", "msg": "비밀번호 초기화를 위한 이메일 송신이 완료되었습니다."}
+    return {
+        "status": "success",
+        "message": "비밀번호 초기화를 위한 이메일 송신이 완료되었습니다.",
+    }
 
 
-@router.patch("/password-change", response_model=Msg, status_code=status.HTTP_200_OK)
+@router.patch(
+    "/password-change",
+    response_model=Message,
+    status_code=status.HTTP_200_OK,
+)
 def change_password(
     password_data: UserPasswordUpdate,
     user_service: UserService = Depends(UserService),
@@ -181,14 +196,17 @@ def change_password(
 
      Returns:
 
-     - Msg: 실행 완료 메세지
+     - Message: 실행 완료 메세지
     """
     user_service.change_password(
         db,
         current_user.email,
         **password_data.dict(),
     )
-    return {"status": "success", "msg": "비밀번호가 변경되었습니다."}
+    return {
+        "status": "success",
+        "message": "비밀번호가 변경되었습니다.",
+    }
 
 
 @router.get(
@@ -277,7 +295,7 @@ def update_user(
 
 @router.delete(
     "/users/{user_id}",
-    response_model=Msg,
+    response_model=Message,
     status_code=status.HTTP_200_OK,
 )
 def delete_user(
@@ -301,14 +319,14 @@ def delete_user(
 
     Returns:
 
-    - Msg: 계정 삭제 완료 메세지
+    - Message: 계정 삭제 완료 메세지
     """
     user_service.delete_user(
         db,
         user_id,
         current_user.email,
     )
-    return {"status": "success", "msg": "계정이 삭제되었습니다."}
+    return {"status": "success", "message": "계정이 삭제되었습니다."}
 
 
 @router.get(
@@ -373,7 +391,7 @@ def read_followings(
 
 @router.post(
     "/users/{user_id}/follow",
-    response_model=Msg,
+    response_model=Message,
     status_code=status.HTTP_200_OK,
 )
 def follow_user(
@@ -381,7 +399,7 @@ def follow_user(
     user_service: UserService = Depends(UserService),
     current_user: UserBase = Depends(UserService.get_current_user_verified),
     db: Session = Depends(db.get_db),
-) -> Msg:
+) -> Message:
     """현재 로그인한 유저가 user_id에 해당하는 유저를 팔로우한다.
 
     Args:
@@ -396,19 +414,19 @@ def follow_user(
 
     Returns:
 
-    - Msg: 팔로우 성공 메세지
+    - Message: 팔로우 성공 메세지
     """
     user_service.follow_user(
         db,
         user_id,
         current_user.id,
     )
-    return {"status": "success", "msg": "follow 관계 맺기에 성공했습니다."}
+    return {"status": "success", "message": "follow 관계 맺기에 성공했습니다."}
 
 
 @router.post(
     "/users/{user_id}/unfollow",
-    response_model=Msg,
+    response_model=Message,
     status_code=status.HTTP_200_OK,
 )
 def unfollow_user(
@@ -416,7 +434,7 @@ def unfollow_user(
     user_service: UserService = Depends(UserService),
     current_user: UserBase = Depends(UserService.get_current_user_verified),
     db: Session = Depends(db.get_db),
-) -> Msg:
+) -> Message:
     """현재 로그인한 유저가 user_id에 해당하는 유저를 언팔로우한다.
 
     Args:
@@ -431,11 +449,14 @@ def unfollow_user(
 
     Returns:
 
-    - Msg: 언팔로우 성공 메세지
+    - Message: 언팔로우 성공 메세지
     """
     user_service.unfollow_user(
         db,
         user_id,
         current_user.id,
     )
-    return {"status": "success", "msg": "follow 관계 취소에 성공했습니다."}
+    return {
+        "status": "success",
+        "message": "follow 관계 취소에 성공했습니다.",
+    }
