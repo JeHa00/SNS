@@ -37,10 +37,10 @@ def test_read_post_not_existed(
 ):
     post_id = randint(fake_post.id + 1, 100)
     response = client.get(f"{settings.API_V1_PREFIX}/posts/{post_id}")
-    result_msg = response.json()["detail"]
+    result_message = response.json()["detail"]
 
     assert response.status_code == status.HTTP_404_NOT_FOUND
-    assert result_msg == "해당 id의 글을 찾을 수 없습니다."
+    assert result_message == "해당 id의 글을 찾을 수 없습니다."
 
 
 @pytest.mark.read_posts
@@ -55,10 +55,10 @@ def test_read_posts_if_not_registered(
 
     # 글 조회 및 결과
     response = client.get(f"{settings.API_V1_PREFIX}/users/{user_id}/posts?page={page}")
-    result_msg = response.json()["detail"]
+    result_message = response.json()["detail"]
 
     assert response.status_code == status.HTTP_404_NOT_FOUND
-    assert result_msg == "해당되는 유저를 찾을 수 없습니다."
+    assert result_message == "해당되는 유저를 찾을 수 없습니다."
 
 
 @pytest.mark.read_posts
@@ -74,10 +74,10 @@ def test_read_posts_if_post_not_exist(
 
     # 글 조회 및 결과
     response = client.get(f"{settings.API_V1_PREFIX}/users/{user.id}/posts?page={page}")
-    result_msg = response.json()["detail"]
+    result_message = response.json()["detail"]
 
     assert response.status_code == status.HTTP_404_NOT_FOUND
-    assert result_msg == "작성된 글이 없습니다."
+    assert result_message == "작성된 글이 없습니다."
 
 
 @pytest.mark.read_posts
@@ -120,10 +120,10 @@ def test_create_post_if_user_not_registered(
         headers=headers,
         json=content.dict(),
     )
-    result_msg = response.json()["detail"]
+    result_message = response.json()["detail"]
 
     assert response.status_code == status.HTTP_404_NOT_FOUND
-    assert result_msg == "해당되는 유저를 찾을 수 없습니다."
+    assert result_message == "해당되는 유저를 찾을 수 없습니다."
 
 
 @pytest.mark.create_post
@@ -147,10 +147,10 @@ def test_create_post_if_unauthorized(
         headers=headers,
         json=content.dict(),
     )
-    result_msg = response.json()["detail"]
+    result_message = response.json()["detail"]
 
     assert response.status_code == status.HTTP_401_UNAUTHORIZED
-    assert result_msg == "작성할 권한이 없습니다."
+    assert result_message == "작성할 권한이 없습니다."
 
 
 @pytest.mark.create_post
@@ -201,10 +201,10 @@ def test_update_post_if_user_not_registered(
         headers=headers,
         json=content.dict(),
     )
-    result_msg = response.json()["detail"]
+    result_message = response.json()["detail"]
 
     assert response.status_code == status.HTTP_404_NOT_FOUND
-    assert result_msg == "해당되는 유저를 찾을 수 없습니다."
+    assert result_message == "해당되는 유저를 찾을 수 없습니다."
 
 
 @pytest.mark.update_post
@@ -228,10 +228,10 @@ def test_update_post_if_try_to_update_not_mine(
         headers=headers,
         json=content.dict(),
     )
-    result_msg = response.json()["detail"]
+    result_message = response.json()["detail"]
 
     assert response.status_code == status.HTTP_401_UNAUTHORIZED
-    assert result_msg == "수정할 권한이 없습니다."
+    assert result_message == "수정할 권한이 없습니다."
 
 
 @pytest.mark.update_post
@@ -259,10 +259,10 @@ def test_update_post_if_user_id_is_not_same_as_user_logged_in(
         headers=headers,
         json=content.dict(),
     )
-    result_msg = response.json()["detail"]
+    result_message = response.json()["detail"]
 
     assert response.status_code == status.HTTP_401_UNAUTHORIZED
-    assert result_msg == "수정할 권한이 없습니다."
+    assert result_message == "수정할 권한이 없습니다."
 
 
 @pytest.mark.update_post
@@ -288,10 +288,10 @@ def test_update_post_if_post_not_exist(
         headers=headers,
         json=content.dict(),
     )
-    result_msg = response.json()["detail"]
+    result_message = response.json()["detail"]
 
     assert response.status_code == status.HTTP_404_NOT_FOUND
-    assert result_msg == "해당 id의 글을 찾을 수 없습니다."
+    assert result_message == "해당 id의 글을 찾을 수 없습니다."
 
 
 @pytest.mark.update_post
@@ -374,11 +374,11 @@ def test_delete_post_if_authorized(
         headers=headers,
     )
     result_status_text = response.json()["status"]
-    result_msg = response.json()["msg"]
+    result_message = response.json()["message"]
 
     assert response.status_code == status.HTTP_200_OK
     assert result_status_text == "success"
-    assert result_msg == "글이 삭제되었습니다."
+    assert result_message == "글이 삭제되었습니다."
 
     # 결과 확인
     with pytest.raises(HTTPException):
@@ -405,13 +405,13 @@ def test_delete_post_if_not_authorized(
         f"{settings.API_V1_PREFIX}/users/{user.id}/posts/{post_id}",
         headers=headers,
     )
-    result_msg = response.json()["detail"]
+    result_message = response.json()["detail"]
 
     # 결과 확인
     post = post_service.get_post_and_check_none(db_session, post_id=post_id)
 
     assert response.status_code == status.HTTP_401_UNAUTHORIZED
-    assert result_msg == "삭제할 권한이 없습니다."
+    assert result_message == "삭제할 권한이 없습니다."
     assert post is not None
 
 
@@ -443,9 +443,9 @@ def test_read_likees_if_likees_not_exist(
 
     # likees 조회 및 결과
     response = client.get(f"{settings.API_V1_PREFIX}/posts/likees", headers=headers)
-    result_msg = response.json()["detail"]
+    result_message = response.json()["detail"]
 
-    assert result_msg == "해당 유저가 좋아요를 한 글이 없습니다."
+    assert result_message == "해당 유저가 좋아요를 한 글이 없습니다."
 
 
 @pytest.mark.read_likees
@@ -497,11 +497,11 @@ def test_like_post(
         )
         result = response.json()
         result_status_text = result.get("status")
-        result_msg = result.get("msg")
+        result_message = result.get("message")
 
         assert response.status_code == status.HTTP_200_OK
         assert result_status_text == "success"
-        assert result_msg == "post 좋아요가 완료되었습니다."
+        assert result_message == "post 좋아요가 완료되었습니다."
 
 
 @pytest.mark.unlike_post
@@ -525,8 +525,8 @@ def test_unlike_post(
             headers=headers,
         )
         result_status_text = response.json().get("status")
-        result_msg = response.json().get("msg")
+        result_message = response.json().get("message")
 
         assert response.status_code == status.HTTP_200_OK
         assert result_status_text == "success"
-        assert result_msg == "post 좋아요가 취소되었습니다"
+        assert result_message == "post 좋아요가 취소되었습니다"
