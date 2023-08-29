@@ -843,8 +843,8 @@ class UserService:
     ) -> bool:
         """주어진 정보를 바탕으로 follow 관계를 맺는다.
             주어진 정보를 바탕으로 Follow 객체가 이미 존재하는지 조회 후,
-            조회된 Follow 객체의 is_followed 값이 False이면
-            True롤 변경한다. 조회 후 없다면 새로 생성한다.
+            조회된 Follow 객체의 is_followed 값이 False이면 True롤 변경한다.
+            조회 후 없다면 새로 생성한다.
             follower_id는 팔로우를 당하는 유저의 id, following_id는 팔로우를 거는 유저의 id 를 말한다.
 
         Args:
@@ -868,19 +868,19 @@ class UserService:
                 status_code=400,
                 detail="이미 Follow 관계가 맺어져 있습니다.",
             )
-        # try:
-        user_crud.follow(
-            db,
-            selected_follow,
-            follower_id,
-            following_id,
-        )
-        return True
-        # except Exception:
-        #     raise HTTPException(
-        #         status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-        #         detail="follow 관계를 맺는데 실패하였습니다.",
-        #     )
+        try:
+            user_crud.follow(
+                db,
+                selected_follow,
+                follower_id,
+                following_id,
+            )
+            return True
+        except Exception:
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="follow 관계를 맺는데 실패하였습니다.",
+            )
 
     def unfollow_user(
         self,
