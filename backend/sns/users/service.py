@@ -226,7 +226,7 @@ class UserService:
                 - jwt로부터 얻은 email 정보로 유저 조회 시 없을 경우 발생되는 에러
 
         Returns:
-            User: jwt로부터 얻은 유저 정보
+            - User: jwt로부터 얻은 유저 정보
         """
         credentials_exception = HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
@@ -262,18 +262,18 @@ class UserService:
         """인증된 현재 유저 정보를 반환한다.
 
         Args:
-            - current_user (Depends): 현재 유저 정보
+           - current_user (Depends): 현재 유저 정보
 
         Raises:
             - HTTPException (401 UNAUTHORIZED): 등록은 되었지만 이메일 인증이 미완료 상태인 경우
 
         Returns:
-            - str: 인증된 user의 email 정보
+           - str: 인증된 user의 email 정보
         """
 
         if not current_user.verified:
             raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
+                status_code=status.HTTP_401_UNAUTHORIZED,
                 detail="인증 완료되지 못한 이메일입니다. 먼저 이메일 인증을 완료하세요.",
             )
 

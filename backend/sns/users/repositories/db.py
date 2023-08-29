@@ -1,6 +1,8 @@
+from typing import List
+
 from sqlalchemy.orm import Session
 
-from sns.users.model import User
+from sns.users.model import User, Follow
 
 
 class UserDB:
@@ -108,6 +110,123 @@ class UserDB:
         db.commit()
 
         return {"status": "success"}
+
+    def get_follow(
+        self,
+        db: Session,
+        follower_id: int,
+        following_id: int,
+    ) -> Follow:
+        """follow_data에 일치하는 Follow 객체를 조회한다.
+
+        Args:
+            db (Session): db session
+            follower_id (int): follower의 id
+            following_id (int): following의 id
+
+        Returns:
+            Follow: 일치한 Follow 객체를 반환
+        """
+        selected_follow = (
+            db.query(Follow)
+            .filter(
+                Follow.follower_id == follower_id,
+                Follow.following_id == following_id,
+            )
+            .first()
+        )
+
+        return selected_follow
+
+    def get_followers(
+        self,
+        db: Session,
+        following_id: int,
+    ) -> List[User]:
+        """following_id에 해당하는 user가 따르는 follower들을 조회한다.
+
+        Args:
+            db (Session): db session
+            following_id (int): follow 신청을 한 user id
+
+        Returns:
+            List[User]: following_id로부터 follow 신청을 받은 user 목록
+        """
+        subquery = (
+            db.query(Follow).filter(Follow.following_id == following_id).subquery()
+        )
+
+        return db.query(User).join(subquery, User.id == subquery.c.follower_id).all()
+
+    def get_followings(
+        self,
+        db: Session,
+        follower_id: int,
+    ) -> List[User]:
+        """follow_id에 해당하는 user를 따르는 following들을 조회한다.
+
+        Args:
+            db (Session): db session
+            follower_id (int): follow 신청을 받은 user id
+
+        Returns:
+            List[User]: follower_id를 따르는 user 목록
+        """
+        subquery = db.query(Follow).filter(Follow.follower_id == follower_id).subquery()
+
+        return db.query(User).join(subquery, User.id == subquery.c.following_id).all()
+
+    def follow(
+        self,
+        db: Session,
+        selected_follow_data: None | Follow,
+        follower_id: int,
+        following_id: int,
+    ) -> Follow:
+        """follow_data 를 토대로 follow 관계를 맺기 위해 Follow 객체를 생성한다.
+
+        Args:
+            db (Session): db session
+            follow_data (dict): follower와 following의 id 정보
+
+        Returns:
+            Follow: 생성된 Follow 객체를 반환
+        """
+        new_follow = selected_follow_data or Follow(
+            is_followed=True,
+            follower_id=follower_id,
+            following_id=following_id,
+        )
+        if not new_follow.is_followed:
+            new_follow.is_followed = True
+
+        db.add(new_follow)
+        db.commit()
+        db.refresh(new_follow)
+
+        return new_follow
+
+    def unfollow(
+        self,
+        db: Session,
+        selected_follow_data: Follow,
+    ) -> Follow:
+        """selected_follow_data 토대로 follow 관계를 취소하기 위해 is_followed 값을 False로 변경한다.
+
+        Args:
+            db (Session): db session
+            selected_follow_data (dict): follower와 following의 id 정보
+
+        Returns:
+            Follow: follow 관계가 끊어진 Follow 객체 정보를 반환
+        """
+        selected_follow_data.is_followed = False
+
+        db.add(selected_follow_data)
+        db.commit()
+        db.refresh(selected_follow_data)
+
+        return selected_follow_data
 
 
 user_crud = UserDB()
