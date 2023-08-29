@@ -297,6 +297,7 @@ def test_read_user_if_user_is_not_same_as_current_user(
 
     assert "email" not in result
     assert "password" not in result
+    assert "id" in result
     assert "name" in result
     assert "profile_text" in result
 
@@ -433,7 +434,11 @@ def test_delete_user_if_authorized(
 
 
 @pytest.mark.read_followers
-def test_read_followers(client: TestClient, db_session: Session, fake_follow: None):
+def test_read_followers(
+    client: TestClient,
+    db_session: Session,
+    fake_follow: None,
+):
     for user_id in range(1, 11):
         response = client.get(f"{settings.API_V1_PREFIX}/users/{user_id}/followers")
         result = response.json()
@@ -442,12 +447,30 @@ def test_read_followers(client: TestClient, db_session: Session, fake_follow: No
         assert len(result) == 9
 
         for user in result:
+            assert "id" in user
             assert "email" in user
-            assert "verified" in user
+
+
+@pytest.mark.read_followers
+def test_read_followers_if_not_exist_follower(
+    client: TestClient,
+    db_session: Session,
+    fake_user: dict,
+):
+    user_id = fake_user["user"].id
+    response = client.get(f"{settings.API_V1_PREFIX}/users/{user_id}/followers")
+    result_msg = response.json()["detail"]
+
+    assert response.status_code == status.HTTP_404_NOT_FOUND
+    assert result_msg == "해당 유저는 팔로워가 없습니다."
 
 
 @pytest.mark.read_followings
-def test_read_followings(client: TestClient, db_session: Session, fake_follow: None):
+def test_read_followings(
+    client: TestClient,
+    db_session: Session,
+    fake_follow: None,
+):
     for user_id in range(1, 11):
         response = client.get(f"{settings.API_V1_PREFIX}/users/{user_id}/followings")
         result = response.json()
@@ -455,8 +478,22 @@ def test_read_followings(client: TestClient, db_session: Session, fake_follow: N
         assert len(result) == 9
 
         for user in result:
+            assert "id" in user
             assert "email" in user
-            assert "verified" in user
+
+
+@pytest.mark.read_followings
+def test_read_followings_if_not_exist_following(
+    client: TestClient,
+    db_session: Session,
+    fake_user: dict,
+):
+    user_id = fake_user["user"].id
+    response = client.get(f"{settings.API_V1_PREFIX}/users/{user_id}/followings")
+    result_msg = response.json()["detail"]
+
+    assert response.status_code == status.HTTP_404_NOT_FOUND
+    assert result_msg == "해당 유저는 팔로잉이 없습니다."
 
 
 @pytest.mark.follow_user
@@ -464,10 +501,10 @@ def test_follow_user_if_success(
     client: TestClient,
     db_session: Session,
     fake_multi_user: None,
-    get_user_token_headers_and_user_info: dict,
+    get_user_token_headers_and_login_data: dict,
 ):
     # current_user 정보
-    headers = get_user_token_headers_and_user_info.get("headers")
+    headers = get_user_token_headers_and_login_data.get("headers")
 
     # follow 요청 및 결과
     for user_id in range(1, 11):
@@ -480,7 +517,36 @@ def test_follow_user_if_success(
 
         assert response.status_code == status.HTTP_200_OK
         assert result_status_text == "success"
-        assert result_msg == "follow 관계가 맺어졌습니다."
+        assert result_msg == "follow 관계 맺기에 성공했습니다."
+
+
+@pytest.mark.follow_user
+def test_follow_user_if_already_follow(
+    client: TestClient,
+    db_session: Session,
+    fake_multi_user: None,
+    get_user_token_headers_and_login_data: dict,
+):
+    # current_user 정보
+    headers = get_user_token_headers_and_login_data.get("headers")
+
+    for user_id in range(1, 11):
+        # 팔로우 신청
+        response = client.post(
+            f"{settings.API_V1_PREFIX}/users/{user_id}/follow",
+            headers=headers,
+        )
+
+        # 팔로우 재신청
+        response = client.post(
+            f"{settings.API_V1_PREFIX}/users/{user_id}/follow",
+            headers=headers,
+        )
+
+        result_msg = response.json()["detail"]
+
+        assert response.status_code == status.HTTP_400_BAD_REQUEST
+        assert result_msg == "이미 Follow 관계가 맺어져 있습니다."
 
 
 @pytest.mark.unfollow_user
@@ -488,14 +554,17 @@ def test_unfollow_user_if_success(
     client: TestClient,
     db_session: Session,
     fake_multi_user: None,
-    get_user_token_headers_and_user_info: dict,
+    get_user_token_headers_and_login_data: dict,
 ):
     # current_user 정보
-    headers = get_user_token_headers_and_user_info.get("headers")
+    headers = get_user_token_headers_and_login_data.get("headers")
 
     for user_id in range(1, 11):
         # follow 요청
-        client.post(f"{settings.API_V1_PREFIX}/users/{user_id}/follow", headers=headers)
+        client.post(
+            f"{settings.API_V1_PREFIX}/users/{user_id}/follow",
+            headers=headers,
+        )
 
         # unfollow 요청 및 결과
         response = client.post(
@@ -507,4 +576,52 @@ def test_unfollow_user_if_success(
 
         assert response.status_code == status.HTTP_200_OK
         assert result_status_text == "success"
-        assert result_msg == "follow 관계 취소가 완료되었습니다."
+        assert result_msg == "follow 관계 취소에 성공했습니다."
+
+
+@pytest.mark.unfollow_user
+def test_unfollow_user_if_already_unfollow(
+    client: TestClient,
+    db_session: Session,
+    get_user_token_headers_and_login_data: dict,
+    fake_follow: None,
+):
+    # current_user 정보
+    headers = get_user_token_headers_and_login_data.get("headers")
+
+    # unfollow 대상 유저 정보
+    user_id = 2
+
+    # 중복으로 언팔로우 하기
+    for _ in range(2):
+        response = client.post(
+            f"{settings.API_V1_PREFIX}/users/{user_id}/unfollow",
+            headers=headers,
+        )
+
+    result_msg = response.json()["detail"]
+
+    assert response.status_code == status.HTTP_400_BAD_REQUEST
+    assert result_msg == "이미 Follow 관계가 취소되었습니다."
+
+
+@pytest.mark.unfollow_user
+def test_unfollow_user_if_not_found_follow(
+    client: TestClient,
+    db_session: Session,
+    fake_follow: None,
+    get_user_token_headers_and_login_data: dict,
+):
+    # current_user 정보
+    headers = get_user_token_headers_and_login_data.get("headers")
+
+    # unfollow 대상 유저 정보
+    for user_id in range(1, 11):
+        response = client.post(
+            f"{settings.API_V1_PREFIX}/users/{user_id}/unfollow",
+            headers=headers,
+        )
+        result_msg = response.json()["detail"]
+
+        assert response.status_code == status.HTTP_404_NOT_FOUND
+        assert result_msg == "해당 정보에 일치하는 Follow 관계를 찾을 수 없습니다."

@@ -15,14 +15,13 @@ class TokenPayload(BaseModel):
     sub: str
 
 
-class UserBase(BaseModel):
-    email: EmailStr
-
+class Base(BaseModel):
     class Config:
         orm_mode = True
 
 
-class UserCreate(UserBase):
+class UserCreate(Base):
+    email: EmailStr
     password: str = Field(min_length=8)
     password_confirm: str = Field(min_length=8)
 
@@ -37,17 +36,22 @@ class UserCreate(UserBase):
         return value
 
 
+class UserBase(Base):
+    id: int
+    email: EmailStr
+
+
 class UserRead(UserBase):
     email: EmailStr | None
     name: str
     profile_text: str | None
 
 
-class UserUpdate(BaseModel):
+class UserUpdate(Base):
     profile_text: str | None
 
 
-class UserPasswordUpdate(BaseModel):
+class UserPasswordUpdate(Base):
     current_password: str = Field(min_length=8)
     new_password: str = Field(min_length=8)
 

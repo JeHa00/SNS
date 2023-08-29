@@ -1,7 +1,8 @@
+from typing import List
+
 from fastapi import APIRouter, Depends, status, Body
 from starlette.background import BackgroundTasks
 from sqlalchemy.orm import Session
-
 
 from sns.common.session import db
 from sns.users.service import UserService
@@ -274,7 +275,11 @@ def update_user(
     return updated_user
 
 
-@router.delete("/users/{user_id}", response_model=Msg, status_code=status.HTTP_200_OK)
+@router.delete(
+    "/users/{user_id}",
+    response_model=Msg,
+    status_code=status.HTTP_200_OK,
+)
 def delete_user(
     user_id: int,
     user_service: UserService = Depends(UserService),
@@ -304,3 +309,133 @@ def delete_user(
         current_user.email,
     )
     return {"status": "success", "msg": "계정이 삭제되었습니다."}
+
+
+@router.get(
+    "/users/{user_id}/followers",
+    response_model=List[UserBase],
+    status_code=status.HTTP_200_OK,
+)
+def read_followers(
+    user_id: int,
+    user_service: UserService = Depends(UserService),
+    db: Session = Depends(db.get_db),
+) -> List[UserBase]:
+    """user_id에 해당하는 유저의 팔로워들을 조회한다.
+
+    Args:
+
+    - user_id (int): user의 id
+
+    Raises:
+
+    - HTTPException (404 NOT FOUND): 팔로워가 없을 때
+
+    Returns:
+
+    - List[UserBase]: 팔로워 목록
+    """
+    return user_service.get_followers(
+        db,
+        user_id,
+    )
+
+
+@router.get(
+    "/users/{user_id}/followings",
+    response_model=List[UserBase],
+    status_code=status.HTTP_200_OK,
+)
+def read_followings(
+    user_id: int,
+    user_service: UserService = Depends(UserService),
+    db: Session = Depends(db.get_db),
+) -> List[UserBase]:
+    """user_id에 해당하는 유저의 팔로잉들을 조회한다.
+
+    Args:
+
+    - user_id (int): user의 id
+
+    Raises:
+
+    - HTTPException (404 NOT FOUND): 팔로잉이 없을 때
+
+    Returns:
+
+    - List[UserBase]: 팔로잉 목록
+    """
+    return user_service.get_followings(
+        db,
+        user_id,
+    )
+
+
+@router.post(
+    "/users/{user_id}/follow",
+    response_model=Msg,
+    status_code=status.HTTP_200_OK,
+)
+def follow_user(
+    user_id: int,
+    user_service: UserService = Depends(UserService),
+    current_user: UserBase = Depends(UserService.get_current_user_verified),
+    db: Session = Depends(db.get_db),
+) -> Msg:
+    """현재 로그인한 유저가 user_id에 해당하는 유저를 팔로우한다.
+
+    Args:
+
+    - user_id (int): 팔로우 대상 유저의 id
+
+    Raises:
+
+    - HTTPException (400 BAD REQUEST): 이미 Follow 관계가 맺어진 경우
+    - HTTPException (404 NOT FOUND): 전달된 정보에 일치하는 Follow 관계를 찾을 수 없을 때
+    - HTTPException (500 INTERNAL SERVER ERROR): Follow 관계에 실패할 경우
+
+    Returns:
+
+    - Msg: 팔로우 성공 메세지
+    """
+    user_service.follow_user(
+        db,
+        user_id,
+        current_user.id,
+    )
+    return {"status": "success", "msg": "follow 관계 맺기에 성공했습니다."}
+
+
+@router.post(
+    "/users/{user_id}/unfollow",
+    response_model=Msg,
+    status_code=status.HTTP_200_OK,
+)
+def unfollow_user(
+    user_id: int,
+    user_service: UserService = Depends(UserService),
+    current_user: UserBase = Depends(UserService.get_current_user_verified),
+    db: Session = Depends(db.get_db),
+) -> Msg:
+    """현재 로그인한 유저가 user_id에 해당하는 유저를 언팔로우한다.
+
+    Args:
+
+    - user_id (int): 언팔로우 대상 유저의 id
+
+    Raises:
+
+    - HTTPException (400 BAD REQUEST): 이미 Follow 관계가 취소된 경우
+    - HTTPException (404 NOT FOUND): 전달된 정보에 일치하는 Follow 관계를 찾을 수 없을 때
+    - HTTPException (500 INTERNAL SERVER ERROR): Follow 관계 끊기에 실패한 경우
+
+    Returns:
+
+    - Msg: 언팔로우 성공 메세지
+    """
+    user_service.unfollow_user(
+        db,
+        user_id,
+        current_user.id,
+    )
+    return {"status": "success", "msg": "follow 관계 취소에 성공했습니다."}

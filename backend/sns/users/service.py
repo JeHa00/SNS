@@ -1,4 +1,5 @@
 from datetime import datetime, timedelta
+from typing import List
 import secrets
 
 from fastapi import HTTPException, Depends, status
@@ -12,7 +13,7 @@ from sns.common.config import settings
 from sns.common.session import db
 from sns.users.repositories.email_client import email_client
 from sns.users.repositories.db import user_crud
-from sns.users.model import User
+from sns.users.model import User, Follow
 from sns.users import schema
 
 
@@ -664,12 +665,14 @@ class UserService:
         if selected_user:
             if selected_user.email == email:
                 return schema.UserRead(
+                    id=selected_user.id,
                     email=selected_user.email,
                     name=selected_user.name,
                     profile_text=selected_user.profile_text,
                 )
             else:
                 return schema.UserRead(
+                    id=selected_user.id,
                     name=selected_user.name,
                     profile_text=selected_user.profile_text,
                 )
@@ -756,6 +759,172 @@ class UserService:
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail="삭제할 권한이 없습니다.",
+            )
+
+    def get_follow(
+        self,
+        db: Session,
+        follower_id: int,
+        following_id: int,
+    ) -> Follow:
+        """주어진 정보에 일치하는 follow 객체 정보를 얻는다.
+
+        Args:
+
+        - follower_id (int): follow 신청을 한 유저의 id
+        - following_id (int): follow 신청을 받은 유저의 id
+
+        Returns:
+
+        - Follow: 조회된 follow 객체
+        """
+        return user_crud.get_follow(db, follower_id, following_id)
+
+    def get_followers(
+        self,
+        db: Session,
+        following_id: int,
+    ) -> List[User]:
+        """following_id에 해당하는 유저의 팔로워들을 조회한다.
+
+        Args:
+
+        - following_id (int): user의 id
+
+        Raises:
+
+        - HTTPException (404 NOT FOUND): 팔로워가 없을 때
+
+        Returns:
+
+        - List[User]: 팔로워 목록
+        """
+        followers = user_crud.get_followers(db, following_id)
+
+        if len(followers) == 0:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="해당 유저는 팔로워가 없습니다.",
+            )
+        return followers
+
+    def get_followings(
+        self,
+        db: Session,
+        follower_id: int,
+    ) -> List[User]:
+        """follower_id에 해당하는 유저를 따르는 팔로잉들을 조회한다.
+
+        Args:
+            follower_id (int): 유저의 id
+
+        Raises:
+
+        - HTTPException (404 NOT FOUND): 팔로잉이 없을 때
+
+        Returns:
+            List[User]: 팔로잉 목록
+        """
+        followings = user_crud.get_followings(db, follower_id)
+
+        if len(followings) == 0:
+            raise HTTPException(
+                status_code=404,
+                detail="해당 유저는 팔로잉이 없습니다.",
+            )
+
+        return followings
+
+    def follow_user(
+        self,
+        db: Session,
+        follower_id: int,
+        following_id: int,
+    ) -> bool:
+        """주어진 정보를 바탕으로 follow 관계를 맺는다.
+            주어진 정보를 바탕으로 Follow 객체가 이미 존재하는지 조회 후,
+            조회된 Follow 객체의 is_followed 값이 False이면
+            True롤 변경한다. 조회 후 없다면 새로 생성한다.
+            follower_id는 팔로우를 당하는 유저의 id, following_id는 팔로우를 거는 유저의 id 를 말한다.
+
+        Args:
+
+        - follower_id (int): 팔로우를 당하는 유저의 id
+        - following_id (int): 팔로우를 거는 유저의 id
+
+        Raises:
+
+        - HTTPException (400 BAD REQUEST): 이미 Follow 관계가 맺어진 경우
+        - HTTPException (500 INTERNAL SERVER ERROR): Follow 관계에 실패할 경우
+
+        Returns:
+
+        - bool: follow 관계 맺기 성공 시 True를 반환
+        """
+        selected_follow = self.get_follow(db, follower_id, following_id)
+
+        if selected_follow and selected_follow.is_followed:
+            raise HTTPException(
+                status_code=400,
+                detail="이미 Follow 관계가 맺어져 있습니다.",
+            )
+        # try:
+        user_crud.follow(
+            db,
+            selected_follow,
+            follower_id,
+            following_id,
+        )
+        return True
+        # except Exception:
+        #     raise HTTPException(
+        #         status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        #         detail="follow 관계를 맺는데 실패하였습니다.",
+        #     )
+
+    def unfollow_user(
+        self,
+        db: Session,
+        follower_id: int,
+        following_id: int,
+    ) -> bool:
+        """주어진 정보를 바탕으로 follow 관계를 끊는다.
+            주어진 정보의를 바탕으로 Follow 객체를 조회 후, 해당 객체의 is_followed 값이 False이면 에러를 발생시킨다.
+            True이면 언팔로우를 시도한다.
+            follower_id는 팔로우를 당하는 유저의 id, following_id는 팔로우를 거는 유저의 id 를 말한다.
+
+        Args:
+
+        - follower_id (int): 팔로우를 당했던 유저의 id
+        - following_id (int): 팔로우를 걸었던 유저의 id
+
+        Raises:
+
+        - HTTPException (400 BAD REQUEST): 이미 Follow 관계가 취소된 경우
+        - HTTPException (404 NOT FOUND): 전달된 정보에 일치하는 Follow 관계를 찾을 수 없을 때
+        - HTTPException (500 INTERNAL SERVER ERROR): Follow 관계 끊기에 실패한 경우
+
+        Returns:
+
+        - bool: follow 관계 끊기 성공 시 True를 반환
+        """
+        selected_follow = self.get_follow(db, follower_id, following_id)
+
+        if not selected_follow:
+            raise HTTPException(
+                status_code=404,
+                detail="해당 정보에 일치하는 Follow 관계를 찾을 수 없습니다.",
+            )
+
+        if not selected_follow.is_followed:
+            raise HTTPException(status_code=400, detail="이미 Follow 관계가 취소되었습니다.")
+        try:
+            user_crud.unfollow(db, selected_follow)
+            return True
+        except Exception:
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="follow 관계 취소가 실패하였습니다.",
             )
 
 
