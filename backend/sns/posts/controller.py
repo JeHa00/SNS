@@ -100,7 +100,7 @@ def like_post(
     - Message: post 좋아요 성공 메세지를 반환
     """
     post_service.like(db, post_id, current_user.id)
-    return {"status": "success", "Message": "post 좋아요가 완료되었습니다."}
+    return {"status": "success", "message": "post 좋아요가 완료되었습니다."}
 
 
 @router.post(
@@ -131,7 +131,7 @@ def unlike_post(
     - Message: post 좋아요 취소 성공 메세지를 반환
     """
     post_service.unlike(db, post_id, current_user.id)
-    return {"status": "success", "Message": "post 좋아요가 취소되었습니다"}
+    return {"status": "success", "message": "post 좋아요가 취소되었습니다"}
 
 
 @router.get(
