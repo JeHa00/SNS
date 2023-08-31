@@ -11,6 +11,7 @@ from sns.common.config import settings
 from sns.users.schema import UserUpdate, UserPasswordUpdate
 from sns.users.test.utils import random_email, random_lower_string
 from sns.users.service import user_service
+from sns.users.repositories.db import user_crud
 
 
 @pytest.mark.signup
@@ -314,7 +315,7 @@ def test_read_user_if_user_is_same_as_current_user(
     current_user_email = current_user_data["email"]
 
     # 동일한 유저 정보 조회 및 결과
-    user_id = user_service.get_user(db_session, email=current_user_email).id
+    user_id = user_crud.get_user(db_session, email=current_user_email).id
     response = client.get(f"{settings.API_V1_PREFIX}/users/{user_id}", headers=headers)
     result = response.json()
     email_of_user_id = result["email"]
@@ -375,7 +376,7 @@ def test_update_user_on_profile_text_if_authorized(
     current_user_email = current_user_data["email"]
 
     # 동일한 유저의 프로필 정보 변경
-    user = user_service.get_user(db_session, email=current_user_email)
+    user = user_crud.get_user(db_session, email=current_user_email)
     info_to_be_updated = UserUpdate(profile_text="Hello world")
     response = client.patch(
         f"{settings.API_V1_PREFIX}/users/{user.id}",
@@ -420,7 +421,7 @@ def test_delete_user_if_authorized(
     current_user_email = current_user_data["email"]
 
     # 유저 삭제 및 결과
-    user = user_service.get_user(db_session, email=current_user_email)
+    user = user_crud.get_user(db_session, email=current_user_email)
     response = client.delete(
         f"{settings.API_V1_PREFIX}/users/{user.id}",
         headers=headers,

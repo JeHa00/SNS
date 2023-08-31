@@ -146,7 +146,7 @@ class UserService:
         """
         try:
             code = secrets.token_urlsafe(10)  # verification_code의 최소 길이 10
-            new_user = self.get_user(
+            new_user = user_crud.get_user(
                 db,
                 email=email,
             )
@@ -187,7 +187,7 @@ class UserService:
         """
         try:
             temporary_password = secrets.token_urlsafe(8)  # 패스워드의 최소 길이 8
-            selected_user = self.get_user(
+            selected_user = user_crud.get_user(
                 db,
                 email=email,
             )
@@ -279,57 +279,6 @@ class UserService:
             )
 
         return current_user
-
-    def get_user(
-        self,
-        db: Session,
-        email: str = None,
-        user_id: int = None,
-        verification_code: str = None,
-        password: str = None,
-    ) -> User:
-        """입력 받은 정보를 UserDB class에 전달하여 유저 정보를 조회한다.
-            email, user_id, verification_code 중 하나의 정보를 받으면 이 정보를 토대로 유저 정보를 조회한다.
-            추가로 password 정보까지 포함하여 2개의 key 값을 입력받을 경우,
-            위 3가지 정보를 토대로 조회된 user가 해당 password 정보를 가지고 있는지 확인한다.
-
-        Args:
-            - db (Session): db session
-            - email (str): email 정보
-            - user_id (int): user id 정보
-            - verification_code (str): 인증 코드 정보
-            - password (str): user의 password 정보
-
-        Returns:
-            - User: 조회된 user 객체
-        """
-
-        # 받은 정보를 통해 user 조회
-        if email is not None:
-            user = user_crud.get_user(
-                db,
-                email=email,
-            )
-        elif user_id is not None:
-            user = user_crud.get_user(
-                db,
-                user_id=user_id,
-            )
-        else:
-            user = user_crud.get_user(
-                db,
-                verification_code=verification_code,
-            )
-
-        if password is not None:
-            # 조회된 user의 비밀번호 정보와 입력받은 password 정보와 일치하는지 확인
-            if self.verify_password(
-                password,
-                user.password,
-            ):
-                return user
-        else:
-            return user
 
     def create(
         self,
@@ -447,7 +396,7 @@ class UserService:
                 - 유저 생성에 실패할 경우
                 - 이메일 인증을 위한 이메일 발송에 실패할 경우
         """
-        user = self.get_user(
+        user = user_crud.get_user(
             db,
             email=data_for_signup.get("email"),
         )
@@ -485,7 +434,7 @@ class UserService:
                 - verification code가 code 값과 일치하는 user를 찾지 못한 경우
             - HTTPException (500 INTERNAL SERVER ERROR): 인증 상태값 변경에 실패한 경우
         """
-        user = self.get_user(
+        user = user_crud.get_user(
             db,
             verification_code=code,
         )
