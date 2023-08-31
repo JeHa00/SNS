@@ -531,14 +531,15 @@ class UserService:
 
         - str: 생성된 access token을 반환
         """
-        user = self.get_user(
+        user = user_crud.get_user(
             db,
             email=email,
-            password=password,
         )
 
         if not user:
             raise self.USER_NOT_FOUND_ERROR
+
+        self.verify_password(password, user.password)
 
         if self.is_verified(user):
             access_token = self.create_access_token({"sub": email})
@@ -563,7 +564,7 @@ class UserService:
         - HTTPException (500 INTERNAL SERVER ERROR): 다음 경우에 발생한다.
             - 비밀번호 초기화를 위한 이메일 발송에 실패했을 때
         """
-        user = self.get_user(
+        user = user_crud.get_user(
             db,
             email=email,
         )
@@ -602,7 +603,7 @@ class UserService:
         - HTTPException (400 BAD REQUEST): 입력한 비밀번호가 회원가입 시 입력한 비밀번호와 다를 때 발생
         - HTTPException (500 INTERNAL SERVER ERROR): 비밀번호 변경에 실패했을 때 발생한다.
         """
-        user = self.get_user(
+        user = user_crud.get_user(
             db,
             email=email,
         )
@@ -646,7 +647,7 @@ class UserService:
 
         - User or dict: 유저 정보
         """
-        selected_user = self.get_user(
+        selected_user = user_crud.get_user(
             db,
             user_id=user_id,
         )
@@ -695,7 +696,7 @@ class UserService:
 
         - User: 변경된 user 정보를 반환
         """
-        selected_user = self.get_user(
+        selected_user = user_crud.get_user(
             db,
             user_id=user_id,
         )
@@ -736,7 +737,7 @@ class UserService:
         - HTTPException (500 INTERNAL SERVER ERROR): 유저 정보 삭제에 실패했을 때 발생
         - HTTPException (401 UNAUTHORIZED): 삭제 권한이 없음을 나타내는 에러
         """
-        selected_user = self.get_user(
+        selected_user = user_crud.get_user(
             db,
             user_id=user_id,
         )
