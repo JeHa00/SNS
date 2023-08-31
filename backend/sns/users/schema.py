@@ -1,9 +1,9 @@
 from pydantic import BaseModel, EmailStr, Field, validator
 
 
-class Msg(BaseModel):
+class Message(BaseModel):
     status: str
-    msg: str
+    message: str
 
 
 class Token(BaseModel):
