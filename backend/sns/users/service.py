@@ -13,7 +13,7 @@ from sns.common.config import settings
 from sns.common.session import db
 from sns.users.repositories.email_client import email_client
 from sns.users.repositories.db import user_crud
-from sns.users.model import User, Follow
+from sns.users.model import User
 from sns.users import schema
 
 
@@ -755,25 +755,6 @@ class UserService:
                 detail="삭제할 권한이 없습니다.",
             )
 
-    def get_follow(
-        self,
-        db: Session,
-        follower_id: int,
-        following_id: int,
-    ) -> Follow:
-        """주어진 정보에 일치하는 follow 객체 정보를 얻는다.
-
-        Args:
-
-        - follower_id (int): follow 신청을 한 유저의 id
-        - following_id (int): follow 신청을 받은 유저의 id
-
-        Returns:
-
-        - Follow: 조회된 follow 객체
-        """
-        return user_crud.get_follow(db, follower_id, following_id)
-
     def get_followers(
         self,
         db: Session,
@@ -855,7 +836,7 @@ class UserService:
 
         - bool: follow 관계 맺기 성공 시 True를 반환
         """
-        selected_follow = self.get_follow(db, follower_id, following_id)
+        selected_follow = user_crud.get_follow(db, follower_id, following_id)
 
         if selected_follow and selected_follow.is_followed:
             raise HTTPException(
@@ -902,7 +883,7 @@ class UserService:
 
         - bool: follow 관계 끊기 성공 시 True를 반환
         """
-        selected_follow = self.get_follow(db, follower_id, following_id)
+        selected_follow = user_crud.get_follow(db, follower_id, following_id)
 
         if not selected_follow:
             raise HTTPException(
