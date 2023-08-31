@@ -70,14 +70,14 @@ class UserService:
         """plain_password가 암호화되었을 때 hashed_password와 일치하는지 판단한다.
 
         Args:
-            plain_password (str): 로그인 시 입력하는 패스워드
-            hashed_password (str): db에 저장된 해쉬화된 패스워드
+            - plain_password (str): 로그인 시 입력하는 패스워드
+            - hashed_password (str): db에 저장된 해쉬화된 패스워드
 
         Raises:
-            HTTPException (400 BAD REQUEST): 일치하지 않을 경우 발생하는 에러
+            - HTTPException (400 BAD REQUEST): 일치하지 않을 경우 발생하는 에러
 
         Returns:
-            bool: 일치 유무를 반환
+            - bool: 일치 유무를 반환
         """
         if cls.get_pwd_context().verify(
             plain_password,
@@ -97,10 +97,10 @@ class UserService:
         """암호화된 패스워드를 얻는다.
 
         Args:
-            password (str): 암호화할 패스워드
+            - password (str): 암호화할 패스워드
 
         Returns:
-            str: 암호화된 패스워드
+            - str: 암호화된 패스워드
         """
         return cls.get_pwd_context().hash(
             password,
@@ -113,17 +113,17 @@ class UserService:
         """user의 이메일 인증 여부를 확인한다.
 
         Args:
-            user (User): user 정보
+            - user (User): user 정보
 
         Raises:
-            HTTPException (403 FORBIDDEN): 이메일 미인증일 경우 발생하는 에러
+            - HTTPException (401 UNAUTHORIZED): 등록은 되었지만 이메일 인증이 미완료 상태인 경우
 
         Returns:
-            bool: user의 verified 값
+            - bool: user의 verified 값
         """
         if not user.verified:
             raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
+                status_code=status.HTTP_401_UNAUTHORIZED,
                 detail="인증 완료되지 못한 이메일입니다. 먼저 이메일 인증을 완료하세요.",
             )
 
@@ -138,11 +138,11 @@ class UserService:
         """입력 받은 email 주소로 이메일 인증 메일을 보낸다.
 
         Args:
-            email (str): 회원가입 시 입력한 이메일 주소로, 이 이메일 주소로 인증 메일을 발송한다.
-            db (Session): db session
+            - db (Session): db session
+            - email (str): 회원가입 시 입력한 이메일 주소
 
         Raises:
-            HTTPException (500): 이메일 전송과정에서 문제 발생 시 등록한 유저 삭제와 에러를 일으킨다.
+            - HTTPException (500): 이메일 전송과정에서 문제 발생 시 등록한 유저 삭제와 에러를 일으킨다.
         """
         try:
             code = secrets.token_urlsafe(10)  # verification_code의 최소 길이 10
@@ -179,11 +179,11 @@ class UserService:
         """입력 받은 email 주소로 임시 비밀번호를 발송한다.
 
         Args:
-            email (str): 회원가입 시 입력한 이메일 주소로, 이 이메일 주소로 임시 비밀번호를 받는다.
-            db (Session): db session
+            - db (Session): db session
+            - email (str): 회원가입 시 입력한 이메일 주소
 
         Raises:
-            HTTPException (500 INTERNAL SERVER ERROR): 이메일 전송과정에서 문제가 생기면 에러를 발생시킨다.
+            - HTTPException (500 INTERNAL SERVER ERROR): 이메일 전송과정에서 문제가 생기면 에러를 발생시킨다.
         """
         try:
             temporary_password = secrets.token_urlsafe(8)  # 패스워드의 최소 길이 8
@@ -218,15 +218,16 @@ class UserService:
         """발급했던 Token으로부터 user 정보를 가져온다.
 
         Args:
-            db (Session): db session
-            token (Token, optional): 발급받은 token 정보
+            - db (Session): db session
+            - token (Token, optional): 발급받은 token 정보
 
         Raises:
-            credentials_exception: decoding 작업 시 발생되는 JWT error
-            credentials_exception: jwt로부터 얻은 email 정보로 유저 조회 시 없을 경우 발생되는 에러
+            - HTTPException (401 UNAUTHORIZED): 다음 두 가지 경우에 발생한다.
+                - decoding 작업 시 발생되는 JWT error
+                - jwt로부터 얻은 email 정보로 유저 조회 시 없을 경우 발생되는 에러
 
         Returns:
-            User: jwt로부터 얻은 유저 정보
+            - User: jwt로부터 얻은 유저 정보
         """
         credentials_exception = HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
@@ -262,13 +263,13 @@ class UserService:
         """인증된 현재 유저 정보를 반환한다.
 
         Args:
-            current_user (Depends): 현재 유저 정보
+           - current_user (Depends): 현재 유저 정보
 
         Raises:
-            HTTPException (403 FORBIDDEN): user가 이메일 인증이 완료되지 않으면 발생
+            - HTTPException (401 UNAUTHORIZED): 등록은 되었지만 이메일 인증이 미완료 상태인 경우
 
         Returns:
-            str: 인증된 user의 email 정보
+           - str: 인증된 user의 email 정보
         """
 
         if not current_user.verified:
@@ -294,10 +295,10 @@ class UserService:
 
         Args:
             - db (Session): db session
-            - email: email 정보
-            - user_id: user id 정보
-            - verification_code: 인증 코드 정보
-            - password: user의 password 정보
+            - email (str): email 정보
+            - user_id (int): user id 정보
+            - verification_code (str): 인증 코드 정보
+            - password (str): user의 password 정보
 
         Returns:
             - User: 조회된 user 객체
@@ -339,14 +340,14 @@ class UserService:
             user 생성 시 패스워드는 암호화하여 저장하기 위해 암호화된 패스워드로 변경한 후 infrastructure layer에 전달한다.
 
         Args:
-            db (Session): db session
-            data_for_signup (schema.UserCreate): 등록할 user의 가입 정보
+            - db (Session): db session
+            - data_for_signup (schema.UserCreate): 등록할 user의 가입 정보
 
         Raises:
-            HTTPException (500 INTERNAL SERVER ERROR): user 등록 실패 시
+            - HTTPException (500 INTERNAL SERVER ERROR): user 등록 과정에서 문제가 생기면 에러를 발생시킨다.
 
         Returns:
-            User: 생성된 user 객체
+            - User: 생성된 user 객체
         """
         # password 암호화
         data_for_signup["password"] = self.get_password_hash(
@@ -376,14 +377,15 @@ class UserService:
         """user 정보와 업데이트할 정보를 UserDB class에 전달하여 해당 user 정보를 수정한다.
 
         Args:
-            db (Session): db session
-            user (User): user 정보
-            data_to_be_updated (dict): 해당 user의 변경될 정보
+            - db (Session): db session
+            - user (User): user 정보
+            - data_to_be_updated (dict): 해당 user의 변경될 정보
 
         Raises:
-            HTTPException (500 INTERNAL SERVER ERROR): user 정보 변경 실패 시
+            - HTTPException (500): user 정보 변경 과정에서 문제가 발생할 경우
+
         Returns:
-            User: 수정된 user 객체
+            - User: 수정된 user 객체
         """
         try:
             updated_user = user_crud.update(
@@ -406,14 +408,14 @@ class UserService:
         """삭제할 user의 id 또는 User 객체 정보를 UserDB class에 전달하여 해당 user 정보를 삭제한다.
 
         Args:
-            db (Session): db session
-            user_to_be_deleted (User | int): 삭제될 user 정보
+            - db (Session): db session
+            - user_to_be_deleted (User | int): 삭제될 user 정보
 
         Raises:
-            HTTPException (500 INTERNAL SERVER ERROR): user 정보 삭제 실패 시
+            - HTTPException (500): user 정보 삭제 과정에서 문제가 생기면 에러를 발생시킨다.
 
         Returns:
-            dict: 작업 성공 메세지
+            - dict: 작업 성공 메세지
         """
         try:
             user_crud.remove(
@@ -436,34 +438,25 @@ class UserService:
         """email과 password로 새 user를 등록한다.
 
         Args:
-
-        - data_for_signup (schema.UserCreate) : 등록할 email과 password 정보
+            - data_for_signup (schema.UserCreate) : 등록할 email과 password 정보
 
         Raises:
-
-        - HTTPException (403 FORBIDDEN): 다음 2가지 경우에 발생한다.
-            - 회원 가입 시 입력한 이메일이 이미 인증되었을 때
-            - 이미 등록은 되었고, 인증은 안되었을 때
-        - HTTPException (500 INTERNAL SERVER ERROR): 다음 2가지 경우에 발생한다.
-            - 유저 생성에 실패했을 때
-            - 이메일 인증을 위한 이메일 발송에 실패했을 때
+            - HTTPException (400 BAD REQUEST): 이미 인증된 이메일인 경우
+            - HTTPException (401 UNAUTHORIZED): 등록은 되었지만 이메일 인증이 미완료 상태인 경우
+            - HTTPException (500 INTERNAL SERVER ERROR): 다음 2가지 경우에 발생한다.
+                - 유저 생성에 실패할 경우
+                - 이메일 인증을 위한 이메일 발송에 실패할 경우
         """
         user = self.get_user(
             db,
             email=data_for_signup.get("email"),
         )
 
-        if user:
-            if self.is_verified(user):
-                raise HTTPException(
-                    status_code=403,
-                    detail="이미 인증된 이메일입니다.",
-                )
-            else:
-                raise HTTPException(
-                    status_code=403,
-                    detail="이미 등록되었지만 미인증인 유저입니다.",
-                )
+        if user and self.is_verified(user):
+            raise HTTPException(
+                status_code=400,
+                detail="이미 인증된 이메일입니다.",
+            )
 
         self.create(
             db,
@@ -485,14 +478,12 @@ class UserService:
         """code 정보를 받아 user를 조회하여 해당 user의 인증 상태를 True로 바꾼다.
 
         Args:
-
           - code (str) : url에 담겨진 인증 code 정보
 
         Raises:
-
             - HTTPException (404 NOT FOUND): 다음 경우에 발생한다.
-                - verification code가 code 값과 일치하는 user를 찾지 못할 때 발생한다.
-            - HTTPException (500 INTERNAL SERVER ERROR): 인증 상태값 변경에 실패했을 때 발생한다.
+                - verification code가 code 값과 일치하는 user를 찾지 못한 경우
+            - HTTPException (500 INTERNAL SERVER ERROR): 인증 상태값 변경에 실패한 경우
         """
         user = self.get_user(
             db,
@@ -517,18 +508,15 @@ class UserService:
         """login 정보를 입력하면 access token을 발행한다.
 
         Args:
-
         - email: 로그인 시 입력한 email
         - password: 로그인 시 입력한 password
 
         Raises:
-
-        - HTTPException (404 NOT FOUND): email에 해당하는 user를 찾지 못할 때 발생
-        - HTTPException (400 BAD REQUEST): 입력한 비밀번호가 회원가입 시 입력한 비밀번호와 다를 때 발생
-        - HTTPException (403 FORBIDDEN): 등록은 했지만 이메일 인증이 완료되지 못한 계정일 때 발생
+        - HTTPException (400 BAD REQUEST): 입력한 비밀번호가 회원가입 시 입력한 비밀번호와 다른 경우
+        - HTTPException (401 UNAUTHORIZED): 등록은 되었지만 이메일 인증이 미완료 상태인 경우
+        - HTTPException (404 NOT FOUND): email에 해당하는 user를 찾지 못한 경우
 
         Returns:
-
         - str: 생성된 access token을 반환
         """
         user = user_crud.get_user(
@@ -554,13 +542,11 @@ class UserService:
         """로그인 시 비밀번호를 잊었을 때, 입력한 이메일 주소로 임시 비밀번호를 보낸다.
 
         Args:
-
         - email: 로그인 시 입력한 이메일 주소
 
         Raises:
-
-        - HTTPException (404 NOT FOUND): email에 해당하는 user를 찾지 못할 때 발생
-        - HTTPException (403 FORBIDDEN): 등록은 했지만 이메일 인증이 완료되지 못한 계정일 때 발생
+        - HTTPException (401 UNAUTHORIZED): 등록은 되었지만 이메일 인증이 미완료 상태인 경우
+        - HTTPException (404 NOT FOUND): email에 해당하는 user를 찾지 못한 경우
         - HTTPException (500 INTERNAL SERVER ERROR): 다음 경우에 발생한다.
             - 비밀번호 초기화를 위한 이메일 발송에 실패했을 때
         """
@@ -591,17 +577,15 @@ class UserService:
             일치하지 않으면 변경하지 않는다.
 
         Args:
-
         - email (str): 유저의 email 정보
         - current_password: 현재 패스워드
         - new_password: 새 패스워드
 
         Raises:
-
-        - HTTPException (403 FORBIDDEN): user가 이메일 인증이 완료되지 않으면 발생
-        - HTTPException (404 NOT FOUND): email에 해당하는 user를 찾지 못할 때 발생
-        - HTTPException (400 BAD REQUEST): 입력한 비밀번호가 회원가입 시 입력한 비밀번호와 다를 때 발생
-        - HTTPException (500 INTERNAL SERVER ERROR): 비밀번호 변경에 실패했을 때 발생한다.
+        - HTTPException (400 BAD REQUEST): 입력한 비밀번호가 회원가입 시 입력한 비밀번호와 다른 경우
+        - HTTPException (401 UNAUTHORIZED): 등록은 되었지만 이메일 인증이 미완료 상태인 경우
+        - HTTPException (404 NOT FOUND): email에 해당하는 user를 찾지 못한 경우
+        - HTTPException (500 INTERNAL SERVER ERROR): 비밀번호 변경에 실패한 경우
         """
         user = user_crud.get_user(
             db,
@@ -634,17 +618,14 @@ class UserService:
 
 
         Args:
-
         - user_id (int): db에 저장된 user id
         - email (str): 유저의 email 정보
 
         Raises:
-
-        - HTTPException (403 FORBIDDEN): user가 이메일 인증이 완료되지 않으면 발생
+        - HTTPException (401 UNAUTHORIZED): 등록은 되었지만 이메일 인증이 미완료 상태인 경우
         - HTTPException (404 NOT FOUND): email에 해당하는 user를 찾지 못할 때 발생
 
         Returns:
-
         - User or dict: 유저 정보
         """
         selected_user = user_crud.get_user(
@@ -680,20 +661,16 @@ class UserService:
         """user_id와 현재 user id와 같으면 유저 자신의 정보를 수정한다.
 
         Args:
-
         - user_id (int): db에 저장된 user id
         - email (str): token에서 가져온 현재 유저의 email 정보
         - data_to_be_updated (dict): 업데이트할 user 정보
 
         Raises:
-
-        - HTTPException (403 FORBIDDEN): user가 이메일 인증이 완료되지 않으면 발생
-        - HTTPException (404 NOT FOUND): email에 해당하는 user를 찾지 못할 때 발생
-        - HTTPException (500 INTERNAL SERVER ERROR): 유저 정보 변경에 실패했을 때 발생
-        - HTTPException (401 UNAUTHORIZED): 변경 권한이 없음을 나타내는 에러
+        - HTTPException (403 FORBIDDEN): 수정 권한이 없는 경우
+        - HTTPException (404 NOT FOUND): email에 해당하는 user를 찾지 못한 경우
+        - HTTPException (500 INTERNAL SERVER ERROR): 유저 정보 변경에 실패한 경우
 
         Returns:
-
         - User: 변경된 user 정보를 반환
         """
         selected_user = user_crud.get_user(
@@ -713,7 +690,7 @@ class UserService:
             return updated_user
         else:
             raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
+                status_code=status.HTTP_403_FORBIDDEN,
                 detail="수정할 권한이 없습니다.",
             )
 
@@ -726,16 +703,13 @@ class UserService:
         """user_id와 현재 user id와 같으면 유저 자신의 계정을 삭제한다.
 
         Args:
-
         - user_id (int): db에 저장된 user id
         - email (str): 유저의 이메일 정보
 
         Raises:
-
-        - HTTPException (403 FORBIDDEN): user가 이메일 인증이 완료되지 않으면 발생
-        - HTTPException (404 NOT FOUND): email에 해당하는 user를 찾지 못할 때 발생
-        - HTTPException (500 INTERNAL SERVER ERROR): 유저 정보 삭제에 실패했을 때 발생
-        - HTTPException (401 UNAUTHORIZED): 삭제 권한이 없음을 나타내는 에러
+        - HTTPException (403 FORBIDDEN): 삭제 권한이 없는 경우
+        - HTTPException (404 NOT FOUND): email에 해당하는 user를 찾지 못한 경우
+        - HTTPException (500 INTERNAL SERVER ERROR): 유저 정보 삭제에 실패한 경우
         """
         selected_user = user_crud.get_user(
             db,
@@ -752,7 +726,7 @@ class UserService:
             )
         else:
             raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
+                status_code=status.HTTP_403_FORBIDDEN,
                 detail="삭제할 권한이 없습니다.",
             )
 
