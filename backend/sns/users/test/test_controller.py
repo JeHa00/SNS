@@ -30,7 +30,7 @@ def test_signup_if_email_is_not_verified(
     result_message = response.json()["detail"]
 
     assert response.status_code == status.HTTP_401_UNAUTHORIZED
-    assert result_msg == "인증 완료되지 못한 이메일입니다. 먼저 이메일 인증을 완료하세요."
+    assert result_message == "인증 완료되지 못한 이메일입니다. 먼저 이메일 인증을 완료하세요."
 
 
 @pytest.mark.signup
@@ -51,8 +51,7 @@ def test_signup_if_email_is_already_verified(
     result_message = response.json()["detail"]
 
     assert response.status_code == status.HTTP_400_BAD_REQUEST
-    assert result_msg == "이미 인증된 이메일입니다."
-
+    assert result_message == "이미 인증된 이메일입니다."
 
 
 @pytest.mark.verify_email
@@ -105,7 +104,8 @@ def test_login_if_user_is_not_verified(client: TestClient, fake_user: Dict):
     result_message = response.json()["detail"]
 
     assert response.status_code == status.HTTP_401_UNAUTHORIZED
-    assert result_msg == "인증 완료되지 못한 이메일입니다. 먼저 이메일 인증을 완료하세요."
+    assert result_message == "인증 완료되지 못한 이메일입니다. 먼저 이메일 인증을 완료하세요."
+
 
 @pytest.mark.login
 def test_login_if_login_information_is_wrong(client: TestClient, fake_user: Dict):
@@ -164,7 +164,7 @@ def test_reset_password_if_not_verified_email(client: TestClient, fake_user: Dic
     result_message = response.json()["detail"]
 
     assert response.status_code == status.HTTP_401_UNAUTHORIZED
-    assert result_msg == "인증 완료되지 못한 이메일입니다. 먼저 이메일 인증을 완료하세요."
+    assert result_message == "인증 완료되지 못한 이메일입니다. 먼저 이메일 인증을 완료하세요."
 
 
 @pytest.mark.reset_password
@@ -360,8 +360,7 @@ def test_update_user_on_profile_text_if_not_authorized(
 
     assert current_user_email != email_of_not_authorized_user
     assert response.status_code == status.HTTP_403_FORBIDDEN
-    assert result_msg == "수정할 권한이 없습니다."
-
+    assert result_message == "수정할 권한이 없습니다."
 
 
 @pytest.mark.update_user
@@ -406,8 +405,7 @@ def test_delete_user_if_not_authorized(
     result_message = response.json()["detail"]
 
     assert response.status_code == status.HTTP_403_FORBIDDEN
-    assert result_msg == "삭제할 권한이 없습니다."
-
+    assert result_message == "삭제할 권한이 없습니다."
 
 
 @pytest.mark.delete_user
