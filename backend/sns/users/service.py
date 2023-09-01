@@ -592,7 +592,7 @@ class UserService:
         self,
         db: Session,
         email: str,
-    ):
+    ) -> schema.UserRead:
         """로그인한 유저의 프로필 정보를 반환한다.
 
         Args:

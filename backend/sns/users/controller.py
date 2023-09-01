@@ -215,11 +215,7 @@ def read_private_data(
     current_user: UserBase = Depends(UserService.get_current_user_verified),
     db: Session = Depends(db.get_db),
 ):
-    """로그인한 유저의 상세 정보를 반환한다.
-
-    Args:
-
-    - email (str): 유저의 email 정보
+    """jwt를 사용하여 유저를 인증하고, 로그인한 유저의 상세 정보를 반환한다.
 
     Raises:
 
