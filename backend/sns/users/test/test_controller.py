@@ -303,7 +303,7 @@ def test_read_user_if_user_is_not_same_as_current_user(
     assert "profile_text" in result
 
 
-@pytest.mark.read_user
+@pytest.mark.read_private_data
 def test_read_user_if_user_is_same_as_current_user(
     client: TestClient,
     db_session: Session,
@@ -315,8 +315,10 @@ def test_read_user_if_user_is_same_as_current_user(
     current_user_email = current_user_data["email"]
 
     # 동일한 유저 정보 조회 및 결과
-    user_id = user_crud.get_user(db_session, email=current_user_email).id
-    response = client.get(f"{settings.API_V1_PREFIX}/users/{user_id}", headers=headers)
+    response = client.get(
+        f"{settings.API_V1_PREFIX}/users/current-user/private-data",
+        headers=headers,
+    )
     result = response.json()
     email_of_user_id = result["email"]
 

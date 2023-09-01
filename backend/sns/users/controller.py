@@ -206,6 +206,39 @@ def change_password(
 
 
 @router.get(
+    "/users/current-user/private-data",
+    status_code=status.HTTP_200_OK,
+    response_model=UserRead,
+)
+def read_private_data(
+    user_service: UserService = Depends(UserService),
+    current_user: UserBase = Depends(UserService.get_current_user_verified),
+    db: Session = Depends(db.get_db),
+):
+    """로그인한 유저의 상세 정보를 반환한다.
+
+    Args:
+
+    - email (str): 유저의 email 정보
+
+    Raises:
+
+    - HTTPException (404 NOT FOUND): email에 해당하는 user를 찾지 못한 경우
+
+    Returns:
+
+    - id: 로그인한 유저의 id
+    - email: 로그인 시 사용하는 email
+    - name: 현재 로그인된 user의 name
+    - profile_text: 현재 로그인된 user의 profile text
+    """
+    return user_service.read_private_data(
+        db,
+        current_user.email,
+    )
+
+
+@router.get(
     "/users/{user_id}",
     status_code=status.HTTP_200_OK,
     response_model=UserRead,
@@ -214,13 +247,9 @@ def change_password(
 def read_user(
     user_id: int,
     user_service: UserService = Depends(UserService),
-    current_user: UserBase = Depends(UserService.get_current_user_verified),
     db: Session = Depends(db.get_db),
 ) -> UserRead:
-    """user_id가 current_user와의 일치 유무에 따라 user 정보를 반환한다.
-
-    - user_id가 current_user와 동일하면 email을 포함한 current_user의 정보를 전달한다.
-    - user_id와 current_user가 다르면 user_id에 해당되는 name과 profile text를 전달한다.
+    """로그인한 유저 이외의 유저 정보를 조회한다.
 
     Args:
 
@@ -228,26 +257,18 @@ def read_user(
 
     Raises:
 
-    - HTTPException (401 UNAUTHORIZED): 등록은 되었지만 이메일 인증이 미완료 상태인 경우
     - HTTPException (404 NOT FOUND): email에 해당하는 user를 찾지 못한 경우
 
     Returns:
 
-    - UserRead: 조회된 유저 정보
-        -  user_id와 current_user 가 동일할 때 전달되는 정보
-            - email: 로그인 시 사용하는 email
-            - name: 현재 로그인된 user의 name
-            - profile_text: 현재 로그인된 user의 profile text
-        - user_id와 current_user가 동일하지 않을 때 전달되는 정보
-            - name: user_id에 해당되는 user의 name
-            - profile_text: user_id에 해당되는 user의 profile text
+    - id: 조회하려는 프로필의 id
+    - name: user_id에 해당되는 user의 name
+    - profile_text: user_id에 해당되는 user의 profile text
     """
-    user_data = user_service.read_user(
+    return user_service.read_user(
         db,
         user_id,
-        current_user.email,
     )
-    return user_data
 
 
 @router.patch(

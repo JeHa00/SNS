@@ -559,23 +559,20 @@ class UserService:
         self,
         db: Session,
         user_id: int,
-        email: str,
     ) -> schema.UserRead:
-        """user_id가 current_user와의 일치 유무에 따라 다른 user 정보를 반환한다.
-        - user_id가 current_user와 동일하면 email을 포함한 current_user의 정보를 전달한다.
-        - user_id와 current_user가 다르면 user_id에 해당되는 name과 profile text를 전달한다.
-
+        """로그인한 유저 이외의 유저 프로필 정보를 조회한다.
 
         Args:
         - user_id (int): db에 저장된 user id
-        - email (str): 유저의 email 정보
 
         Raises:
-        - HTTPException (401 UNAUTHORIZED): 등록은 되었지만 이메일 인증이 미완료 상태인 경우
         - HTTPException (404 NOT FOUND): email에 해당하는 user를 찾지 못할 때 발생
 
         Returns:
-        - User or dict: 유저 정보
+        - UserRead:
+            - id: 조회하려는 프로필의 id
+            - name: user_id에 해당되는 user의 name
+            - profile_text: user_id에 해당되는 user의 profile text
         """
         selected_user = user_crud.get_user(
             db,
@@ -585,20 +582,46 @@ class UserService:
         if not selected_user:
             raise self.USER_NOT_FOUND_ERROR
 
-        if selected_user:
-            if selected_user.email == email:
-                return schema.UserRead(
-                    id=selected_user.id,
-                    email=selected_user.email,
-                    name=selected_user.name,
-                    profile_text=selected_user.profile_text,
-                )
-            else:
-                return schema.UserRead(
-                    id=selected_user.id,
-                    name=selected_user.name,
-                    profile_text=selected_user.profile_text,
-                )
+        return schema.UserRead(
+            id=selected_user.id,
+            name=selected_user.name,
+            profile_text=selected_user.profile_text,
+        )
+
+    def read_private_data(
+        self,
+        db: Session,
+        email: str,
+    ):
+        """로그인한 유저의 프로필 정보를 반환한다.
+
+        Args:
+        - email (str): 로그인 상태인 유저의 email 정보
+
+        Raises:
+        - HTTPException (401 UNAUTHORIZED): 등록은 되었지만 이메일 인증이 미완료 상태인 경우
+
+        Returns:
+        - UserRead:
+            - id: 위 email 정보를 가지고 있는 유저의 id
+            - email: 로그인한 유저의 email
+            - name: 위 email 정보를 가지고 있는 유저의 name
+            - profile_text: 위 email 정보를 가지고 있는 유저의 profile_text
+        """
+        selected_user = user_crud.get_user(
+            db,
+            email=email,
+        )
+
+        if not selected_user:
+            raise self.USER_NOT_FOUND_ERROR
+
+        return schema.UserRead(
+            id=selected_user.id,
+            email=selected_user.email,
+            name=selected_user.name,
+            profile_text=selected_user.profile_text,
+        )
 
     def update_user(
         self,
