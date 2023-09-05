@@ -34,6 +34,7 @@ markers = [
     "reset_password",
     "change_password",
     "read_user",
+    "read_private_data",
     "update_user",
     "delete_user",
     "read_post",

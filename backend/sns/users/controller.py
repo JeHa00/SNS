@@ -1,7 +1,8 @@
+from typing import List
+
 from fastapi import APIRouter, Depends, status, Body
 from starlette.background import BackgroundTasks
 from sqlalchemy.orm import Session
-
 
 from sns.common.session import db
 from sns.users.service import UserService
@@ -12,14 +13,18 @@ from sns.users.schema import (
     UserRead,
     UserBase,
     Token,
-    Msg,
+    Message,
 )
 
 
 router = APIRouter()
 
 
-@router.post("/signup", response_model=Msg, status_code=status.HTTP_201_CREATED)
+@router.post(
+    "/signup",
+    response_model=Message,
+    status_code=status.HTTP_201_CREATED,
+)
 def signup(
     data_for_signup: UserCreate,
     background_tasks: BackgroundTasks,
@@ -45,19 +50,19 @@ def signup(
 
     Returns:
 
-    - Msg: 이메일 전송 성공 유무 메세지 반환
+    - Message: 이메일 전송 성공 유무 메세지 반환
     """
     user_service.signup(
         db,
         background_tasks,
         data_for_signup.dict(),
     )
-    return {"status": "success", "msg": "이메일 전송이 완료되었습니다."}
+    return {"status": "success", "message": "이메일 전송이 완료되었습니다."}
 
 
 @router.post(
     "/verification-email/{code}",
-    response_model=Msg,
+    response_model=Message,
     status_code=status.HTTP_200_OK,
 )
 def verify_email(
@@ -79,16 +84,20 @@ def verify_email(
 
     Returns:
 
-    - Msg: 계정 인증 완료 메세지
+    - Message: 계정 인증 완료 메세지
     """
     user_service.verify_email(
         db,
         code,
     )
-    return {"status": "success", "msg": "이메일 인증이 완료되었습니다."}
+    return {"status": "success", "message": "이메일 인증이 완료되었습니다."}
 
 
-@router.post("/login", response_model=Token, status_code=status.HTTP_200_OK)
+@router.post(
+    "/login",
+    response_model=Token,
+    status_code=status.HTTP_200_OK,
+)
 def login(
     email: str = Body(...),
     password: str = Body(...),
@@ -120,7 +129,11 @@ def login(
     return {"access_token": access_token, "token_type": "Bearer"}
 
 
-@router.patch("/password-reset", response_model=Msg, status_code=status.HTTP_200_OK)
+@router.patch(
+    "/password-reset",
+    response_model=Message,
+    status_code=status.HTTP_200_OK,
+)
 def reset_password(
     background_tasks: BackgroundTasks,
     email: str = Body(...),
@@ -142,17 +155,21 @@ def reset_password(
 
     Returns:
 
-    - Msg: 비밀번호 초기화 이메일 송신 완료 메세지
+    - Message: 비밀번호 초기화 이메일 송신 완료 메세지
     """
     user_service.reset_password(
         db,
         email,
         background_tasks,
     )
-    return {"status": "success", "msg": "비밀번호 초기화를 위한 이메일 송신이 완료되었습니다."}
+    return {"status": "success", "message": "비밀번호 초기화를 위한 이메일 송신이 완료되었습니다."}
 
 
-@router.patch("/password-change", response_model=Msg, status_code=status.HTTP_200_OK)
+@router.patch(
+    "/password-change",
+    response_model=Message,
+    status_code=status.HTTP_200_OK,
+)
 def change_password(
     password_data: UserPasswordUpdate,
     user_service: UserService = Depends(UserService),
@@ -178,14 +195,43 @@ def change_password(
 
      Returns:
 
-     - Msg: 실행 완료 메세지
+     - Message: 실행 완료 메세지
     """
     user_service.change_password(
         db,
         current_user.email,
         **password_data.dict(),
     )
-    return {"status": "success", "msg": "비밀번호가 변경되었습니다."}
+    return {"status": "success", "message": "비밀번호가 변경되었습니다."}
+
+
+@router.get(
+    "/users/current-user/private-data",
+    status_code=status.HTTP_200_OK,
+    response_model=UserRead,
+)
+def read_private_data(
+    user_service: UserService = Depends(UserService),
+    current_user: UserBase = Depends(UserService.get_current_user_verified),
+    db: Session = Depends(db.get_db),
+):
+    """jwt를 사용하여 유저를 인증하고, 로그인한 유저의 상세 정보를 반환한다.
+
+    Raises:
+
+    - HTTPException (404 NOT FOUND): email에 해당하는 user를 찾지 못한 경우
+
+    Returns:
+
+    - id: 로그인한 유저의 id
+    - email: 로그인 시 사용하는 email
+    - name: 현재 로그인된 user의 name
+    - profile_text: 현재 로그인된 user의 profile text
+    """
+    return user_service.read_private_data(
+        db,
+        current_user.email,
+    )
 
 
 @router.get(
@@ -197,13 +243,9 @@ def change_password(
 def read_user(
     user_id: int,
     user_service: UserService = Depends(UserService),
-    current_user: UserBase = Depends(UserService.get_current_user_verified),
     db: Session = Depends(db.get_db),
 ) -> UserRead:
-    """user_id가 current_user와의 일치 유무에 따라 user 정보를 반환한다.
-
-    - user_id가 current_user와 동일하면 email을 포함한 current_user의 정보를 전달한다.
-    - user_id와 current_user가 다르면 user_id에 해당되는 name과 profile text를 전달한다.
+    """로그인한 유저 이외의 유저 정보를 조회한다.
 
     Args:
 
@@ -211,26 +253,18 @@ def read_user(
 
     Raises:
 
-    - HTTPException (401 UNAUTHORIZED): 등록은 되었지만 이메일 인증이 미완료 상태인 경우
     - HTTPException (404 NOT FOUND): email에 해당하는 user를 찾지 못한 경우
 
     Returns:
 
-    - UserRead: 조회된 유저 정보
-        -  user_id와 current_user 가 동일할 때 전달되는 정보
-            - email: 로그인 시 사용하는 email
-            - name: 현재 로그인된 user의 name
-            - profile_text: 현재 로그인된 user의 profile text
-        - user_id와 current_user가 동일하지 않을 때 전달되는 정보
-            - name: user_id에 해당되는 user의 name
-            - profile_text: user_id에 해당되는 user의 profile text
+    - id: 조회하려는 프로필의 id
+    - name: user_id에 해당되는 user의 name
+    - profile_text: user_id에 해당되는 user의 profile text
     """
-    user_data = user_service.read_user(
+    return user_service.read_user(
         db,
         user_id,
-        current_user.email,
     )
-    return user_data
 
 
 @router.patch(
@@ -272,7 +306,11 @@ def update_user(
     return updated_user
 
 
-@router.delete("/users/{user_id}", response_model=Msg, status_code=status.HTTP_200_OK)
+@router.delete(
+    "/users/{user_id}",
+    response_model=Message,
+    status_code=status.HTTP_200_OK,
+)
 def delete_user(
     user_id: int,
     user_service: UserService = Depends(UserService),
@@ -294,11 +332,141 @@ def delete_user(
 
     Returns:
 
-    - Msg: 계정 삭제 완료 메세지
+    - Message: 계정 삭제 완료 메세지
     """
     user_service.delete_user(
         db,
         user_id,
         current_user.email,
     )
-    return {"status": "success", "msg": "계정이 삭제되었습니다."}
+    return {"status": "success", "message": "계정이 삭제되었습니다."}
+
+
+@router.get(
+    "/users/{user_id}/followers",
+    response_model=List[UserBase],
+    status_code=status.HTTP_200_OK,
+)
+def read_followers(
+    user_id: int,
+    user_service: UserService = Depends(UserService),
+    db: Session = Depends(db.get_db),
+) -> List[UserBase]:
+    """user_id에 해당하는 유저의 팔로워들을 조회한다.
+
+    Args:
+
+    - user_id (int): user의 id
+
+    Raises:
+
+    - HTTPException (404 NOT FOUND): 팔로워가 없을 때
+
+    Returns:
+
+    - List[UserBase]: 팔로워 목록
+    """
+    return user_service.get_followers(
+        db,
+        user_id,
+    )
+
+
+@router.get(
+    "/users/{user_id}/followings",
+    response_model=List[UserBase],
+    status_code=status.HTTP_200_OK,
+)
+def read_followings(
+    user_id: int,
+    user_service: UserService = Depends(UserService),
+    db: Session = Depends(db.get_db),
+) -> List[UserBase]:
+    """user_id에 해당하는 유저의 팔로잉들을 조회한다.
+
+    Args:
+
+    - user_id (int): user의 id
+
+    Raises:
+
+    - HTTPException (404 NOT FOUND): 팔로잉이 없을 때
+
+    Returns:
+
+    - List[UserBase]: 팔로잉 목록
+    """
+    return user_service.get_followings(
+        db,
+        user_id,
+    )
+
+
+@router.post(
+    "/users/{user_id}/follow",
+    response_model=Message,
+    status_code=status.HTTP_200_OK,
+)
+def follow_user(
+    user_id: int,
+    user_service: UserService = Depends(UserService),
+    current_user: UserBase = Depends(UserService.get_current_user_verified),
+    db: Session = Depends(db.get_db),
+) -> Message:
+    """현재 로그인한 유저가 user_id에 해당하는 유저를 팔로우한다.
+
+    Args:
+
+    - user_id (int): 팔로우 대상 유저의 id
+
+    Raises:
+
+    - HTTPException (400 BAD REQUEST): 이미 Follow 관계가 맺어진 경우
+    - HTTPException (404 NOT FOUND): 전달된 정보에 일치하는 Follow 관계를 찾을 수 없을 때
+    - HTTPException (500 INTERNAL SERVER ERROR): Follow 관계에 실패할 경우
+
+    Returns:
+
+    - Message: 팔로우 성공 메세지
+    """
+    user_service.follow_user(
+        db,
+        user_id,
+        current_user.id,
+    )
+    return {"status": "success", "message": "follow 관계 맺기에 성공했습니다."}
+
+
+@router.post(
+    "/users/{user_id}/unfollow",
+    response_model=Message,
+    status_code=status.HTTP_200_OK,
+)
+def unfollow_user(
+    user_id: int,
+    user_service: UserService = Depends(UserService),
+    current_user: UserBase = Depends(UserService.get_current_user_verified),
+    db: Session = Depends(db.get_db),
+) -> Message:
+    """현재 로그인한 유저가 user_id에 해당하는 유저를 언팔로우한다.
+
+    Args:
+
+    - user_id (int): 언팔로우 대상 유저의 id
+
+    Raises:
+
+    - HTTPException (400 BAD REQUEST): 이미 Follow 관계가 취소된 경우
+    - HTTPException (404 NOT FOUND): 전달된 정보에 일치하는 Follow 관계를 찾을 수 없을 때
+    - HTTPException (500 INTERNAL SERVER ERROR): Follow 관계 끊기에 실패한 경우
+
+    Returns:
+
+    - Message: 언팔로우 성공 메세지
+    """
+    user_service.unfollow_user(
+        db,
+        user_id,
+        current_user.id,
+    )
+    return {"status": "success", "message": "follow 관계 취소에 성공했습니다."}

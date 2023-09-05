@@ -1,4 +1,5 @@
 from datetime import datetime, timedelta
+from typing import List
 import secrets
 
 from fastapi import HTTPException, Depends, status
@@ -145,7 +146,7 @@ class UserService:
         """
         try:
             code = secrets.token_urlsafe(10)  # verification_code의 최소 길이 10
-            new_user = self.get_user(
+            new_user = user_crud.get_user(
                 db,
                 email=email,
             )
@@ -186,7 +187,7 @@ class UserService:
         """
         try:
             temporary_password = secrets.token_urlsafe(8)  # 패스워드의 최소 길이 8
-            selected_user = self.get_user(
+            selected_user = user_crud.get_user(
                 db,
                 email=email,
             )
@@ -278,57 +279,6 @@ class UserService:
             )
 
         return current_user
-
-    def get_user(
-        self,
-        db: Session,
-        email: str = None,
-        user_id: int = None,
-        verification_code: str = None,
-        password: str = None,
-    ) -> User:
-        """입력 받은 정보를 UserDB class에 전달하여 유저 정보를 조회한다.
-            email, user_id, verification_code 중 하나의 정보를 받으면 이 정보를 토대로 유저 정보를 조회한다.
-            추가로 password 정보까지 포함하여 2개의 key 값을 입력받을 경우,
-            위 3가지 정보를 토대로 조회된 user가 해당 password 정보를 가지고 있는지 확인한다.
-
-        Args:
-            - db (Session): db session
-            - email (str): email 정보
-            - user_id (int): user id 정보
-            - verification_code (str): 인증 코드 정보
-            - password (str): user의 password 정보
-
-        Returns:
-            - User: 조회된 user 객체
-        """
-
-        # 받은 정보를 통해 user 조회
-        if email is not None:
-            user = user_crud.get_user(
-                db,
-                email=email,
-            )
-        elif user_id is not None:
-            user = user_crud.get_user(
-                db,
-                user_id=user_id,
-            )
-        else:
-            user = user_crud.get_user(
-                db,
-                verification_code=verification_code,
-            )
-
-        if password is not None:
-            # 조회된 user의 비밀번호 정보와 입력받은 password 정보와 일치하는지 확인
-            if self.verify_password(
-                password,
-                user.password,
-            ):
-                return user
-        else:
-            return user
 
     def create(
         self,
@@ -446,7 +396,7 @@ class UserService:
                 - 유저 생성에 실패할 경우
                 - 이메일 인증을 위한 이메일 발송에 실패할 경우
         """
-        user = self.get_user(
+        user = user_crud.get_user(
             db,
             email=data_for_signup.get("email"),
         )
@@ -484,7 +434,7 @@ class UserService:
                 - verification code가 code 값과 일치하는 user를 찾지 못한 경우
             - HTTPException (500 INTERNAL SERVER ERROR): 인증 상태값 변경에 실패한 경우
         """
-        user = self.get_user(
+        user = user_crud.get_user(
             db,
             verification_code=code,
         )
@@ -518,14 +468,15 @@ class UserService:
         Returns:
         - str: 생성된 access token을 반환
         """
-        user = self.get_user(
+        user = user_crud.get_user(
             db,
             email=email,
-            password=password,
         )
 
         if not user:
             raise self.USER_NOT_FOUND_ERROR
+
+        self.verify_password(password, user.password)
 
         if self.is_verified(user):
             access_token = self.create_access_token({"sub": email})
@@ -548,7 +499,7 @@ class UserService:
         - HTTPException (500 INTERNAL SERVER ERROR): 다음 경우에 발생한다.
             - 비밀번호 초기화를 위한 이메일 발송에 실패했을 때
         """
-        user = self.get_user(
+        user = user_crud.get_user(
             db,
             email=email,
         )
@@ -585,7 +536,7 @@ class UserService:
         - HTTPException (404 NOT FOUND): email에 해당하는 user를 찾지 못한 경우
         - HTTPException (500 INTERNAL SERVER ERROR): 비밀번호 변경에 실패한 경우
         """
-        user = self.get_user(
+        user = user_crud.get_user(
             db,
             email=email,
         )
@@ -608,25 +559,22 @@ class UserService:
         self,
         db: Session,
         user_id: int,
-        email: str,
     ) -> schema.UserRead:
-        """user_id가 current_user와의 일치 유무에 따라 다른 user 정보를 반환한다.
-        - user_id가 current_user와 동일하면 email을 포함한 current_user의 정보를 전달한다.
-        - user_id와 current_user가 다르면 user_id에 해당되는 name과 profile text를 전달한다.
-
+        """로그인한 유저 이외의 유저 프로필 정보를 조회한다.
 
         Args:
         - user_id (int): db에 저장된 user id
-        - email (str): 유저의 email 정보
 
         Raises:
-        - HTTPException (401 UNAUTHORIZED): 등록은 되었지만 이메일 인증이 미완료 상태인 경우
         - HTTPException (404 NOT FOUND): email에 해당하는 user를 찾지 못할 때 발생
 
         Returns:
-        - User or dict: 유저 정보
+        - UserRead:
+            - id: 조회하려는 프로필의 id
+            - name: user_id에 해당되는 user의 name
+            - profile_text: user_id에 해당되는 user의 profile text
         """
-        selected_user = self.get_user(
+        selected_user = user_crud.get_user(
             db,
             user_id=user_id,
         )
@@ -634,18 +582,46 @@ class UserService:
         if not selected_user:
             raise self.USER_NOT_FOUND_ERROR
 
-        if selected_user:
-            if selected_user.email == email:
-                return schema.UserRead(
-                    email=selected_user.email,
-                    name=selected_user.name,
-                    profile_text=selected_user.profile_text,
-                )
-            else:
-                return schema.UserRead(
-                    name=selected_user.name,
-                    profile_text=selected_user.profile_text,
-                )
+        return schema.UserRead(
+            id=selected_user.id,
+            name=selected_user.name,
+            profile_text=selected_user.profile_text,
+        )
+
+    def read_private_data(
+        self,
+        db: Session,
+        email: str,
+    ) -> schema.UserRead:
+        """로그인한 유저의 프로필 정보를 반환한다.
+
+        Args:
+        - email (str): 로그인 상태인 유저의 email 정보
+
+        Raises:
+        - HTTPException (401 UNAUTHORIZED): 등록은 되었지만 이메일 인증이 미완료 상태인 경우
+
+        Returns:
+        - UserRead:
+            - id: 위 email 정보를 가지고 있는 유저의 id
+            - email: 로그인한 유저의 email
+            - name: 위 email 정보를 가지고 있는 유저의 name
+            - profile_text: 위 email 정보를 가지고 있는 유저의 profile_text
+        """
+        selected_user = user_crud.get_user(
+            db,
+            email=email,
+        )
+
+        if not selected_user:
+            raise self.USER_NOT_FOUND_ERROR
+
+        return schema.UserRead(
+            id=selected_user.id,
+            email=selected_user.email,
+            name=selected_user.name,
+            profile_text=selected_user.profile_text,
+        )
 
     def update_user(
         self,
@@ -669,7 +645,7 @@ class UserService:
         Returns:
         - User: 변경된 user 정보를 반환
         """
-        selected_user = self.get_user(
+        selected_user = user_crud.get_user(
             db,
             user_id=user_id,
         )
@@ -707,7 +683,7 @@ class UserService:
         - HTTPException (404 NOT FOUND): email에 해당하는 user를 찾지 못한 경우
         - HTTPException (500 INTERNAL SERVER ERROR): 유저 정보 삭제에 실패한 경우
         """
-        selected_user = self.get_user(
+        selected_user = user_crud.get_user(
             db,
             user_id=user_id,
         )
@@ -724,6 +700,153 @@ class UserService:
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
                 detail="삭제할 권한이 없습니다.",
+            )
+
+    def get_followers(
+        self,
+        db: Session,
+        following_id: int,
+    ) -> List[User]:
+        """following_id에 해당하는 유저의 팔로워들을 조회한다.
+
+        Args:
+
+        - following_id (int): user의 id
+
+        Raises:
+
+        - HTTPException (404 NOT FOUND): 팔로워가 없을 때
+
+        Returns:
+
+        - List[User]: 팔로워 목록
+        """
+        followers = user_crud.get_followers(db, following_id)
+
+        if len(followers) == 0:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="해당 유저는 팔로워가 없습니다.",
+            )
+        return followers
+
+    def get_followings(
+        self,
+        db: Session,
+        follower_id: int,
+    ) -> List[User]:
+        """follower_id에 해당하는 유저를 따르는 팔로잉들을 조회한다.
+
+        Args:
+            follower_id (int): 유저의 id
+
+        Raises:
+
+        - HTTPException (404 NOT FOUND): 팔로잉이 없을 때
+
+        Returns:
+            List[User]: 팔로잉 목록
+        """
+        followings = user_crud.get_followings(db, follower_id)
+
+        if len(followings) == 0:
+            raise HTTPException(
+                status_code=404,
+                detail="해당 유저는 팔로잉이 없습니다.",
+            )
+
+        return followings
+
+    def follow_user(
+        self,
+        db: Session,
+        follower_id: int,
+        following_id: int,
+    ) -> bool:
+        """주어진 정보를 바탕으로 follow 관계를 맺는다.
+            주어진 정보를 바탕으로 Follow 객체가 이미 존재하는지 조회 후,
+            조회된 Follow 객체의 is_followed 값이 False이면 True롤 변경한다.
+            조회 후 없다면 새로 생성한다.
+            follower_id는 팔로우를 당하는 유저의 id, following_id는 팔로우를 거는 유저의 id 를 말한다.
+
+        Args:
+
+        - follower_id (int): 팔로우를 당하는 유저의 id
+        - following_id (int): 팔로우를 거는 유저의 id
+
+        Raises:
+
+        - HTTPException (400 BAD REQUEST): 이미 Follow 관계가 맺어진 경우
+        - HTTPException (500 INTERNAL SERVER ERROR): Follow 관계에 실패할 경우
+
+        Returns:
+
+        - bool: follow 관계 맺기 성공 시 True를 반환
+        """
+        selected_follow = user_crud.get_follow(db, follower_id, following_id)
+
+        if selected_follow and selected_follow.is_followed:
+            raise HTTPException(
+                status_code=400,
+                detail="이미 Follow 관계가 맺어져 있습니다.",
+            )
+        try:
+            user_crud.follow(
+                db,
+                selected_follow,
+                follower_id,
+                following_id,
+            )
+            return True
+        except Exception:
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="follow 관계를 맺는데 실패하였습니다.",
+            )
+
+    def unfollow_user(
+        self,
+        db: Session,
+        follower_id: int,
+        following_id: int,
+    ) -> bool:
+        """주어진 정보를 바탕으로 follow 관계를 끊는다.
+            주어진 정보의를 바탕으로 Follow 객체를 조회 후, 해당 객체의 is_followed 값이 False이면 에러를 발생시킨다.
+            True이면 언팔로우를 시도한다.
+            follower_id는 팔로우를 당하는 유저의 id, following_id는 팔로우를 거는 유저의 id 를 말한다.
+
+        Args:
+
+        - follower_id (int): 팔로우를 당했던 유저의 id
+        - following_id (int): 팔로우를 걸었던 유저의 id
+
+        Raises:
+
+        - HTTPException (400 BAD REQUEST): 이미 Follow 관계가 취소된 경우
+        - HTTPException (404 NOT FOUND): 전달된 정보에 일치하는 Follow 관계를 찾을 수 없을 때
+        - HTTPException (500 INTERNAL SERVER ERROR): Follow 관계 끊기에 실패한 경우
+
+        Returns:
+
+        - bool: follow 관계 끊기 성공 시 True를 반환
+        """
+        selected_follow = user_crud.get_follow(db, follower_id, following_id)
+
+        if not selected_follow:
+            raise HTTPException(
+                status_code=404,
+                detail="해당 정보에 일치하는 Follow 관계를 찾을 수 없습니다.",
+            )
+
+        if not selected_follow.is_followed:
+            raise HTTPException(status_code=400, detail="이미 Follow 관계가 취소되었습니다.")
+        try:
+            user_crud.unfollow(db, selected_follow)
+            return True
+        except Exception:
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="follow 관계 취소가 실패하였습니다.",
             )
 
 
