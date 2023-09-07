@@ -59,8 +59,8 @@ def read_likers(
     Raises:
 
     - HTTPException(404 NOT FOUND): 다음 2가지 경우에 발생한다.
-        - 해당 글에 좋아요를 한 user들이 없는 경우 (code: USER_NOT_FOUND)
-        - post_id에 해당하는 post를 조회하지 못한 경우 (code: POST_NOT_FOUND)
+        - post_id에 해당하는 post를 조회하지 못한 경우 ("code": "POST_NOT_FOUND")
+        - 해당 글에 좋아요를 한 user들이 없는 경우 ("code": "LIKER_NOT_FOUND")
 
     Returns:
 
@@ -94,7 +94,7 @@ def like_post(
     Raises:
 
     - HTTPException (400 BAD REQUEST): 해당 user에게 이미 좋아요를 받은 경우
-    - HTTPException(404 NOT FOUND): post_id에 해당하는 글이 없는 경우 (code: POST_NOT_FOUND)
+    - HTTPException (404 NOT FOUND): post_id에 해당하는 글이 없는 경우
     - HTTPException (500 INTERNAL SERVER ERROR): 글 좋아요 작업에 실패한 경우
 
     Returns:
@@ -125,7 +125,7 @@ def unlike_post(
     Raises:
 
     - HTTPException (400 BAD REQUEST): 이미 좋아요가 취소 상태인 경우
-    - HTTPException(404 NOT FOUND): post_id에 해당하는 글이 없는 경우 (code: POST_NOT_FOUND)
+    - HTTPException (404 NOT FOUND): post_id에 해당하는 글이 없는 경우
     - HTTPException (500 INTERNAL SERVER ERROR): 좋아요 취소 작업에 실패한 경우
 
     Returns:
@@ -185,9 +185,9 @@ def read_posts(
     Raises:
 
     - HTTPException (404 NOT FOUND): 다음 경우에 대해서 발생한다.
-        - user_id에 해당되는 user를 찾지 못한 경우 (code: USER_NOT_FOUND)
-        - user_id에 해당되는 user가 작성한 글이 없는 경우 (code: POST_NOT_FOUND)
-        - 해당 page에 작성된 글이 없는 경우 (code: POST_NOT_FOUND)
+        - user_id에 해당되는 user를 찾지 못한 경우 ("code": "USER_NOT_FOUND")
+        - user_id에 해당되는 user가 작성한 글이 없는 경우 ("code": "POST_NOT_FOUND")
+        - 해당 page에 작성된 글이 없는 경우 ("code": "POST_NOT_FOUND")
 
     Returns:
 
@@ -219,7 +219,6 @@ def create_post(
     Raises:
 
     - HTTPException (403 FORBIDDEN): 전송된 user_id 값이 로그인된 user의 id와 달라 작성 권한이 없는 경우
-    - HTTPException (404 NOT FOUND): user_id에 해당되는 user를 찾지 못한 경우
     - HTTPException (500 INTERNAL SERVER ERROR): 글 생성에 실패한 경우
 
     Returns:
@@ -256,10 +255,8 @@ def update_post(
 
     Raises:
 
-    - HTTPException (401 UNAUTHORIZED): post_id에 해당하는 글의 작성자가 로그인된 user와 달라 수정 권한이 없을 경우
-    - HTTPException(404 NOT FOUND): 다음 2가지 경우에 발생
-        - 보내준 jwt에 해당되는 user를 찾지 못한 경우 (code: USER_NOT_FOUND)
-        - post_id에 해당하는 글이 없는 경우 (code: POST_NOT_FOUND)
+    - HTTPException (403 FORBIDDEN): 해당 글의 작성자가 로그인된 user id와 달라 수정 권한이 없는 경우
+    - HTTPException (404 NOT FOUND): post_id에 해당하는 글이 없는 경우
     - HTTPException (500 INTERNAL SERVER ERROR): 글 수정에 실패한 경우
 
     Returns:
@@ -294,10 +291,8 @@ def delete_post(
 
     Raises:
 
-    - HTTPException (401 UNAUTHORIZED): post_id에 해당하는 글의 작성자가 로그인된 user와 달라 삭제 권한이 없을 경우
-    - HTTPException(404 NOT FOUND): 다음 2가지 경우에 발생
-        - 보내준 jwt에 해당되는 user를 찾지 못한 경우 (code: USER_NOT_FOUND)
-        - post_id에 해당하는 글이 없는 경우 (code: POST_NOT_FOUND)
+    - HTTPException (401 UNAUTHORIZED): 글의 작성자가 로그인된 user와 달라 삭제 권한이 없을 경우
+    - HTTPException (404 NOT FOUND): post_id에 해당하는 글이 없는 경우
     - HTTPException (500 INTERNAL SERVER ERROR): 글 삭제에 실패한 경우
 
     Returns:
