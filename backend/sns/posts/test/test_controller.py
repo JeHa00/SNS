@@ -10,6 +10,7 @@ import pytest
 from sns.common.config import settings
 from sns.users.test.utils import random_lower_string
 from sns.users.service import user_service
+from sns.users.repositories.db import user_crud
 from sns.posts.schema import PostCreate, PostUpdate
 from sns.posts.service import post_service
 from sns.posts import model
@@ -40,7 +41,7 @@ def test_read_post_not_existed(
     result_message = response.json()["detail"]
 
     assert response.status_code == status.HTTP_404_NOT_FOUND
-    assert result_message == "해당 id의 글을 찾을 수 없습니다."
+    assert result_message == "주어진 정보에 일치하는 글을 찾을 수 없습니다."
 
 
 @pytest.mark.read_posts
@@ -55,9 +56,11 @@ def test_read_posts_if_not_registered(
 
     # 글 조회 및 결과
     response = client.get(f"{settings.API_V1_PREFIX}/users/{user_id}/posts?page={page}")
-    result_message = response.json()["detail"]
+    result_code = response.json()["detail"]["code"]
+    result_message = response.json()["detail"]["message"]
 
     assert response.status_code == status.HTTP_404_NOT_FOUND
+    assert result_code == "USER_NOT_FOUND"
     assert result_message == "해당되는 유저를 찾을 수 없습니다."
 
 
@@ -74,10 +77,12 @@ def test_read_posts_if_post_not_exist(
 
     # 글 조회 및 결과
     response = client.get(f"{settings.API_V1_PREFIX}/users/{user.id}/posts?page={page}")
-    result_message = response.json()["detail"]
+    result_code = response.json()["detail"]["code"]
+    result_message = response.json()["detail"]["message"]
 
     assert response.status_code == status.HTTP_404_NOT_FOUND
-    assert result_message == "작성된 글이 없습니다."
+    assert result_code == "POST_NOT_FOUND"
+    assert result_message == "주어진 정보에 일치하는 글을 찾을 수 없습니다."
 
 
 @pytest.mark.read_posts
@@ -98,32 +103,6 @@ def test_read_posts_if_post_exist(
 
         assert response.status_code == status.HTTP_200_OK
         assert len(result) == 5
-
-
-@pytest.mark.create_post
-def test_create_post_if_user_not_registered(
-    client: TestClient,
-    get_user_token_headers_and_login_data: Dict,
-):
-    # current_user 정보
-    headers = get_user_token_headers_and_login_data["headers"]
-
-    # 생성할 글 content 정보
-    content = PostCreate(content=random_lower_string(k=1000))
-
-    # 등록되지 않은 유저 id
-    not_registered_user_id = 2
-
-    # 글 생성 및 결과
-    response = client.post(
-        f"{settings.API_V1_PREFIX}/users/{not_registered_user_id}/posts",
-        headers=headers,
-        json=content.dict(),
-    )
-    result_message = response.json()["detail"]
-
-    assert response.status_code == status.HTTP_404_NOT_FOUND
-    assert result_message == "해당되는 유저를 찾을 수 없습니다."
 
 
 @pytest.mark.create_post
@@ -149,8 +128,8 @@ def test_create_post_if_unauthorized(
     )
     result_message = response.json()["detail"]
 
-    assert response.status_code == status.HTTP_401_UNAUTHORIZED
-    assert result_message == "작성할 권한이 없습니다."
+    assert response.status_code == status.HTTP_403_FORBIDDEN
+    assert result_message == "작성 권한이 없습니다."
 
 
 @pytest.mark.create_post
@@ -162,7 +141,7 @@ def test_create_post_if_authorized(
     # current_user 정보
     headers = get_user_token_headers_and_login_data["headers"]
     login_data = get_user_token_headers_and_login_data["login_data"]
-    authorized_user = user_service.get_user(db_session, email=login_data["email"])
+    authorized_user = user_crud.get_user(db_session, email=login_data["email"])
 
     # 생성할 글 content 정보
     content = PostCreate(content=random_lower_string(k=1000))
@@ -174,37 +153,10 @@ def test_create_post_if_authorized(
         json=content.dict(),
     )
     created_post_id = response.json()["id"]
-    post = post_service.get_post_and_check_none(db_session, post_id=created_post_id)
+    post = post_service.get_post_and_handle_none(db_session, post_id=created_post_id)
 
     assert response.status_code == status.HTTP_201_CREATED
     assert post is not None
-
-
-@pytest.mark.update_post
-def test_update_post_if_user_not_registered(
-    client: TestClient,
-    get_user_token_headers_and_login_data: Dict,
-    fake_post: model.Post,
-):
-    # current_user 정보
-    headers = get_user_token_headers_and_login_data["headers"]
-
-    # 변경할 글 content 정보
-    content = PostUpdate(content=random_lower_string(k=1000))
-
-    # 등록되지 않은 유저 id
-    not_registered_user_id = 3
-
-    # 글 수정 및 결과
-    response = client.patch(
-        f"{settings.API_V1_PREFIX}/users/{not_registered_user_id}/posts/{fake_post.id}",
-        headers=headers,
-        json=content.dict(),
-    )
-    result_message = response.json()["detail"]
-
-    assert response.status_code == status.HTTP_404_NOT_FOUND
-    assert result_message == "해당되는 유저를 찾을 수 없습니다."
 
 
 @pytest.mark.update_post
@@ -217,7 +169,7 @@ def test_update_post_if_try_to_update_not_mine(
     # current_user 정보
     headers = get_user_token_headers_and_login_data["headers"]
     login_data = get_user_token_headers_and_login_data["login_data"]
-    authorized_user = user_service.get_user(db_session, email=login_data["email"])
+    authorized_user = user_crud.get_user(db_session, email=login_data["email"])
 
     # 변경할 content 정보
     content = PostUpdate(content=random_lower_string(k=1000))
@@ -230,39 +182,8 @@ def test_update_post_if_try_to_update_not_mine(
     )
     result_message = response.json()["detail"]
 
-    assert response.status_code == status.HTTP_401_UNAUTHORIZED
-    assert result_message == "수정할 권한이 없습니다."
-
-
-@pytest.mark.update_post
-def test_update_post_if_user_id_is_not_same_as_user_logged_in(
-    client: TestClient,
-    db_session: Session,
-    get_user_token_headers_and_login_data: Dict,
-    fake_post_by_user_logged_in: model.Post,
-    fake_user: dict,
-):
-    # 현재 로그인 상태가 아닌 유저
-    user_id_not_logged_in = fake_user["user"].id
-
-    # 로그인 상태의 유저
-    headers = get_user_token_headers_and_login_data["headers"]
-
-    # 로그인한 유저가 작성한 post id
-    post_id = fake_post_by_user_logged_in.id
-
-    # 변경할 content 정보
-    content = PostUpdate(content=random_lower_string(k=1000))
-
-    response = client.patch(
-        f"{settings.API_V1_PREFIX}/users/{user_id_not_logged_in}/posts/{post_id}",
-        headers=headers,
-        json=content.dict(),
-    )
-    result_message = response.json()["detail"]
-
-    assert response.status_code == status.HTTP_401_UNAUTHORIZED
-    assert result_message == "수정할 권한이 없습니다."
+    assert response.status_code == status.HTTP_403_FORBIDDEN
+    assert result_message == "수정 권한이 없습니다."
 
 
 @pytest.mark.update_post
@@ -274,7 +195,7 @@ def test_update_post_if_post_not_exist(
     # current_user 정보
     headers = get_user_token_headers_and_login_data["headers"]
     login_data = get_user_token_headers_and_login_data["login_data"]
-    authorized_user = user_service.get_user(db_session, email=login_data["email"])
+    authorized_user = user_crud.get_user(db_session, email=login_data["email"])
 
     # 변경할 content 정보
     content = PostUpdate(content=random_lower_string(k=1000))
@@ -291,7 +212,7 @@ def test_update_post_if_post_not_exist(
     result_message = response.json()["detail"]
 
     assert response.status_code == status.HTTP_404_NOT_FOUND
-    assert result_message == "해당 id의 글을 찾을 수 없습니다."
+    assert result_message == "주어진 정보에 일치하는 글을 찾을 수 없습니다."
 
 
 @pytest.mark.update_post
@@ -304,7 +225,7 @@ def test_update_post_only_one_if_authorized(
     # current_user 정보
     headers = get_user_token_headers_and_login_data["headers"]
     login_data = get_user_token_headers_and_login_data["login_data"]
-    authorized_user = user_service.get_user(db_session, email=login_data["email"])
+    authorized_user = user_crud.get_user(db_session, email=login_data["email"])
 
     # 로그인한 유저가 작성한 post id
     post_id = fake_post_by_user_logged_in.id
@@ -334,7 +255,7 @@ def test_update_post_multi_posts_if_authorized(
     # current_user 정보
     headers = get_user_token_headers_and_login_data["headers"]
     login_data = get_user_token_headers_and_login_data["login_data"]
-    authorized_user = user_service.get_user(db_session, email=login_data["email"])
+    authorized_user = user_crud.get_user(db_session, email=login_data["email"])
 
     for post_id in range(1, 101):
         # 변경할 content 정보
@@ -365,7 +286,7 @@ def test_delete_post_if_authorized(
     # user 및 post 정보
     headers = get_user_token_headers_and_login_data["headers"]
     login_data = get_user_token_headers_and_login_data["login_data"]
-    user = user_service.get_user(db_session, email=login_data["email"])
+    user = user_crud.get_user(db_session, email=login_data["email"])
     post_id = fake_post_by_user_logged_in.id
 
     # 글 삭제 및 결과
@@ -382,11 +303,11 @@ def test_delete_post_if_authorized(
 
     # 결과 확인
     with pytest.raises(HTTPException):
-        post_service.get_post_and_check_none(db_session, post_id=post_id)
+        post_service.get_post_and_handle_none(db_session, post_id=post_id)
 
 
 @pytest.mark.delete_post
-def test_delete_post_if_not_authorized(
+def test_delete_post_if_unauthorized(
     client: TestClient,
     db_session: Session,
     get_user_token_headers_and_login_data: Dict,
@@ -395,7 +316,7 @@ def test_delete_post_if_not_authorized(
     # 로그인 상태의 유저
     headers = get_user_token_headers_and_login_data["headers"]
     login_data = get_user_token_headers_and_login_data["login_data"]
-    user = user_service.get_user(db_session, email=login_data["email"])
+    user = user_crud.get_user(db_session, email=login_data["email"])
 
     # 삭제 대상 post의 id
     post_id = fake_post.id
@@ -408,10 +329,10 @@ def test_delete_post_if_not_authorized(
     result_message = response.json()["detail"]
 
     # 결과 확인
-    post = post_service.get_post_and_check_none(db_session, post_id=post_id)
+    post = post_service.get_post_and_handle_none(db_session, post_id=post_id)
 
-    assert response.status_code == status.HTTP_401_UNAUTHORIZED
-    assert result_message == "삭제할 권한이 없습니다."
+    assert response.status_code == status.HTTP_403_FORBIDDEN
+    assert result_message == "삭제 권한이 없습니다."
     assert post is not None
 
 
@@ -443,8 +364,10 @@ def test_read_likees_if_likees_not_exist(
 
     # likees 조회 및 결과
     response = client.get(f"{settings.API_V1_PREFIX}/posts/likees", headers=headers)
+
     result_message = response.json()["detail"]
 
+    assert response.status_code == status.HTTP_404_NOT_FOUND
     assert result_message == "해당 유저가 좋아요를 한 글이 없습니다."
 
 
@@ -504,6 +427,26 @@ def test_like_post(
         assert result_message == "post 좋아요가 완료되었습니다."
 
 
+@pytest.mark.like_post
+def test_like_post_if_post_not_exist(
+    client: TestClient,
+    db_session: Session,
+    get_user_token_headers_and_login_data: dict,
+):
+    headers = get_user_token_headers_and_login_data.get("headers")
+
+    post_id = 1
+
+    response = client.post(
+        f"{settings.API_V1_PREFIX}/posts/{post_id}/like",
+        headers=headers,
+    )
+    result_message = response.json()["detail"]
+
+    assert response.status_code == status.HTTP_404_NOT_FOUND
+    assert result_message == "주어진 정보에 일치하는 글을 찾을 수 없습니다."
+
+
 @pytest.mark.unlike_post
 def test_unlike_post(
     client: TestClient,
@@ -530,3 +473,23 @@ def test_unlike_post(
         assert response.status_code == status.HTTP_200_OK
         assert result_status_text == "success"
         assert result_message == "post 좋아요가 취소되었습니다"
+
+
+@pytest.mark.unlike_post
+def test_unlike_post_if_post_not_exist(
+    client: TestClient,
+    db_session: Session,
+    get_user_token_headers_and_login_data: dict,
+):
+    headers = get_user_token_headers_and_login_data.get("headers")
+
+    post_id = 1
+
+    response = client.post(
+        f"{settings.API_V1_PREFIX}/posts/{post_id}/unlike",
+        headers=headers,
+    )
+    result_message = response.json()["detail"]
+
+    assert response.status_code == status.HTTP_404_NOT_FOUND
+    assert result_message == "주어진 정보에 일치하는 글을 찾을 수 없습니다."
