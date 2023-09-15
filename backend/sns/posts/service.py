@@ -31,7 +31,7 @@ class PostService:
             - HTTPException (404 NOT FOUND): post_id 에 해당되는 post를 찾지 못할 경우
 
         Returns:
-            - User : 조회된 user를 반환
+            - Post : 조회된 post를 반환
         """
         selected_post = post_crud.get_post(
             db,
