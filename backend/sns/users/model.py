@@ -34,6 +34,12 @@ class User(Base, BaseMixin):
         cascade="all, delete-orphan",
     )
 
+    comments = relationship(
+        "Comment",
+        back_populates="writer",
+        cascade="all, delete-orphan",
+    )
+
     def __repr__(self) -> str:
         return f"User(id={self.id}, email={self.email}, name={self.name})"
 
