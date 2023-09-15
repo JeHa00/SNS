@@ -10,8 +10,9 @@ from sns.common.conftest import start_app, app, db_session, client
 # flake8: noqa
 from sns.users.test.conftest import fake_user, get_user_token_headers_and_login_data
 from sns.users.test.utils import random_lower_string, random_email
+from sns.users.repositories.db import user_crud
 from sns.users.service import user_service
-from sns.users.schema import UserCreate, UserUpdate
+from sns.users.schema import UserCreate
 from sns.posts.service import post_service
 from sns.posts.model import Post
 from sns.posts import schema
@@ -98,7 +99,7 @@ def fake_post_by_user_logged_in(
         Post: 생성된 Post 객체를 반환
     """
     login_data = get_user_token_headers_and_login_data["login_data"]
-    user = user_service.get_user(db_session, login_data["email"])
+    user = user_crud.get_user(db_session, login_data["email"])
 
     # 생성할 post 정보
     content = random_lower_string(k=1000)
@@ -125,7 +126,7 @@ def fake_multi_post_by_user_logged_in(
         get_user_token_headers_and_login_data (dict): 로그인된 user를 생성
     """
     login_data = get_user_token_headers_and_login_data["login_data"]
-    user = user_service.get_user(
+    user = user_crud.get_user(
         db_session,
         login_data["email"],
     )
@@ -173,7 +174,7 @@ def fake_postlike(
     another_user = user_service.create(db_session, data_for_signup.dict())
 
     for post_id in range(1, 51):
-        post_service.like(db_session, post_id, user.id)
+        post_service.like_post(db_session, post_id, user.id)
 
     for post_id in range(1, 101):
-        post_service.like(db_session, post_id, another_user.id)
+        post_service.like_post(db_session, post_id, another_user.id)
