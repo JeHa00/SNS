@@ -35,11 +35,7 @@ def fake_comment(
     user_service.update(db_session, writer, {"verified": True})
 
     # content 정보
-    content = CommentCreate(
-        content=random_lower_string(k=500),
-        writer_id=writer.id,
-        post_id=fake_post.id,
-    )
+    content = CommentCreate(content=random_lower_string(k=500))
 
     # comment 생성
     comment = comment_crud.create(
@@ -67,11 +63,7 @@ def fake_multi_comments(
 
     # comment 생성
     while total_comment_count_to_produce > 0:
-        content = CommentCreate(
-            content=random_lower_string(k=500),
-            writer_id=writer.id,
-            post_id=fake_post.id,
-        )
+        content = CommentCreate(content=random_lower_string(k=500))
         comment_crud.create(
             db_session,
             writer.id,
