@@ -33,6 +33,7 @@ class PostService:
         Returns:
             - Post : 조회된 post를 반환
         """
+
         selected_post = post_crud.get_post(
             db,
             post_id,
