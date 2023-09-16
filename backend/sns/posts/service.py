@@ -332,15 +332,16 @@ class PostService:
     def get_like(
         self,
         db: Session,
-        who_like_id: int,
-        like_target_id: int,
+        user_id_who_like: int,
+        liked_post_id: int,
     ) -> PostLike | None:
         """입력받은 정보를 PostLikeDB class에 전달하여 post_like_data를 가지고 있는 PostLike 모델 객체를 조회한다.
             없으면 None을 반환한다.
 
         Args:
             - db (Session): db session.
-            - post_like_data (dict): PostLike 모델 객체 정보
+            - user_id_who_like (int): 좋아요를 한 유저의 id
+            - liked_post_id (int): 좋아요를 받은 글의 id
 
         Returns:
             - PostLike: 조회된 PostLike 객체를 반환
@@ -348,15 +349,15 @@ class PostService:
         """
         return post_crud.get_like(
             db,
-            who_like_id,
-            like_target_id,
+            user_id_who_like,
+            liked_post_id,
         )
 
     def read_likers(
         self,
         db: Session,
         redis_db: Redis,
-        like_target_id: int,
+        liked_post_id: int,
         background_tasks: BackgroundTasks,
     ) -> List[User]:
         """입력받은 정보를 PostLikeDB class에 전달하여 주어진 post id에 해당하는 post를 좋아요한 user들을 조회한다.
@@ -364,7 +365,7 @@ class PostService:
         Args:
             - db (Session): db session.
             - redis_db (Redis): Redis db
-            - like_target_id (int): 좋아요를 받은 post의 id
+            - liked_post_id (int): 좋아요를 받은 post의 id
 
         Raises:
             - HTTPException(404 NOT FOUND): 다음 2가지 경우에 발생한다.
@@ -376,7 +377,7 @@ class PostService:
         """
         selected_post = post_crud.get_post(
             db,
-            like_target_id,
+            liked_post_id,
         )
 
         if not selected_post:
@@ -388,10 +389,10 @@ class PostService:
                 },
             )
 
-        cache = post_redis_crud.get_cache(redis_db, f"post::{like_target_id}")
+        cache = post_redis_crud.get_cache(redis_db, f"post::{liked_post_id}")
 
         if cache is None:
-            users = post_crud.get_users_who_like(db, like_target_id)
+            users = post_crud.get_users_who_like(db, liked_post_id)
 
             if len(users) == 0:
                 raise HTTPException(
@@ -404,7 +405,7 @@ class PostService:
 
             data = {
                 "redis_db": redis_db,
-                "key": f"post::{like_target_id}",
+                "key": f"post::{liked_post_id}",
                 "value": users,
             }
 
@@ -467,22 +468,9 @@ class PostService:
         """
         self.get_post_and_handle_none(db, post_id)
 
-        post_like_object = self.get_like(
-            db,
-            current_user_id,
-            post_id,
-        )
-
-        if post_like_object and post_like_object.is_liked:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="이미 좋아요 처리된 post 입니다.",
-            )
-
         try:
             post_crud.like(
                 db,
-                post_like_object,
                 current_user_id,
                 post_id,
             )
