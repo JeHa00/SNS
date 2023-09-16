@@ -17,7 +17,7 @@ class User(Base, BaseMixin):
     posts = relationship("Post", back_populates="writer", cascade="all, delete-orphan")
     liker = relationship(
         "PostLike",
-        back_populates="who_like",
+        back_populates="user_who_like",
         cascade="all, delete-orphan",
     )
 
