@@ -61,6 +61,13 @@ class Follow(Base, BaseMixin):
         foreign_keys=[follower_id],
     )
 
+    notification = relationship(
+        "Notification",
+        back_populates="follow",
+        foreign_keys="Notification.follow_id",
+        cascade="all, delete-orphan",
+    )
+
     def __repr__(self) -> str:
         return (
             f"Follow(id={self.id}, "

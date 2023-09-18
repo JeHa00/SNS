@@ -34,6 +34,13 @@ class PostLike(Base, BaseMixin):
 
     is_liked = Column(Boolean, default=True)
 
+    notification = relationship(
+        "Notification",
+        back_populates="post_like",
+        foreign_keys="Notification.post_like_id",
+        cascade="all, delete-orphan",
+    )
+
     def __repr__(self) -> str:
         return (
             f"PostLike(user_id_who_like={self.user_id_who_like}, "
