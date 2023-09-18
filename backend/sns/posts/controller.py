@@ -93,7 +93,6 @@ def like_post(
 
     Raises:
 
-    - HTTPException (400 BAD REQUEST): 해당 user에게 이미 좋아요를 받은 경우
     - HTTPException (404 NOT FOUND): post_id에 해당하는 글이 없는 경우
     - HTTPException (500 INTERNAL SERVER ERROR): 글 좋아요 작업에 실패한 경우
 

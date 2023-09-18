@@ -459,7 +459,6 @@ class PostService:
             - like_data (dict): 이미 존재하거나 새로 생성할 PostLike 객체 정보
 
         Raises:
-            - HTTPException (400 BAD REQUEST): 이미 is_liked 상태 값이 True인 경우
             - HTTPException (404 NOT FOUND): post_id에 해당하는 글이 없는 경우
             - HTTPException (500 INTERNAL SERVER ERROR): post 좋아요 작업에 실패한 경우
 
