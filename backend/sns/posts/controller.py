@@ -16,34 +16,37 @@ router = APIRouter()
 
 
 @router.get(
-    "/posts/likees",
+    "/posts/liked_posts",
     response_model=List[schema.Post],
     status_code=status.HTTP_200_OK,
 )
-def read_likees(
+def read_liked_posts(
     post_service: PostService = Depends(PostService),
     current_user: UserBase = Depends(UserService.get_current_user_verified),
     db: Session = Depends(db.get_db),
 ) -> List[schema.Post]:
-    """현재 로그인한 user가 좋아요한 글들을 조회한다.
+    """현재 로그인한 유저가 좋아요한 글들을 조회한다.
 
     Raises:
 
-    - HTTPException (404 NOT FOUND): 해당 user가 좋아요를 한 글이 없는 경우
+    - HTTPException (404 NOT FOUND): 해당 유저가 좋아요를 한 글이 없는 경우
 
     Returns:
 
     - List[Post]: like를 받은 post 목록을 반환
     """
-    return post_service.read_likees(db, current_user.id)
+    return post_service.read_liked_posts(
+        db,
+        current_user.id,
+    )
 
 
 @router.get(
-    "/posts/{post_id}/likers",
+    "/posts/{post_id}/users_who_like",
     response_model=List[UserRead],
     status_code=status.HTTP_200_OK,
 )
-def read_likers(
+def read_users_who_like(
     post_id: int,
     background_tasks: BackgroundTasks,
     post_service: PostService = Depends(PostService),
@@ -59,14 +62,14 @@ def read_likers(
     Raises:
 
     - HTTPException(404 NOT FOUND): 다음 2가지 경우에 발생한다.
-        - post_id에 해당하는 post를 조회하지 못한 경우 ("code": "POST_NOT_FOUND")
-        - 해당 글에 좋아요를 한 user들이 없는 경우 ("code": "LIKER_NOT_FOUND")
+        - post_id에 해당하는 post를 조회하지 못한 경우 (code: POST_NOT_FOUND)
+        - 해당 글에 좋아요를 한 user들이 없는 경우 (code: LIKER_NOT_FOUND)
 
     Returns:
 
     - List[UserRead]: post를 좋아요한 유저 목록을 반환
     """
-    return post_service.read_likers(
+    return post_service.read_users_who_like(
         db,
         redis_db,
         post_id,
@@ -123,8 +126,9 @@ def unlike_post(
 
     Raises:
 
-    - HTTPException (400 BAD REQUEST): 이미 좋아요가 취소 상태인 경우
-    - HTTPException (404 NOT FOUND): post_id에 해당하는 글이 없는 경우
+    - HTTPException (404 NOT FOUND): 다음 2가지 경우에 발생한다.
+        - post_id에 해당하는 글이 없는 경우 (code: POST_NOT_FOUND)
+        - 주어진 정보에 해당하는 PostLike 정보가 없는 경우 (code: POST_LIKE_NOT_FOUND)
     - HTTPException (500 INTERNAL SERVER ERROR): 좋아요 취소 작업에 실패한 경우
 
     Returns:
@@ -184,9 +188,9 @@ def read_posts(
     Raises:
 
     - HTTPException (404 NOT FOUND): 다음 경우에 대해서 발생한다.
-        - user_id에 해당되는 user를 찾지 못한 경우 ("code": "USER_NOT_FOUND")
-        - user_id에 해당되는 user가 작성한 글이 없는 경우 ("code": "POST_NOT_FOUND")
-        - 해당 page에 작성된 글이 없는 경우 ("code": "POST_NOT_FOUND")
+        - user_id에 해당되는 user를 찾지 못한 경우 (code: USER_NOT_FOUND)
+        - user_id에 해당되는 user가 작성한 글이 없는 경우 (code: POST_NOT_FOUND)
+        - 해당 page에 작성된 글이 없는 경우 (code: POST_NOT_FOUND)
 
     Returns:
 
