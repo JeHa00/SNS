@@ -478,7 +478,7 @@ class PostService:
         """
         self.get_post_and_handle_none(db, post_id)
 
-        post_like_object = self.get_like(
+        post_like_object = post_crud.get_like(
             db,
             current_user_id,
             post_id,
