@@ -209,7 +209,7 @@ def test_like_if_post_like_not_exist(
     for post_id in range(1, 101):
         post_crud.like(db_session, user.id, post_id)
 
-    posts = post_crud.get_like_targets(db_session, user.id)
+    posts = post_crud.get_liked_posts(db_session, user.id)
 
     assert len(posts) == 100
 
@@ -228,13 +228,13 @@ def test_get_users_who_like(
     assert len(users_about_post_second) == 1
 
 
-def test_get_like_targets(
+def test_get_liked_posts(
     client: TestClient,
     db_session: Session,
     fake_postlike: None,
 ):
-    posts_on_user_one = post_crud.get_like_targets(db_session, 1)
-    posts_on_user_two = post_crud.get_like_targets(db_session, 2)
+    posts_on_user_one = post_crud.get_liked_posts(db_session, 1)
+    posts_on_user_two = post_crud.get_liked_posts(db_session, 2)
 
     assert posts_on_user_one is not None
     assert len(posts_on_user_one) == 50
