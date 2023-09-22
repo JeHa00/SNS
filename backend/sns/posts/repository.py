@@ -141,23 +141,24 @@ class PostDB:
     def get_like(
         self,
         db: Session,
-        who_like_id: int,
-        like_target_id: int,
+        user_id_who_like: int,
+        liked_post_id: int,
     ) -> PostLike:
-        """post_like_data에 해당되는 PostLike 객체 정보를 얻는다.
+        """주어진 정보에 해당되는 PostLike 객체 정보를 얻는다.
 
         Args:
             db (Session): db session
-            post_like_data (dict): like_target_id, who_like_id 정보
+            user_id_who_like (int): 좋아요를 한 유저의 id
+            liked_post_id (int): 좋아요를 받은 글의 id
 
         Returns:
-            PostLike: _description_
+            PostLike: 해당 정보에 일치하는 PostLike 객체 정보
         """
         return (
             db.query(PostLike)
             .filter(
-                PostLike.like_target_id == like_target_id,
-                PostLike.who_like_id == who_like_id,
+                PostLike.liked_post_id == liked_post_id,
+                PostLike.user_id_who_like == user_id_who_like,
             )
             .first()
         )
@@ -165,73 +166,77 @@ class PostDB:
     def get_users_who_like(
         self,
         db: Session,
-        like_target_id: int,
+        liked_post_id: int,
     ) -> List[User]:
-        """like_target_id에 일치하는 post를 좋아요한 liker 유저들을 조회한다.
+        """liked_post_id에 일치하는 글에 좋아요를 한 liker 유저들을 조회한다.
 
         Args:
             db (Session): db session
-            like_target_id (int): like를 받은 post의 id
+            liked_post_id (int): like를 받은 post의 id
 
         Returns:
             List[User]: list 데이터 타입에 담겨진 User 객체
         """
         subquery = (
             db.query(PostLike)
-            .filter(PostLike.like_target_id == like_target_id, PostLike.is_liked)
+            .filter(PostLike.liked_post_id == liked_post_id, PostLike.is_liked)
             .order_by(PostLike.updated_at.desc())
             .subquery()
         )
 
-        return db.query(User).join(subquery, User.id == subquery.c.who_like_id).all()
+        return (
+            db.query(User).join(subquery, User.id == subquery.c.user_id_who_like).all()
+        )
 
-    def get_like_targets(
+    def get_liked_posts(
         self,
         db: Session,
-        who_like_id: int,
+        user_id_who_like: int,
     ) -> List[Post]:
-        """who_like_id에 해당하는 user가 좋아요를 표시한 likee인 다수의 post를 조회한다.
+        """user_id_who_like 해당하는 user가 좋아요를 한 글들을 조회한다.
 
         Args:
             db (Session): db session
-            who_like_id (int): 작성된 post에 좋아요를 한 user의 id
+            user_id_who_like (int): 좋아요를 한 유저의 id
 
         Returns:
             List[Post]: list 데이터 타입에 담겨진 Post 객체 정보들
         """
         subquery = (
             db.query(PostLike)
-            .filter(PostLike.who_like_id == who_like_id, PostLike.is_liked)
+            .filter(PostLike.user_id_who_like == user_id_who_like, PostLike.is_liked)
             .order_by(PostLike.updated_at.desc())
             .subquery()
         )
 
-        return db.query(Post).join(subquery, Post.id == subquery.c.like_target_id).all()
+        return db.query(Post).join(subquery, Post.id == subquery.c.liked_post_id).all()
 
     def like(
         self,
         db: Session,
-        selected_post_like: None | PostLike,
-        who_like_id: int,
-        like_target_id: int,
+        user_id_who_like: int,
+        liked_post_id: int,
     ) -> PostLike:
         """like_data 를 토대로 post에 좋아요를 실행한다.
 
         Args:
             db (Session): db session
-            selected_like (PostLike): 다음 2가지 중 하나에 해당된다.
-                - 새로 생성할 경우: None
-                - 존재하는 PostLike 객체
-            who_like_id (int): 좋아요를 할 user의 id
-            like_target_id (int): 좋아요를 받을 글의 id
+            user_id_who_like (int): 좋아요를 할 user의 id
+            liked_post_id (int): 좋아요를 받을 글의 id
 
         Returns:
             PostLike: is_liked 값이 True로 생성된 PostLike 객체를 반환
         """
+        selected_post_like = self.get_like(
+            db,
+            user_id_who_like,
+            liked_post_id,
+        )
+
         new_like = selected_post_like or PostLike(
             is_liked=True,
-            who_like_id=who_like_id,
-            like_target_id=like_target_id,
+            user_id_who_like=user_id_who_like,
+            liked_post_id=liked_post_id,
         )
 
         if not new_like.is_liked:

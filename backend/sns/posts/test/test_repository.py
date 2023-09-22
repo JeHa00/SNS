@@ -5,7 +5,6 @@ from sqlalchemy.orm import Session
 
 from sns.users.test.utils import random_lower_string
 from sns.users.service import user_service
-from sns.users.model import User
 from sns.posts.repository import post_crud
 from sns.posts.model import Post, PostLike
 from sns.posts import schema
@@ -208,20 +207,9 @@ def test_like_if_post_like_not_exist(
     user = fake_user.get("user")
 
     for post_id in range(1, 101):
-        like_data = {
-            "who_like_id": user.id,
-            "like_target_id": post_id,
-        }
-        post_crud.like(
-            db_session,
-            None,
-            **like_data,
-        )
+        post_crud.like(db_session, user.id, post_id)
 
-    posts = post_crud.get_like_targets(
-        db_session,
-        user.id,
-    )
+    posts = post_crud.get_liked_posts(db_session, user.id)
 
     assert len(posts) == 100
 
@@ -240,13 +228,13 @@ def test_get_users_who_like(
     assert len(users_about_post_second) == 1
 
 
-def test_get_like_targets(
+def test_get_liked_posts(
     client: TestClient,
     db_session: Session,
     fake_postlike: None,
 ):
-    posts_on_user_one = post_crud.get_like_targets(db_session, 1)
-    posts_on_user_two = post_crud.get_like_targets(db_session, 2)
+    posts_on_user_one = post_crud.get_liked_posts(db_session, 1)
+    posts_on_user_two = post_crud.get_liked_posts(db_session, 2)
 
     assert posts_on_user_one is not None
     assert len(posts_on_user_one) == 50
@@ -263,44 +251,27 @@ def test_unlike(
     user = fake_user.get("user")
 
     for post_id in range(1, 51):
-        post_like_data = {
-            "who_like_id": user.id,  # id = 1
-            "like_target_id": post_id,
-        }
-        post_like_object: PostLike = post_crud.get_like(db_session, post_like_data)
-        post_crud.unlike(
-            db_session,
-            post_like_object,
-        )
+        post_like_object: PostLike = post_crud.get_like(db_session, user.id, post_id)
+        post_crud.unlike(db_session, post_like_object)
 
-        who_like: List[PostLike] = post_crud.get_users_who_like(
+        user_who_like: List[PostLike] = post_crud.get_users_who_like(
             db_session,
             post_id,
         )
 
         # fake_user와 fake_postlike에서 another user를 생성하여 총 user id가 2까지 존재하는 상황
-        assert len(who_like) == 1  # who_like_id=2 인 유저 정보만 조회
+        assert len(user_who_like) == 1  # user_id_who_like=2 인 유저 정보만 조회
 
     for post_id in range(1, 101):
-        post_like_data = {
-            "who_like_id": 2,
-            "like_target_id": post_id,
-        }
-        post_like_object: PostLike = post_crud.get_like(
-            db_session,
-            post_like_data,
-        )
-        post_crud.unlike(
-            db_session,
-            post_like_object,
-        )
+        post_like_object: PostLike = post_crud.get_like(db_session, 2, post_id)
+        post_crud.unlike(db_session, post_like_object)
 
-        who_like: List[PostLike] = post_crud.get_users_who_like(
+        user_who_like: List[PostLike] = post_crud.get_users_who_like(
             db_session,
             post_id,
         )
 
-        assert len(who_like) == 0
+        assert len(user_who_like) == 0
 
 
 def test_like_if_post_like_already_exist(
@@ -312,32 +283,19 @@ def test_like_if_post_like_already_exist(
     user = fake_user.get("user")
 
     for post_id in range(1, 51):
-        post_like_data = {
-            "who_like_id": user.id,  # id = 1
-            "like_target_id": post_id,
-        }
-        post_like_object: PostLike = post_crud.get_like(db_session, post_like_data)
+        post_like_object: PostLike = post_crud.get_like(db_session, user.id, post_id)
 
         # unlike 실행하기
-        post_crud.unlike(
-            db_session,
-            post_like_object,
-        )
+        post_crud.unlike(db_session, post_like_object)
 
-        who_like: List[PostLike] = post_crud.get_users_who_like(
-            db_session,
-            post_id,
-        )
+        user_who_like = post_crud.get_users_who_like(db_session, post_id)
 
         # fake_user와 fake_postlike에서 another user를 생성하여 총 user id가 2까지 존재하는 상황
-        assert len(who_like) == 1  # who_like_id=2 인 유저 정보만 조회
+        assert len(user_who_like) == 1  # user_id_who_like=2 인 유저 정보만 조회
 
         # 다시 like 실행하기
-        post_crud.like(db_session, post_like_object)
+        post_crud.like(db_session, user.id, post_id)
 
-        who_like: List[User] = post_crud.get_users_who_like(
-            db_session,
-            post_id,
-        )
+        user_who_like = post_crud.get_users_who_like(db_session, post_id)
 
-        assert len(who_like) == 2
+        assert len(user_who_like) == 2

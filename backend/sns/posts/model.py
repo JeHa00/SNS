@@ -11,7 +11,7 @@ class Post(Base, BaseMixin):
 
     likee = relationship(
         "PostLike",
-        back_populates="like_target",
+        back_populates="liked_post",
         cascade="all, delete-orphan",
     )
 
@@ -20,17 +20,17 @@ class Post(Base, BaseMixin):
 
 
 class PostLike(Base, BaseMixin):
-    who_like_id = Column(Integer, ForeignKey("user.id", ondelete="CASCADE"))
-    who_like = relationship("User", back_populates="liker")
+    user_id_who_like = Column(Integer, ForeignKey("user.id", ondelete="CASCADE"))
+    user_who_like = relationship("User", back_populates="liker")
 
-    like_target_id = Column(Integer, ForeignKey("post.id", ondelete="CASCADE"))
-    like_target = relationship("Post", back_populates="likee")
+    liked_post_id = Column(Integer, ForeignKey("post.id", ondelete="CASCADE"))
+    liked_post = relationship("Post", back_populates="likee")
 
     is_liked = Column(Boolean, default=True)
 
     def __repr__(self) -> str:
         return (
-            f"PostLike(who_like_id={self.who_like_id}, "
-            f"like_target_id={self.like_target_id}, "
+            f"PostLike(user_id_who_like={self.user_id_who_like}, "
+            f"like_target_id={self.liked_post_id}, "
             f"is_liked={self.is_liked})"
         )
