@@ -188,7 +188,7 @@ class PostDB:
             db.query(User).join(subquery, User.id == subquery.c.user_id_who_like).all()
         )
 
-    def get_like_targets(
+    def get_liked_posts(
         self,
         db: Session,
         user_id_who_like: int,
