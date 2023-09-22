@@ -13,7 +13,7 @@ from sns.users.service import user_service
 from sns.users.repositories.db import user_crud
 from sns.posts.schema import PostCreate, PostUpdate
 from sns.posts.service import post_service
-from sns.posts import model
+from sns.posts.model import Post
 
 
 @pytest.mark.read_post
@@ -34,7 +34,7 @@ def test_read_post_existed(
 @pytest.mark.read_post
 def test_read_post_not_existed(
     client: TestClient,
-    fake_post: model.Post,
+    fake_post: Post,
 ):
     post_id = randint(fake_post.id + 1, 100)
     response = client.get(f"{settings.API_V1_PREFIX}/posts/{post_id}")
@@ -164,7 +164,7 @@ def test_update_post_if_try_to_update_not_mine(
     client: TestClient,
     db_session: Session,
     get_user_token_headers_and_login_data: Dict,
-    fake_post: model.Post,
+    fake_post: Post,
 ):
     # current_user 정보
     headers = get_user_token_headers_and_login_data["headers"]
@@ -220,7 +220,7 @@ def test_update_post_only_one_if_authorized(
     client: TestClient,
     db_session: Session,
     get_user_token_headers_and_login_data: Dict,
-    fake_post_by_user_logged_in: model.Post,
+    fake_post_by_user_logged_in: Post,
 ):
     # current_user 정보
     headers = get_user_token_headers_and_login_data["headers"]
@@ -281,7 +281,7 @@ def test_delete_post_if_authorized(
     client: TestClient,
     db_session: Session,
     get_user_token_headers_and_login_data: Dict,
-    fake_post_by_user_logged_in: model.Post,
+    fake_post_by_user_logged_in: Post,
 ):
     # user 및 post 정보
     headers = get_user_token_headers_and_login_data["headers"]
@@ -311,7 +311,7 @@ def test_delete_post_if_unauthorized(
     client: TestClient,
     db_session: Session,
     get_user_token_headers_and_login_data: Dict,
-    fake_post: model.Post,
+    fake_post: Post,
 ):
     # 로그인 상태의 유저
     headers = get_user_token_headers_and_login_data["headers"]
@@ -336,25 +336,68 @@ def test_delete_post_if_unauthorized(
     assert post is not None
 
 
-@pytest.mark.read_likers
-def test_read_likers(client: TestClient, db_session: Session, fake_postlike: None):
+@pytest.mark.read_users_who_like
+def test_read_users_who_like_if_user_and_post_exist(
+    client: TestClient,
+    db_session: Session,
+    fake_postlike: None,
+):
     for post_id in range(1, 101):
         if post_id <= 50:
-            response = client.get(f"{settings.API_V1_PREFIX}/posts/{post_id}/likers")
+            response = client.get(
+                f"{settings.API_V1_PREFIX}/posts/{post_id}/users_who_like",
+            )
             result = response.json()
 
             assert response.status_code == status.HTTP_200_OK
             assert len(result) == 2
         else:
-            response = client.get(f"{settings.API_V1_PREFIX}/posts/{post_id}/likers")
+            response = client.get(
+                f"{settings.API_V1_PREFIX}/posts/{post_id}/users_who_like",
+            )
             result = response.json()
 
             assert response.status_code == status.HTTP_200_OK
             assert len(result) == 1
 
 
-@pytest.mark.read_likees
-def test_read_likees_if_likees_not_exist(
+@pytest.mark.read_users_who_like
+def test_read_users_who_like_if_post_not_exist(
+    client: TestClient,
+    db_session: Session,
+):
+    not_exist_post_id = 1
+
+    response = client.get(
+        f"{settings.API_V1_PREFIX}/posts/{not_exist_post_id}/users_who_like",
+    )
+    result = response.json()["detail"]
+    result_code = result.get("code")
+    result_message = result.get("message")
+
+    assert result_code == "POST_NOT_FOUND"
+    assert result_message == "주어진 정보에 일치하는 글을 찾을 수 없습니다."
+
+
+@pytest.mark.read_users_who_like
+def test_read_users_who_like_if_postlike_not_exist(
+    client: TestClient,
+    db_session: Session,
+    fake_post: Post,
+):
+    response = client.get(
+        f"{settings.API_V1_PREFIX}/posts/{fake_post.id}/users_who_like",
+    )
+    result = response.json()["detail"]
+    result_code = result.get("code")
+    result_message = result.get("message")
+
+    assert result_code == "USER_WHO_LIKE_NOT_FOUND"
+    assert result_message == "해당 글에 좋아요를 한 유저가 없습니다."
+
+
+@pytest.mark.read_liked_posts
+def test_read_liked_posts_if_likees_not_exist(
     client: TestClient,
     db_session: Session,
     get_user_token_headers_and_login_data: dict,
@@ -362,8 +405,11 @@ def test_read_likees_if_likees_not_exist(
     # current user 정보
     headers = get_user_token_headers_and_login_data.get("headers")
 
-    # likees 조회 및 결과
-    response = client.get(f"{settings.API_V1_PREFIX}/posts/likees", headers=headers)
+    # liked_posts 조회 및 결과
+    response = client.get(
+        f"{settings.API_V1_PREFIX}/posts/liked_posts",
+        headers=headers,
+    )
 
     result_message = response.json()["detail"]
 
@@ -371,8 +417,8 @@ def test_read_likees_if_likees_not_exist(
     assert result_message == "해당 유저가 좋아요를 한 글이 없습니다."
 
 
-@pytest.mark.read_likees
-def test_read_likees_if_likees_exist(
+@pytest.mark.read_liked_posts
+def test_read_liked_posts_if_likees_exist(
     client: TestClient,
     db_session: Session,
     fake_user: dict,
@@ -398,7 +444,10 @@ def test_read_likees_if_likees_exist(
     headers = {"Authorization": f"Bearer {token}"}
 
     # likees 조회 및 결과
-    response = client.get(f"{settings.API_V1_PREFIX}/posts/likees", headers=headers)
+    response = client.get(
+        f"{settings.API_V1_PREFIX}/posts/liked_posts",
+        headers=headers,
+    )
     result = response.json()
 
     assert len(result) == 50
@@ -489,7 +538,32 @@ def test_unlike_post_if_post_not_exist(
         f"{settings.API_V1_PREFIX}/posts/{post_id}/unlike",
         headers=headers,
     )
-    result_message = response.json()["detail"]
+    result = response.json()["detail"]
+    result_status_text = result.get("code")
+    result_message = result.get("message")
 
     assert response.status_code == status.HTTP_404_NOT_FOUND
+    assert result_status_text == "POST_NOT_FOUND"
     assert result_message == "주어진 정보에 일치하는 글을 찾을 수 없습니다."
+
+
+@pytest.mark.unlike_post
+def test_unlike_post_if_postlike_not_exist(
+    client: TestClient,
+    db_session: Session,
+    get_user_token_headers_and_login_data: dict,
+    fake_post: Post,
+):
+    headers = get_user_token_headers_and_login_data.get("headers")
+
+    response = client.post(
+        f"{settings.API_V1_PREFIX}/posts/{fake_post.id}/unlike",
+        headers=headers,
+    )
+    result = response.json()["detail"]
+    result_status_text = result.get("code")
+    result_message = result.get("message")
+
+    assert response.status_code == status.HTTP_404_NOT_FOUND
+    assert result_status_text == "POST_LIKE_NOT_FOUND"
+    assert result_message == "해당 정보에 일치하는 좋아요 정보를 찾을 수 없습니다."
