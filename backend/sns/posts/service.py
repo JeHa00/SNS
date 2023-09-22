@@ -329,30 +329,6 @@ class PostService:
                 detail="삭제 권한이 없습니다.",
             )
 
-    def get_like(
-        self,
-        db: Session,
-        user_id_who_like: int,
-        liked_post_id: int,
-    ) -> PostLike | None:
-        """입력받은 정보를 PostLikeDB class에 전달하여 post_like_data를 가지고 있는 PostLike 모델 객체를 조회한다.
-            없으면 None을 반환한다.
-
-        Args:
-            - db (Session): db session.
-            - user_id_who_like (int): 좋아요를 한 유저의 id
-            - liked_post_id (int): 좋아요를 받은 글의 id
-
-        Returns:
-            - PostLike: 조회된 PostLike 객체를 반환
-            - 없으면 None을 반환
-        """
-        return post_crud.get_like(
-            db,
-            user_id_who_like,
-            liked_post_id,
-        )
-
     def read_likers(
         self,
         db: Session,
