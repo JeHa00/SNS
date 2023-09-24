@@ -38,7 +38,7 @@ class CommentService:
         },
     )
 
-    def get_comment_and_handle_none(
+    def get_a_comment_and_handle_none(
         self,
         db: Session,
         comment_id: int,
@@ -56,7 +56,7 @@ class CommentService:
         Returns:
             Comment: 주어진 정보에 해당되는 댓글 정보를 반환
         """
-        comment = comment_crud.get_comment(
+        comment = comment_crud.get_a_comment(
             db,
             comment_id,
         )
@@ -366,7 +366,7 @@ class CommentService:
             - Comment: 수정된 comment 객체 반환
         """
         # 댓글 유무 확인
-        selected_comment = self.get_comment_and_handle_none(db, comment_id)
+        selected_comment = self.get_a_comment_and_handle_none(db, comment_id)
 
         if selected_comment.writer_id == current_user_id:
             self.update(
@@ -405,7 +405,7 @@ class CommentService:
             - bool: 삭제 완료 시 True 반환
         """
         # 댓글 유무 확인
-        selected_comment = self.get_comment_and_handle_none(db, comment_id)
+        selected_comment = self.get_a_comment_and_handle_none(db, comment_id)
 
         if selected_comment.writer_id == current_user_id:
             self.remove(

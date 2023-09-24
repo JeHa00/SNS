@@ -6,7 +6,7 @@ from sns.comments.model import Comment
 
 
 class CommentDB:
-    def get_comment(
+    def get_a_comment(
         self,
         db: Session,
         comment_id: int,
