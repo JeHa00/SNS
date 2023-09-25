@@ -15,6 +15,12 @@ class Post(Base, BaseMixin):
         cascade="all, delete-orphan",
     )
 
+    comments = relationship(
+        "Comment",
+        back_populates="post",
+        cascade="all, delete-orphan",
+    )
+
     def __repr__(self) -> str:
         return f"Post(id={self.id}, writer_id={self.writer_id})"
 

@@ -49,7 +49,12 @@ markers = [
     "read_followers",
     "read_followings",
     "follow_user",
-    "unfollow_user"
+    "unfollow_user",
+    "get_comments_on_a_post",
+    "get_comments_of_a_user",
+    "create_comment",
+    "update_comment",
+    "delete_comment",
 ]
 
 
