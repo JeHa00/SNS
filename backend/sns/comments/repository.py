@@ -49,7 +49,7 @@ class CommentDB:
     def get_comments_by_post_id(
         self,
         db: Session,
-        post_id: int = None,
+        post_id: int,
         skip: int = 0,
         limit: int = 30,
     ) -> List[Comment]:
