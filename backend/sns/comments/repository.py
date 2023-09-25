@@ -21,42 +21,55 @@ class CommentDB:
         """
         return db.query(Comment).filter(Comment.id == comment_id).first()
 
-    def get_multi_comments(
+    def get_comments_by_writer_id(
         self,
         db: Session,
-        post_id: int = None,
-        writer_id: int = None,
+        writer_id: int,
         skip: int = 0,
         limit: int = 30,
     ) -> List[Comment]:
-        """writer_id에 해당되는 writer가 작성한 comment들,
-          또는 post_id에 해당되는 post에 작성된 comment들을 조회한다.
+        """writer_id에 해당되는 writer가 작성한 comment들을 조회한다.
 
         Args:
+            writer_id (int): user의 id
             skip (int, optional): 건너띌 갯수. 기본 값은 0.
             limit (int, optional): 조회할 최대 갯수. 기본 값은 30.
-            kwargs: writer_id 또는 post_id를 key = value로 입력
 
         Returns:
             List[Comment]: comment 객체들을 list 배열에 담아 반환
         """
-        if post_id and not writer_id:
-            return (
-                db.query(Comment)
-                .filter(Comment.post_id == post_id)
-                .offset(skip)
-                .limit(limit)
-                .all()
-            )
+        return (
+            db.query(Comment)
+            .filter(Comment.writer_id == writer_id)
+            .offset(skip)
+            .limit(limit)
+            .all()
+        )
 
-        else:
-            return (
-                db.query(Comment)
-                .filter(Comment.writer_id == writer_id)
-                .offset(skip)
-                .limit(limit)
-                .all()
-            )
+    def get_comments_by_post_id(
+        self,
+        db: Session,
+        post_id: int = None,
+        skip: int = 0,
+        limit: int = 30,
+    ) -> List[Comment]:
+        """post_id에 해당되는 post에 작성된 comment들을 조회한다.
+
+        Args:
+            post_id (int): post의 id
+            skip (int, optional): 건너띌 갯수. 기본 값은 0.
+            limit (int, optional): 조회할 최대 갯수. 기본 값은 30.
+
+        Returns:
+            List[Comment]: comment 객체들을 list 배열에 담아 반환
+        """
+        return (
+            db.query(Comment)
+            .filter(Comment.post_id == post_id)
+            .offset(skip)
+            .limit(limit)
+            .all()
+        )
 
     def create(
         self,

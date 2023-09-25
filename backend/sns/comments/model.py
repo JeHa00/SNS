@@ -3,6 +3,12 @@ from sqlalchemy.orm import relationship
 
 from sns.common.base import Base, BaseMixin
 
+# flake8: noqa
+from sns.users.model import User
+
+# flake8: noqa
+from sns.posts.model import Post
+
 
 class Comment(Base, BaseMixin):
     content = Column(String(500), nullable=False)
