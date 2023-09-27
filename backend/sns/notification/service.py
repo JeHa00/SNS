@@ -43,7 +43,7 @@ class NotificationService:
                 )
 
         else:
-            selected_postlike = post_crud.get_like_by_postlike_id(
+            selected_postlike = post_crud.get_a_like_by_postlike_id(
                 db,
                 selected_notification.id,
             )

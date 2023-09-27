@@ -163,6 +163,18 @@ class PostDB:
             .first()
         )
 
+    def get_a_like_by_postlike_id(self, db: Session, postlike_id: int) -> PostLike:
+        """postlike_id에 일치하는 PostLike 객체를 조회한다.
+
+        Args:
+            db (Session): db session
+            postlike_id (int): PostLike의 id
+
+        Returns:
+            PostLike: 조회된 PostLike 객체
+        """
+        return db.query(PostLike).filter(PostLike.id == postlike_id).first()
+
     def get_users_who_like(
         self,
         db: Session,
@@ -277,7 +289,7 @@ class PostRedisDB:
         redis_db: Redis,
         key: str,
     ) -> Any:
-        """key를 통해 redis에 저장된 value를 얻는다.
+        """key를 통해 redis db에 해당 key로 저장된 hash의 member를 얻는다.
         value가 None이면 그대로 반환하고, None이 아니면 역직렬화를 한 후 값을 반환한다.
 
         Args:
@@ -296,7 +308,7 @@ class PostRedisDB:
         self,
         redis_db: Redis,
         key: str,
-        value: Any,
+        values: List,
     ) -> bool:
         """redis_db에 key - value로 저장한다.
 
@@ -308,11 +320,27 @@ class PostRedisDB:
         Returns:
             bool: cache에 저장되면 True
         """
-        serialized_value = json.dumps(jsonable_encoder(value))
-        redis_db.set(key, serialized_value)
-        redis_db.expire(key, 300)
+        for value in values:
+            redis_db.sadd(key, json.dumps(jsonable_encoder(value)))
 
+        redis_db.expire(key, 300)
         return True
+
+    def get_number_of_members_in_set(
+        self,
+        redis_db: Redis,
+        key: str,
+    ) -> int:
+        """해당 key로 저장된 hash의 전체 member 수를 얻는다.
+
+        Args:
+            redis_db (Redis): redis db session
+            key (str): redis_db에 저장된 key
+
+        Returns:
+            int: 전체 member의 수
+        """
+        return redis_db.scard(key)
 
     def delete_cache(
         self,

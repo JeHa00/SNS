@@ -138,6 +138,22 @@ class UserDB:
 
         return selected_follow
 
+    def get_a_follow_by_follow_id(
+        self,
+        db: Session,
+        follow_id: int,
+    ) -> Follow:
+        """follow_id에 해당하는 Follow 객체를 조회한다.
+
+        Args:
+            db (Session): db session
+            follow_id (int): follow의 id
+
+        Returns:
+            Follow: 조회된 Follow 객체
+        """
+        return db.query(Follow).filter(Follow.id == follow_id).first()
+
     def get_followers(
         self,
         db: Session,
