@@ -3,6 +3,7 @@ from typing import List
 from fastapi import HTTPException, status
 from sqlalchemy.orm import Session
 
+from sns.common.http_exceptions import CustomHTTPExceptions
 from sns.users.model import User
 from sns.users.repositories.db import user_crud
 from sns.posts.model import Post
@@ -13,30 +14,6 @@ from sns.comments.repository import comment_crud
 
 class CommentService:
     COMMENT_COUNT_PER_PAGE = 30
-
-    USER_NOT_FOUND_ERROR = HTTPException(
-        status_code=status.HTTP_404_NOT_FOUND,
-        detail={
-            "code": "USER_NOT_FOUND",
-            "message": "해당되는 유저를 찾을 수 없습니다.",
-        },
-    )
-
-    POST_NOT_FOUND_ERROR = HTTPException(
-        status_code=status.HTTP_404_NOT_FOUND,
-        detail={
-            "code": "POST_NOT_FOUND",
-            "message": "해당되는 글을 찾을 수 없습니다.",
-        },
-    )
-
-    COMMENT_NOT_FOUND_ERROR = HTTPException(
-        status_code=status.HTTP_404_NOT_FOUND,
-        detail={
-            "code": "COMMENT_NOT_FOUND",
-            "message": "해당되는 댓글을 찾을 수 없습니다.",
-        },
-    )
 
     def get_a_comment_and_handle_none(
         self,
@@ -62,7 +39,7 @@ class CommentService:
         )
 
         if not comment:
-            raise self.COMMENT_NOT_FOUND_ERROR
+            raise CustomHTTPExceptions.COMMENT_NOT_FOUND_ERROR
 
         return comment
 
@@ -90,7 +67,7 @@ class CommentService:
         )
 
         if not user:
-            raise self.USER_NOT_FOUND_ERROR
+            raise CustomHTTPExceptions.USER_NOT_FOUND_ERROR
 
         return user
 
@@ -118,7 +95,7 @@ class CommentService:
         )
 
         if not post:
-            raise self.POST_NOT_FOUND_ERROR
+            raise CustomHTTPExceptions.POST_NOT_FOUND_ERROR
 
         return post
 
@@ -249,7 +226,7 @@ class CommentService:
         )
 
         if not comments:
-            raise self.COMMENT_NOT_FOUND_ERROR
+            raise CustomHTTPExceptions.COMMENT_NOT_FOUND_ERROR
 
         return comments
 
@@ -286,7 +263,7 @@ class CommentService:
         )
 
         if not comments:
-            raise self.COMMENT_NOT_FOUND_ERROR
+            raise CustomHTTPExceptions.COMMENT_NOT_FOUND_ERROR
 
         return comments
 
