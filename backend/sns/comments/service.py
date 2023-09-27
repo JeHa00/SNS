@@ -187,7 +187,7 @@ class CommentService:
                 detail="댓글 수정에 실패하였습니다.",
             )
 
-    def remove(
+    def delete(
         self,
         db: Session,
         comment_to_be_deleted: Comment,
@@ -204,7 +204,7 @@ class CommentService:
             - bool: comment 삭제에 성공하면 True를 반환
         """
         try:
-            comment_crud.remove(
+            comment_crud.delete(
                 db,
                 comment_to_be_deleted,
             )
@@ -235,7 +235,7 @@ class CommentService:
             - HTTPException (404 NOT FOUND): 주어진 정보에 해당되는 댓글이 없을 경우
                 - code: COMMENT_NOT_FOUND
 
-        Returns:
+        turns:
             - List[Comment]: 여러 댓글 정보들이 리스트에 담겨진 형태로 반환
         """
         # 글 유무 확인
@@ -407,7 +407,7 @@ class CommentService:
         selected_comment = self.get_a_comment_and_handle_none(db, comment_id)
 
         if selected_comment.writer_id == current_user_id:
-            self.remove(
+            self.delete(
                 db,
                 selected_comment,
             )
