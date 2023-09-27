@@ -248,7 +248,7 @@ class CommentService:
             skip=page * self.COMMENT_COUNT_PER_PAGE,
         )
 
-        if len(comments) == 0:
+        if not comments:
             raise self.COMMENT_NOT_FOUND_ERROR
 
         return comments
@@ -285,7 +285,7 @@ class CommentService:
             skip=page * self.COMMENT_COUNT_PER_PAGE,
         )
 
-        if len(comments) == 0:
+        if not comments:
             raise self.COMMENT_NOT_FOUND_ERROR
 
         return comments
