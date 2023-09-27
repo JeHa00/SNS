@@ -3,7 +3,7 @@ from typing import List
 from fastapi import HTTPException, status
 from sqlalchemy.orm import Session
 
-from sns.common.http_exceptions import CustomHTTPExceptions
+from sns.common.http_exceptions import CommonHTTPExceptions
 from sns.users.model import User
 from sns.users.repositories.db import user_crud
 from sns.posts.model import Post
@@ -39,7 +39,7 @@ class CommentService:
         )
 
         if not comment:
-            raise CustomHTTPExceptions.COMMENT_NOT_FOUND_ERROR
+            raise CommonHTTPExceptions.COMMENT_NOT_FOUND_ERROR
 
         return comment
 
@@ -67,7 +67,7 @@ class CommentService:
         )
 
         if not user:
-            raise CustomHTTPExceptions.USER_NOT_FOUND_ERROR
+            raise CommonHTTPExceptions.USER_NOT_FOUND_ERROR
 
         return user
 
@@ -95,7 +95,7 @@ class CommentService:
         )
 
         if not post:
-            raise CustomHTTPExceptions.POST_NOT_FOUND_ERROR
+            raise CommonHTTPExceptions.POST_NOT_FOUND_ERROR
 
         return post
 
@@ -226,7 +226,7 @@ class CommentService:
         )
 
         if not comments:
-            raise CustomHTTPExceptions.COMMENT_NOT_FOUND_ERROR
+            raise CommonHTTPExceptions.COMMENT_NOT_FOUND_ERROR
 
         return comments
 
@@ -263,7 +263,7 @@ class CommentService:
         )
 
         if not comments:
-            raise CustomHTTPExceptions.COMMENT_NOT_FOUND_ERROR
+            raise CommonHTTPExceptions.COMMENT_NOT_FOUND_ERROR
 
         return comments
 
