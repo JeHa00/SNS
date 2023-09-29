@@ -20,11 +20,9 @@ alembic = "^1.10.2"
 add-trailing-comma = "^2.4.0"
 redis = "^4.6.0"
 
-
 [tool.poetry.group.test.dependencies]
 pytest = "^7.2.1"
 httpx = "^0.23.3"
-
 
 [tool.pytest.ini_options]
 markers = [
@@ -56,8 +54,6 @@ markers = [
     "update_comment",
     "delete_comment",
 ]
-
-
 
 [tool.poetry.group.dev.dependencies]
 black = "^23.1.0"
