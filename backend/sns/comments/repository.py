@@ -49,7 +49,7 @@ class CommentDB:
     def get_comments_by_post_id(
         self,
         db: Session,
-        post_id: int = None,
+        post_id: int,
         skip: int = 0,
         limit: int = 30,
     ) -> List[Comment]:
@@ -131,7 +131,7 @@ class CommentDB:
 
         return comment
 
-    def remove(self, db: Session, comment_to_be_deleted: Comment | int):
+    def delete(self, db: Session, comment_to_be_deleted: Comment | int):
         """Comment 모델 객체 또는 comment_id 로 주어진 comment 객체를 삭제한다.
 
         Args:

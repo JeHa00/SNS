@@ -61,9 +61,13 @@ class SQLAlchemy:
         """
         if self._session is None:
             self.init_app(self._app)
+
+        db_session = self._session()
+
         try:
-            db_session = self._session()
             yield db_session
+        except Exception:
+            db_session.rollback()
         finally:
             db_session.close()
 
