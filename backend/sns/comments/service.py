@@ -104,7 +104,7 @@ class CommentService:
         db: Session,
         writer_id: int,
         post_id: int,
-        content: str,
+        data_to_be_created: dict,
     ) -> Comment:
         """주어진 정보를 토대로 comment를 생성한다.
 
@@ -124,7 +124,7 @@ class CommentService:
                 db,
                 writer_id,
                 post_id,
-                content,
+                **data_to_be_created,
             )
             return created_comment
         except Exception:

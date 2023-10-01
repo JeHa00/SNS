@@ -111,7 +111,7 @@ def create_comment(
         writer_id,
         current_user.id,
         post_id,
-        data_to_be_created,
+        data_to_be_created.dict(),
     )
 
 
@@ -185,4 +185,4 @@ def delete_comment(
         current_user.id,
         comment_id,
     )
-    return {"status": "success", "msg": "댓글이 삭제되었습니다."}
+    return {"status": "success", "message": "댓글이 삭제되었습니다."}
