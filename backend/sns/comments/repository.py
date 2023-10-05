@@ -76,14 +76,14 @@ class CommentDB:
         db: Session,
         writer_id: int,
         post_id: int,
-        **data_to_be_created: dict,
+        content: str,
     ) -> Comment:
         """주어진 정보를 토대로 comment를 생성한다.
 
         Args:
-            data_to_be_created (CommentCreate): comment의 content로 생성할 내용
             writer_id (int): 작성자 유저의 id
             post_id (int): comment가 달릴 post의 id
+            content (str): comment의 content로 생성할 내용
 
         Returns:
             Comment: 생성된 comment 객체를 반환
@@ -91,7 +91,7 @@ class CommentDB:
         new_comment = Comment(
             writer_id=writer_id,
             post_id=post_id,
-            **data_to_be_created,
+            content=content,
         )
 
         db.add(new_comment)

@@ -169,7 +169,7 @@ def test_remove_only_one_by_int(
     fake_comment: Comment,
 ):
     comment_id = fake_comment.id
-    comment_crud.remove(
+    comment_crud.delete(
         db_session,
         comment_id,
     )
@@ -186,7 +186,7 @@ def test_remove_only_one_by_model_object(
     db_session: Session,
     fake_comment: Comment,
 ):
-    comment_crud.remove(
+    comment_crud.delete(
         db_session,
         fake_comment,
     )
@@ -213,7 +213,7 @@ def test_remove_comments_by_int(
     assert len(comments) == 30
 
     for comment in comments:
-        comment_crud.remove(
+        comment_crud.delete(
             db_session,
             comment.id,
         )
@@ -239,7 +239,7 @@ def test_remove_comments_by_model_object(
     assert len(comments) == 30
 
     for comment in comments:
-        comment_crud.remove(
+        comment_crud.delete(
             db_session,
             comment,
         )
