@@ -24,4 +24,8 @@ class Notification(Base, BaseMixin):
     is_read = Column(Boolean, default=False)
 
     def __repr__(self) -> str:
-        return f"Notification(type={self.notification_type}, is_read={self.is_read})"
+        return (
+            f"Notification(id={self.id}, "
+            f"type={self.notification_type}, "
+            f"is_read={self.is_read})"
+        )
