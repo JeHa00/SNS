@@ -308,7 +308,7 @@ class PostRedisDB:
         self,
         redis_db: Redis,
         key: str,
-        values: List,
+        value: Any,
     ) -> bool:
         """redis_db에 key - value로 저장한다.
 
@@ -320,27 +320,11 @@ class PostRedisDB:
         Returns:
             bool: cache에 저장되면 True
         """
-        for value in values:
-            redis_db.sadd(key, json.dumps(jsonable_encoder(value)))
-
+        serialized_value = json.dumps(jsonable_encoder(value))
+        redis_db.set(key, serialized_value)
         redis_db.expire(key, 300)
+
         return True
-
-    def get_number_of_members_in_set(
-        self,
-        redis_db: Redis,
-        key: str,
-    ) -> int:
-        """해당 key로 저장된 hash의 전체 member 수를 얻는다.
-
-        Args:
-            redis_db (Redis): redis db session
-            key (str): redis_db에 저장된 key
-
-        Returns:
-            int: 전체 member의 수
-        """
-        return redis_db.scard(key)
 
     def delete_cache(
         self,
