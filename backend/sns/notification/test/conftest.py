@@ -4,7 +4,7 @@ from fastapi.testclient import TestClient
 from sqlalchemy.orm import Session
 
 # flake8: noqa
-from sns.common.conftest import start_app, app, db_session, redis_db_session, client
+from sns.common.conftest import start_app, app, db_session, client
 
 # flake8: noqa
 from sns.users.test.conftest import (
