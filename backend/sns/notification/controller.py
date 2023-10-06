@@ -22,6 +22,20 @@ def change_is_read_state_to_true(
     notification_service: NotificationService = Depends(NotificationService),
     db: Session = Depends(db.get_db),
 ) -> Message:
+    """해당 id의 알림 읽기 상태를 읽음 상태로 변경합니다.
+
+    Args:
+        notification_id (int): 알림의 id
+        is_read (NotificationUpdate): 객체 형태로 is_read의 값을 보낸다.
+            - ex: {"is_read": True}
+
+    Raises:
+        HTTPException (403 FORBIDDEN): 수정 권한이 없는 경우
+        HTTPException (500 INTERNAL SERVER ERROR): 알림 읽기 상태 변경에 실패한 경우
+
+    Returns:
+        Message: 변경 성공 시 성공 메세지를 반환
+    """
     notification_service.change_is_read_state_to_true(
         db,
         notification_id,
