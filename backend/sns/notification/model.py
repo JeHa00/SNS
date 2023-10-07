@@ -21,11 +21,11 @@ class Notification(Base, BaseMixin):
         foreign_keys=[post_like_id],
     )
 
-    is_read = Column(Boolean, default=False)
+    read = Column(Boolean, default=False)
 
     def __repr__(self) -> str:
         return (
             f"Notification(id={self.id}, "
             f"type={self.notification_type}, "
-            f"is_read={self.is_read})"
+            f"read={self.read})"
         )

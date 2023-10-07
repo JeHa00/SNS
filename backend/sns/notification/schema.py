@@ -20,4 +20,4 @@ class Notification(NotificationBase):
 
 
 class NotificationUpdate(NotificationBase):
-    is_read: bool = True
+    read: bool = True

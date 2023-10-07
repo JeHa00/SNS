@@ -123,7 +123,7 @@ class NotificationDB:
             Notification: 수정된 Notification 객체
         """
         selected_notification = self.get_notification_by_id(db, notification_id)
-        selected_notification.is_read = True
+        selected_notification.read = True
 
         db.add(selected_notification)
         db.commit()
