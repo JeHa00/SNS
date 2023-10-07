@@ -18,7 +18,7 @@ class NotificationDB:
         Returns:
             Notification: 조회된 Notification 객체. 해당되는 객체가 없으면 None을 반환
         """
-        return db.query(Notification).filter(Notification.id == notification_id).first()
+        return db.get(Notification, notification_id)
 
     def get_notification_by_follow_id(
         self,

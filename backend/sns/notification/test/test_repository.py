@@ -6,7 +6,7 @@ from sns.posts.repository import post_crud
 from sns.notification.repository import notification_crud
 
 
-def test_create_and_get_notification_then_change_is_read_state(
+def test_create_and_get_notification_then_mark_as_read(
     client: TestClient,
     db_session: Session,
     fake_follow: None,
@@ -24,9 +24,16 @@ def test_create_and_get_notification_then_change_is_read_state(
         selected_follow.id,
     )
 
-    selected_notification = notification_crud.get_notification_by_follow_id(
+    selected_notification_by_follow_id = (
+        notification_crud.get_notification_by_follow_id(
+            db_session,
+            selected_follow.id,
+        )
+    )
+
+    selected_notification_by_id = notification_crud.get_notification_by_id(
         db_session,
-        selected_follow.id,
+        new_notification_about_follow.id,
     )
 
     assert hasattr(new_notification_about_follow, "id")
@@ -35,13 +42,14 @@ def test_create_and_get_notification_then_change_is_read_state(
     assert hasattr(new_notification_about_follow, "read")
     assert hasattr(new_notification_about_follow, "follow_id")
     assert new_notification_about_follow.follow_id == selected_follow.id
-    assert new_notification_about_follow.id == selected_notification.id
+    assert new_notification_about_follow.id == selected_notification_by_follow_id.id
     assert hasattr(new_notification_about_follow, "post_like_id")
     assert new_notification_about_follow.read is False
+    assert selected_notification_by_follow_id == selected_notification_by_id
 
     notification_crud.mark_as_read(
         db_session,
-        selected_notification.id,
+        new_notification_about_follow.id,
     )
 
     assert new_notification_about_follow.read is True
@@ -50,8 +58,8 @@ def test_create_and_get_notification_then_change_is_read_state(
     user_id_used_for_postlike = 11
     selected_post_like = post_crud.get_like(
         db_session,
-        who_like_id=user_id_used_for_postlike,
-        like_target_id=1,
+        user_id_who_like=user_id_used_for_postlike,
+        liked_post_id=1,
     )
 
     new_notification_about_postlike = notification_crud.create_notification_on_postlike(
@@ -59,9 +67,16 @@ def test_create_and_get_notification_then_change_is_read_state(
         selected_post_like.id,
     )
 
-    selected_notification = notification_crud.get_notification_by_postlike_id(
+    selected_notification_by_postlike_id = (
+        notification_crud.get_notification_by_postlike_id(
+            db_session,
+            selected_post_like.id,
+        )
+    )
+
+    selected_notification_by_id = notification_crud.get_notification_by_id(
         db_session,
-        selected_post_like.id,
+        new_notification_about_postlike.id,
     )
 
     assert hasattr(new_notification_about_postlike, "id")
@@ -71,12 +86,13 @@ def test_create_and_get_notification_then_change_is_read_state(
     assert hasattr(new_notification_about_postlike, "follow_id")
     assert hasattr(new_notification_about_postlike, "post_like_id")
     assert new_notification_about_postlike.post_like_id == selected_post_like.id
-    assert new_notification_about_postlike.id == selected_notification.id
+    assert new_notification_about_postlike.id == selected_notification_by_postlike_id.id
     assert new_notification_about_postlike.read is False
+    assert selected_notification_by_postlike_id.id == selected_notification_by_id.id
 
     notification_crud.mark_as_read(
         db_session,
-        selected_notification.id,
+        selected_notification_by_postlike_id.id,
     )
 
     assert new_notification_about_postlike.read is True
