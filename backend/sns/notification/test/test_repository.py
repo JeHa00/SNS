@@ -39,7 +39,7 @@ def test_create_and_get_notification_then_change_is_read_state(
     assert hasattr(new_notification_about_follow, "post_like_id")
     assert new_notification_about_follow.read is False
 
-    notification_crud.change_is_read_state(
+    notification_crud.mark_as_read(
         db_session,
         selected_notification.id,
     )
@@ -74,7 +74,7 @@ def test_create_and_get_notification_then_change_is_read_state(
     assert new_notification_about_postlike.id == selected_notification.id
     assert new_notification_about_postlike.read is False
 
-    notification_crud.change_is_read_state(
+    notification_crud.mark_as_read(
         db_session,
         selected_notification.id,
     )

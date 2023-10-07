@@ -108,7 +108,7 @@ class NotificationDB:
 
         return new_notification
 
-    def change_is_read_state(
+    def mark_as_read(
         self,
         db: Session,
         notification_id: int,
