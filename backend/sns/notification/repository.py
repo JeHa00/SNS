@@ -1,6 +1,7 @@
 from sqlalchemy.orm import Session
 
 from sns.notification.model import Notification
+from sns.notification.enums import NotificationType
 
 
 class NotificationDB:
@@ -74,7 +75,7 @@ class NotificationDB:
         """
         new_notification = Notification(
             follow_id=follow_id,
-            notification_type="follow",
+            notification_type=NotificationType.follow,
         )
 
         db.add(new_notification)
@@ -99,7 +100,7 @@ class NotificationDB:
         """
         new_notification = Notification(
             post_like_id=post_like_id,
-            notification_type="post_like",
+            notification_type=NotificationType.post_like,
         )
 
         db.add(new_notification)

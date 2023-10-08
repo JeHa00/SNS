@@ -1,11 +1,6 @@
-from enum import Enum
-
 from pydantic import BaseModel, Field
 
-
-class NotificationType(str, Enum):
-    like = "like"
-    follow = "follow"
+from sns.notification.enums import NotificationType
 
 
 class NotificationBase(BaseModel):
