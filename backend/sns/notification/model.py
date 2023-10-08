@@ -7,14 +7,22 @@ from sns.common.base import Base, BaseMixin
 class Notification(Base, BaseMixin):
     notification_type = Column(Enum("follow", "post_like"))
 
-    follow_id = Column(Integer, ForeignKey("follow.id", ondelete="CASCADE"))
+    follow_id = Column(
+        Integer,
+        ForeignKey("follow.id", ondelete="CASCADE"),
+        index=True,
+    )
     follow = relationship(
         "Follow",
         back_populates="notification",
         foreign_keys=[follow_id],
     )
 
-    post_like_id = Column(Integer, ForeignKey("postlike.id", ondelete="CASCADE"))
+    post_like_id = Column(
+        Integer,
+        ForeignKey("postlike.id", ondelete="CASCADE"),
+        index=True,
+    )
     post_like = relationship(
         "PostLike",
         back_populates="notification",
