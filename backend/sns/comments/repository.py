@@ -19,7 +19,7 @@ class CommentDB:
         Returns:
             Comment: comment_id에 해당되는 comment 객체
         """
-        return db.query(Comment).filter(Comment.id == comment_id).first()
+        return db.query(Comment).filter(Comment.id == comment_id).one_or_none()
 
     def get_comments_by_writer_id(
         self,
