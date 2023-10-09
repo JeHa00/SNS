@@ -2,15 +2,20 @@ from sqlalchemy import Column, Integer, ForeignKey, Enum, Boolean
 from sqlalchemy.orm import relationship
 
 from sns.common.base import Base, BaseMixin
+from sns.notification.enums import NotificationType
 
 
 class Notification(Base, BaseMixin):
-    notification_type = Column(Enum("follow", "post_like"))
+    notification_type = Column(
+        Enum(
+            NotificationType.follow,
+            NotificationType.post_like,
+        ),
+    )
 
     follow_id = Column(
         Integer,
         ForeignKey("follow.id", ondelete="CASCADE"),
-        index=True,
     )
     follow = relationship(
         "Follow",
@@ -21,7 +26,6 @@ class Notification(Base, BaseMixin):
     post_like_id = Column(
         Integer,
         ForeignKey("postlike.id", ondelete="CASCADE"),
-        index=True,
     )
     post_like = relationship(
         "PostLike",

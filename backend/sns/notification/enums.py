@@ -1,6 +1,6 @@
-from enum import StrEnum
+from enum import StrEnum, auto
 
 
 class NotificationType(StrEnum):
-    post_like = "post_like"
-    follow = "follow"
+    post_like = auto()
+    follow = auto()
