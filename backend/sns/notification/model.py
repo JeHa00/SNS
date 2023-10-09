@@ -7,15 +7,13 @@ from sns.notification.enums import NotificationType
 
 class Notification(Base, BaseMixin):
     notification_type = Column(
-        Enum(
-            NotificationType.follow,
-            NotificationType.post_like,
-        ),
+        Enum(NotificationType),
     )
 
     follow_id = Column(
         Integer,
         ForeignKey("follow.id", ondelete="CASCADE"),
+        index=True,
     )
     follow = relationship(
         "Follow",
@@ -26,6 +24,7 @@ class Notification(Base, BaseMixin):
     post_like_id = Column(
         Integer,
         ForeignKey("postlike.id", ondelete="CASCADE"),
+        index=True,
     )
     post_like = relationship(
         "PostLike",
