@@ -36,7 +36,9 @@ class NotificationDB:
             Notification: 조회된 Notification 객체. 해당되는 객체가 없으면 None을 반환
         """
         return (
-            db.query(Notification).filter(Notification.follow_id == follow_id).first()
+            db.query(Notification)
+            .filter(Notification.follow_id == follow_id)
+            .one_or_none()
         )
 
     def get_notification_by_postlike_id(
@@ -56,7 +58,7 @@ class NotificationDB:
         return (
             db.query(Notification)
             .filter(Notification.post_like_id == post_like_id)
-            .first()
+            .one_or_none()
         )
 
     def create_notification_on_follow(

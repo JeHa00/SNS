@@ -26,14 +26,14 @@ class UserDB:
             User: 입력된 값들과 일치하는 유저 객체를 반환한다. 없으면 None을 반환
         """
         if email:
-            user = db.query(User).filter(User.email == email).first()
+            user = db.query(User).filter(User.email == email).one_or_none()
         elif user_id:
-            user = db.query(User).filter(User.id == user_id).first()
+            user = db.query(User).filter(User.id == user_id).one_or_none()
         else:
             user = (
                 db.query(User)
                 .filter(User.verification_code == verification_code)
-                .first()
+                .one_or_none()
             )
 
         return user
@@ -133,7 +133,7 @@ class UserDB:
                 Follow.follower_id == follower_id,
                 Follow.following_id == following_id,
             )
-            .first()
+            .one_or_none()
         )
 
         return selected_follow
