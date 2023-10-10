@@ -162,6 +162,18 @@ class PostDB:
             .one_or_none()
         )
 
+    def get_a_postlike_by_id(self, db: Session, postlike_id: int) -> PostLike:
+        """postlike_id에 일치하는 PostLike 객체를 조회한다.
+
+        Args:
+            db (Session): db session
+            postlike_id (int): PostLike의 id
+
+        Returns:
+            PostLike: 조회된 PostLike 객체
+        """
+        return db.query(PostLike).filter(PostLike.id == postlike_id).one_or_none()
+
     def get_users_who_like(
         self,
         db: Session,

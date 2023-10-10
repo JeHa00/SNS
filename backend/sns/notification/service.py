@@ -33,7 +33,7 @@ class NotificationService:
         )
 
         if selected_notification.notification_type == NotificationType.follow:
-            selected_follow = user_crud.get_a_follow_by_follow_id(
+            selected_follow = user_crud.get_a_follow_by_id(
                 db,
                 selected_notification.follow_id,
             )
@@ -44,7 +44,7 @@ class NotificationService:
                 )
 
         else:
-            selected_postlike = post_crud.get_a_like_by_postlike_id(
+            selected_postlike = post_crud.get_a_postlike_by_id(
                 db,
                 selected_notification.id,
             )
