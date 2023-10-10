@@ -6,9 +6,7 @@ from sns.notification.enums import NotificationType
 
 
 class Notification(Base, BaseMixin):
-    notification_type = Column(
-        Enum(NotificationType),
-    )
+    notification_type = Column(Enum(NotificationType))
 
     follow_id = Column(
         Integer,
