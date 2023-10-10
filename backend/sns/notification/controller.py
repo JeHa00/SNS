@@ -17,11 +17,24 @@ router = APIRouter()
 )
 def mark_as_read(
     notification_id: int,
-    is_read: NotificationUpdate,
+    read: NotificationUpdate,
     current_user: UserBase = Depends(UserService.get_current_user_verified),
     notification_service: NotificationService = Depends(NotificationService),
     db: Session = Depends(db.get_db),
 ) -> Message:
+    """notification_id에 해당하는 알림 읽기 상태를 읽음 상태로 변경한다.
+
+    Args:
+        - notification_id (int): 알림의 id
+        - read (NotificationUpdate): 읽기 상태 값 정보
+
+    Raises:
+        - HTTPException (403 FORBIDDEN): 수정 권한이 없는 경우
+        - HTTPException (500 INTERNAL SERVER ERROR): 알림 읽기 상태 변경에 실패한 경우
+
+    Returns:
+        - Message: 성공 메세지를 반환
+    """
     notification_service.mark_as_read(
         db,
         notification_id,
