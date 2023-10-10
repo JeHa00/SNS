@@ -14,6 +14,7 @@ from sns.common.base import Base
 from sns.users.controller import router as users
 from sns.posts.controller import router as posts
 from sns.comments.controller import router as comments
+from sns.notification.controller import router as notifications
 
 
 db_url = settings.SQLALCHEMY_DATABASE_URI.format(
@@ -49,6 +50,11 @@ def start_app() -> Generator[FastAPI, Any, None]:
     app.include_router(users, tags=["Users"], prefix=settings.API_V1_PREFIX)
     app.include_router(posts, tags=["Posts"], prefix=settings.API_V1_PREFIX)
     app.include_router(comments, tags=["Comments"], prefix=settings.API_V1_PREFIX)
+    app.include_router(
+        notifications,
+        tags=["Notifications"],
+        prefix=settings.API_V1_PREFIX,
+    )
     return app
 
 
