@@ -1,4 +1,4 @@
-FROM python:3.10.10-slim
+FROM python:3.11.6-slim
 
 ENV HOME "/root"
 ENV APP_HOME "$HOME/app"
