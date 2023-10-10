@@ -51,7 +51,7 @@ class NotificationService:
 
             selected_post = post_crud.get_post(
                 db,
-                selected_postlike.like_target_id,
+                selected_postlike.liked_post_id,
             )
 
             if selected_post.writer_id != current_user_id:
