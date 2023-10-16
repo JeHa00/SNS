@@ -1,4 +1,7 @@
+import json
+
 from sqlalchemy.orm import Session
+from redis.client import Redis
 
 from sns.notification.model import Notification
 from sns.notification.enums import NotificationType
@@ -139,6 +142,87 @@ class NotificationDB:
         db.refresh(selected_notification)
 
         return selected_notification
+
+
+class RedisQueue:
+    def __init__(
+        self,
+        db: Redis,
+        key: str,
+    ):
+        """redis_queue를 주어진 정보로 초기화하여 인스턴스를 생성한다.
+
+        Args:
+            key (str): queue의 key 값
+            db (Redis): redis의 db connection
+        """
+        self.redis_db = db
+        self.key = key
+
+    def size(self) -> int:
+        """redis_queue의 전체 크기 값을 반환한다.
+
+        Returns:
+            int: redis_queue의 전체 크기 값 반환
+        """
+        return self.redis_db.llen(self.key)
+
+    def is_empty(self) -> bool:
+        """redis_queue가 빈 값인지 확인한다.
+
+        Returns:
+            bool: 빈 값 유무 값 반환
+        """
+        return self.size() == 0
+
+    def exists(self) -> bool:
+        """self.key가 redis db에 존재하는지 판단하여, 있으면 True 없으면 False를 반환
+        없으면 value와 함께 queue에 추가해야한다.
+
+        Returns:
+            bool: key가 존재하면 True, 없으면 False를 반환
+        """
+        return bool(self.redis_db.exists(self.key))
+
+    def put(self, element) -> bool:
+        """입력한 element를 redis_queue에 추가한다.
+
+        Args:
+            element: model 객체 정보를 받는다.
+
+        Returns:
+            bool: 추가 성공 시 True, 실패는 False를 반환
+        """
+        return bool(self.redis_db.lpush(self.key, element))
+
+    def pop(self) -> bytes | None:
+        """맨 마지막 인덱스에 해당하는 값을 얻고, 삭제한다.
+           하지만, 빈 값인 경우 None을 반환한다.
+
+        Returns:
+            byte | None: 맨 마지막 인덱스 값 또는 None
+        """
+        return json.loads(self.redis_db.rpop(self.key)) if not self.is_empty() else None
+
+    def read(self) -> bytes:
+        """맨 마지막 인덱스에 해당하는 값을 단지 읽는다. 제거하지 않는다.
+
+        Returns:
+            bytes: 맨 마지막 값
+        """
+        return (
+            json.loads(self.redis_db.lindex(self.key, -1))
+            if not self.is_empty()
+            else None
+        )
+
+    def clear(self) -> bool:
+        """해당 queue를 삭제한다. 성공하면 True, 실패하면 False를 반환한다.
+
+        Returns:
+            bool: 성공하면 True, 실패하면 False를 반환
+        """
+        return bool(self.redis_db.delete(self.key))
 
 
 notification_crud = NotificationDB()

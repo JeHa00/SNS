@@ -12,13 +12,12 @@ class SQLAlchemy:
         self._engine = None
         self._session = None
         self._app = None
-        self._redis_engine = None
-        self._redis_session = None
 
     def init_app(self, app: FastAPI, **kwargs):
         """
         db 초기화 함수
         """
+        self._app = app
         self._engine = create_engine(
             settings.SQLALCHEMY_DATABASE_URI.format(
                 username=settings.DB_USERNAME,
@@ -33,15 +32,6 @@ class SQLAlchemy:
             autocommit=False,
             autoflush=False,
             bind=self._engine,
-        )
-
-        self._redis_engine = redis.ConnectionPool(
-            host=settings.REDIS_DB_HOST,
-            port=settings.REDIS_DB_PORT,
-        )
-
-        self._redis_session = redis.Redis(
-            connection_pool=self._redis_engine,
         )
 
         @app.on_event("startup")
@@ -71,18 +61,37 @@ class SQLAlchemy:
         finally:
             db_session.close()
 
-    def get_redis_db(self):
-        if self._redis_session is None:
-            self.init_app(self._app)
-        try:
-            redis_db_session = self._redis_session
-            yield redis_db_session
-        finally:
-            redis_db_session.close()
-
     @property
     def engine(self):
         return self._engine
 
 
+class RedisDB:
+    def __init__(self):
+        self._app = None
+        self._redis_engine = None
+        self._redis_session = None
+
+    def init_app(self, app: FastAPI):
+        self._app = app
+
+        self._redis_engine = redis.ConnectionPool(
+            host=settings.REDIS_DB_HOST,
+            port=settings.REDIS_DB_PORT,
+        )
+
+        self._redis_session = redis.Redis(
+            connection_pool=self._redis_engine,
+        )
+
+    def get_db(self):
+        if self._redis_session is None:
+            self.init_app(self._app)
+        try:
+            yield self._redis_session
+        finally:
+            self._redis_session.close()
+
+
 db = SQLAlchemy()
+redis_db = RedisDB()
