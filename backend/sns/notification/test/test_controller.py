@@ -18,7 +18,6 @@ def test_mark_as_read_if_follower_is_not_same_as_current_user(
         response = client.patch(
             f"{settings.API_V1_PREFIX}/notifications/{notification_id}",
             headers=headers,
-            json={"is_read": True},
         )
         result = response.json()
         result_message = result.get("detail")
@@ -40,7 +39,6 @@ def test_mark_as_read_if_writer_is_not_same_as_current_user(
         response = client.patch(
             f"{settings.API_V1_PREFIX}/notifications/{notification_id}",
             headers=headers,
-            json={"is_read": True},
         )
         result = response.json()
         result_message = result.get("detail")

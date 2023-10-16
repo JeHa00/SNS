@@ -5,7 +5,6 @@ from sns.common.session import db
 from sns.users.service import UserService
 from sns.users.schema import Message, UserBase
 from sns.notification.service import NotificationService
-from sns.notification.schema import NotificationUpdate
 
 router = APIRouter()
 
@@ -17,7 +16,6 @@ router = APIRouter()
 )
 def mark_as_read(
     notification_id: int,
-    read: NotificationUpdate,
     current_user: UserBase = Depends(UserService.get_current_user_verified),
     notification_service: NotificationService = Depends(NotificationService),
     db: Session = Depends(db.get_db),
