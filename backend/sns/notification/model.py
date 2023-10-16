@@ -6,13 +6,9 @@ from sns.notification.enums import NotificationType
 
 
 class Notification(Base, BaseMixin):
-    notification_type = Column(Enum(NotificationType))
+    type = Column(Enum(NotificationType))
 
-    follow_id = Column(
-        Integer,
-        ForeignKey("follow.id", ondelete="CASCADE"),
-        index=True,
-    )
+    follow_id = Column(Integer, ForeignKey("follow.id", ondelete="CASCADE"), index=True)
     follow = relationship(
         "Follow",
         back_populates="notification",
@@ -30,11 +26,18 @@ class Notification(Base, BaseMixin):
         foreign_keys=[post_like_id],
     )
 
+    notified_user_id = Column(
+        Integer,
+        ForeignKey("user.id", ondelete="CASCADE"),
+        index=True,
+    )
+    notified_user = relationship(
+        "User",
+        back_populates="receiver",
+        foreign_keys=[notified_user_id],
+    )
+
     read = Column(Boolean, default=False)
 
     def __repr__(self) -> str:
-        return (
-            f"Notification(id={self.id}, "
-            f"type={self.notification_type}, "
-            f"read={self.read})"
-        )
+        return f"Notification(id={self.id}, " f"type={self.type}, " f"read={self.read})"

@@ -28,7 +28,7 @@ class UserDB:
         if email:
             user = db.query(User).filter(User.email == email).one_or_none()
         elif user_id:
-            user = db.query(User).filter(User.id == user_id).one_or_none()
+            user = db.query(User).get(user_id)
         else:
             user = (
                 db.query(User)
@@ -137,6 +137,22 @@ class UserDB:
         )
 
         return selected_follow
+
+    def get_a_follow_by_id(
+        self,
+        db: Session,
+        follow_id: int,
+    ) -> Follow:
+        """follow_id에 해당하는 Follow 객체를 조회한다.
+
+        Args:
+            db (Session): db session
+            follow_id (int): follow의 id
+
+        Returns:
+            Follow: 조회된 Follow 객체
+        """
+        return db.query(Follow).get(follow_id)
 
     def get_followers(
         self,

@@ -65,19 +65,22 @@ class NotificationDB:
         self,
         db: Session,
         follow_id: int,
+        notified_user_id: int,
     ) -> Notification:
         """새로 생성된 follow 객체에 대해 notification 객체를 생성한다.
 
         Args:
             db (Session): db session
             follow_id (int): follow 객체의 id
+            notified_user_id (int): 알림을 수신하는 유저의 id
 
         Returns:
             Notification: 생성된 notification 객체
         """
         new_notification = Notification(
             follow_id=follow_id,
-            notification_type=NotificationType.follow,
+            notified_user_id=notified_user_id,
+            type=NotificationType.follow,
         )
 
         db.add(new_notification)
@@ -90,19 +93,22 @@ class NotificationDB:
         self,
         db: Session,
         post_like_id: int,
+        notified_user_id: int,
     ) -> Notification:
         """새로 생성된 postlike 객체에 대해 notification 객체를 생성한다.
 
         Args:
             db (Session): db session
             post_like_id (int): postlike 객체의 id
+            notified_user_id (int): 알림을 수신하는 유저의 id
 
         Returns:
             Notification: 생성된 notification 객체
         """
         new_notification = Notification(
             post_like_id=post_like_id,
-            notification_type=NotificationType.post_like,
+            notified_user_id=notified_user_id,
+            type=NotificationType.post_like,
         )
 
         db.add(new_notification)

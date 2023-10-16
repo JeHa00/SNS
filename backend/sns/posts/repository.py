@@ -24,7 +24,7 @@ class PostDB:
         Returns:
             Post: post_id에 해당되는 Post 객체 정보. 조회 결과 없으면 None을 반환
         """
-        return db.query(Post).filter(Post.id == post_id).one_or_none()
+        return db.query(Post).get(post_id)
 
     def get_multi_posts(
         self,
@@ -161,6 +161,18 @@ class PostDB:
             )
             .one_or_none()
         )
+
+    def get_a_postlike_by_id(self, db: Session, postlike_id: int) -> PostLike:
+        """postlike_id에 일치하는 PostLike 객체를 조회한다.
+
+        Args:
+            db (Session): db session
+            postlike_id (int): PostLike의 id
+
+        Returns:
+            PostLike: 조회된 PostLike 객체
+        """
+        return db.query(PostLike).get(postlike_id)
 
     def get_users_who_like(
         self,

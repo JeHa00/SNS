@@ -28,6 +28,7 @@ def test_create_and_get_notification_on_follow_then_mark_as_read(
                 notification_crud.create_notification_on_follow(
                     db_session,
                     selected_follow.id,
+                    selected_follow.follower_id,
                 )
             )
 
@@ -37,6 +38,7 @@ def test_create_and_get_notification_on_follow_then_mark_as_read(
             assert hasattr(new_notification_about_follow, "read")
             assert hasattr(new_notification_about_follow, "follow_id")
             assert hasattr(new_notification_about_follow, "post_like_id")
+            assert hasattr(new_notification_about_follow, "notified_user_id")
             assert hasattr(new_notification_about_follow, NotificationType.follow)
             assert new_notification_about_follow.read is False
             assert new_notification_about_follow.follow_id == selected_follow.id
@@ -50,28 +52,25 @@ def test_create_and_get_notification_on_follow_then_mark_as_read(
 
     total_follow_count = 81
 
-    # index 테스트
-    total_read_count = 100
-    for _ in range(1, total_read_count + 1):
-        for follow_id in range(1, total_follow_count + 1):
-            notification_by_follow_id = notification_crud.get_notification_by_follow_id(
-                db_session,
-                follow_id,
-            )
+    for follow_id in range(1, total_follow_count + 1):
+        notification_by_follow_id = notification_crud.get_notification_by_follow_id(
+            db_session,
+            follow_id,
+        )
 
-            notification_by_id = notification_crud.get_notification_by_id(
-                db_session,
-                notification_by_follow_id.id,
-            )
+        notification_by_id = notification_crud.get_notification_by_id(
+            db_session,
+            notification_by_follow_id.id,
+        )
 
-            assert notification_by_follow_id == notification_by_id
+        assert notification_by_follow_id == notification_by_id
 
-            notification_crud.mark_as_read(
-                db_session,
-                notification_by_follow_id.id,
-            )
+        notification_crud.mark_as_read(
+            db_session,
+            notification_by_follow_id.id,
+        )
 
-            assert notification_by_follow_id.read is True
+        assert notification_by_follow_id.read is True
 
 
 def test_create_and_get_notification_on_postlike_then_mark_as_read(
@@ -96,6 +95,7 @@ def test_create_and_get_notification_on_postlike_then_mark_as_read(
                 notification_crud.create_notification_on_postlike(
                     db_session,
                     selected_post_like.id,
+                    selected_post_like.liked_post.writer.id,
                 )
             )
 
@@ -105,6 +105,7 @@ def test_create_and_get_notification_on_postlike_then_mark_as_read(
             assert hasattr(new_notification_about_postlike, "read")
             assert hasattr(new_notification_about_postlike, "follow_id")
             assert hasattr(new_notification_about_postlike, "post_like_id")
+            assert hasattr(new_notification_about_postlike, "notified_user_id")
             assert hasattr(new_notification_about_postlike, NotificationType.post_like)
             assert new_notification_about_postlike.read is False
             assert new_notification_about_postlike.post_like_id == selected_post_like.id
@@ -116,27 +117,24 @@ def test_create_and_get_notification_on_postlike_then_mark_as_read(
 
             assert new_notification_about_postlike == selected_notification_by_id
 
-    # index 테스트
-    total_read_count = 100
-    for _ in range(1, total_read_count + 1):
-        for post_id in range(1, selected_post_count + 1):
-            selected_notification_by_postlike_id = (
-                notification_crud.get_notification_by_postlike_id(
-                    db_session,
-                    selected_post_like.id,
-                )
-            )
-
-            selected_notification_by_id = notification_crud.get_notification_by_id(
+    for post_id in range(1, selected_post_count + 1):
+        selected_notification_by_postlike_id = (
+            notification_crud.get_notification_by_postlike_id(
                 db_session,
-                new_notification_about_postlike.id,
+                selected_post_like.id,
             )
+        )
 
-            assert selected_notification_by_postlike_id == selected_notification_by_id
+        selected_notification_by_id = notification_crud.get_notification_by_id(
+            db_session,
+            new_notification_about_postlike.id,
+        )
 
-            notification_crud.mark_as_read(
-                db_session,
-                selected_notification_by_postlike_id.id,
-            )
+        assert selected_notification_by_postlike_id == selected_notification_by_id
 
-            assert new_notification_about_postlike.read is True
+        notification_crud.mark_as_read(
+            db_session,
+            selected_notification_by_postlike_id.id,
+        )
+
+        assert new_notification_about_postlike.read is True
