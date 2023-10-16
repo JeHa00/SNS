@@ -40,4 +40,4 @@ class Notification(Base, BaseMixin):
     read = Column(Boolean, default=False)
 
     def __repr__(self) -> str:
-        return f"Notification(id={self.id}, " f"type={self.type}, " f"read={self.read})"
+        return f"Notification(id={self.id}, type={self.type}, read={self.read})"
