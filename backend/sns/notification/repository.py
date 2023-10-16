@@ -77,7 +77,7 @@ class NotificationDB:
         """
         new_notification = Notification(
             follow_id=follow_id,
-            notification_type=NotificationType.follow,
+            type=NotificationType.follow,
         )
 
         db.add(new_notification)
@@ -102,7 +102,7 @@ class NotificationDB:
         """
         new_notification = Notification(
             post_like_id=post_like_id,
-            notification_type=NotificationType.post_like,
+            type=NotificationType.post_like,
         )
 
         db.add(new_notification)
