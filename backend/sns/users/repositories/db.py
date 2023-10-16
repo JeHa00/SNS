@@ -28,7 +28,7 @@ class UserDB:
         if email:
             user = db.query(User).filter(User.email == email).one_or_none()
         elif user_id:
-            user = db.query(User).filter(User.id == user_id).one_or_none()
+            user = db.query(User).get(user_id)
         else:
             user = (
                 db.query(User)
@@ -152,7 +152,7 @@ class UserDB:
         Returns:
             Follow: 조회된 Follow 객체
         """
-        return db.query(Follow).filter(Follow.id == follow_id).one_or_none()
+        return db.query(Follow).get(follow_id)
 
     def get_followers(
         self,
