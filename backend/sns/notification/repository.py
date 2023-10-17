@@ -198,7 +198,7 @@ class RedisQueue:
         """
         return bool(self.redis_db.lpush(self.key, element))
 
-    def pop(self) -> bytes | None:
+    def pop(self) -> Dict[str, Any] | None:
         """맨 마지막 인덱스에 해당하는 값을 얻고, 삭제한다.
            하지만, 빈 값인 경우 None을 반환한다.
 
@@ -207,7 +207,7 @@ class RedisQueue:
         """
         return orjson.loads(self.redis_db.rpop(self.key)) if not self.empty else None
 
-    def read(self) -> Dict[str, Any]:
+    def read(self) -> Dict[str, Any] | None:
         """맨 마지막 인덱스에 해당하는 값을 단지 읽는다. 제거하지 않는다.
 
         Returns:
