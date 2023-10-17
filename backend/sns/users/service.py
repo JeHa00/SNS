@@ -878,6 +878,7 @@ class UserService:
 
         Raises:
             - HTTPException (500 INTERNAL SERVER ERROR): 알림 생성에 실패한 경우
+                - code: FAILED_TO_CREATE_NOTIFICATION
 
         Returns:
             - bool : 성공 시 True를 반환
@@ -898,7 +899,7 @@ class UserService:
                 },
             )
         notification_data = {
-            "type": new_notification.notification_type,
+            "type": new_notification.type,
             "notification_id": new_notification.id,
             "notified_user_id": new_follow.follower_id,
             "following_id": new_follow.following_id,

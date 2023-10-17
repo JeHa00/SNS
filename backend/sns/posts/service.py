@@ -535,15 +535,18 @@ class PostService:
         new_post_like: PostLike,
     ) -> bool:
         """주어진 데이터를 가지고 알림을 생성하고, message queue에 추가한다.
+        writer_id를 통해서 writer의 email 정보를 얻은 후, 이 정보를 queue의 key값으로 사용하여 queue를 생성한다.
+        그리고 이 queue에 bytestr 타입으로 post_like event data를 추가한다.
 
         Args:
             - db (Session): mysql db session
             - redis_db (Redis): message queue에 접속하는 db
             - message_queue (RedisQueue): redis_db를 통해 생성되는 message_queue
-            - new_follow (Follow): 새로 생성된 PostLike 객체
+            - new_post_like (PostLike): 새로 생성된 PostLike 객체
 
         Raises:
             - HTTPException (500 INTERNAL SERVER ERROR): 알림 생성에 실패한 경우
+                - code: FAILED_TO_CREATE_NOTIFICATION
 
         Returns:
             - bool : 성공 시 True를 반환
@@ -566,11 +569,11 @@ class PostService:
             )
 
         notification_data = {
-            "type": new_notification.notification_type,
+            "type": new_notification.type,
             "notification_id": new_notification.id,
             "notified_user_id": notified_user_id,
-            "user_id_who_like": new_post_like.who_like_id,
-            "liked_post_id": new_post_like.like_target_id,
+            "user_id_who_like": new_post_like.user_id_who_like,
+            "liked_post_id": new_post_like.liked_post_id,
             "created_at": str(new_post_like.created_at),
         }
 
