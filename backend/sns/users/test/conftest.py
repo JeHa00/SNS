@@ -108,7 +108,7 @@ def fake_follow(
 ) -> None:
     """
     fake_multi_user fixture를 사용하여 테스트용 팔로우 데이터를 81개 생성한다.
-    81개인 이유는 10명의 유저가 자신은 제외한 나머지 유저를 팔로우하기 때문이다.
+    81개인 이유는 10명의 유저가 자신을 제외한 나머지 유저를 팔로우하기 때문이다.
 
     Args:
         client (TestClient): test용 db url에 연결된 client를 생성
