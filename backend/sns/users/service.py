@@ -784,7 +784,7 @@ class UserService:
                 - 알림 생성에 실패한 경우 (code: FAILED_TO_CREATE_NOTIFICATION)
 
         Returns:
-            - bool: follow 관계 맺기 성공 시 True를 반환
+            - bool: follow 관계 맺기 성공 시 True를 반환, 실패 시 에러를 발생
         """
         follower = user_crud.get_user(db, user_id=follower_id)
 

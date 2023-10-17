@@ -440,7 +440,7 @@ class PostService:
                 - 알림 생성에 실패한 경우 (code: FAILED_TO_CREATE_NOTIFICATION)
 
         Returns:
-            - bool: 새로 생성되거나 변경된 PostLike 객체를 반환
+            - bool: 좋아요 성공 시 True, 실패 시 에러를 발생
         """
         self.get_post_and_handle_none(db, post_id)
 
