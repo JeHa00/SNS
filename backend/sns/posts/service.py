@@ -4,7 +4,6 @@ from starlette.background import BackgroundTasks
 from fastapi import HTTPException, status
 from sqlalchemy.orm import Session
 from redis.client import Redis
-import json
 
 from sns.users.repositories.db import user_crud
 from sns.users.model import User
@@ -580,7 +579,7 @@ class PostService:
             redis_db,
             f"notification_useremail:{new_notification.notified_user.email}",
         )
-        message_queue.put(json.dumps(notification_data))
+        message_queue.push(notification_data)
 
         return True
 

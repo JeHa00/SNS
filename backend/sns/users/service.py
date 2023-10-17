@@ -1,7 +1,6 @@
 from datetime import datetime, timedelta
 from typing import List
 import secrets
-import json
 
 from fastapi import HTTPException, Depends, status
 from fastapi.security import OAuth2PasswordBearer
@@ -914,7 +913,7 @@ class UserService:
             f"notification_useremail:{follower.email}",
         )
 
-        message_queue.put(json.dumps(notification_data))
+        message_queue.push(notification_data)
 
         return True
 

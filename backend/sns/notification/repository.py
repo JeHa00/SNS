@@ -188,7 +188,7 @@ class RedisQueue:
         return bool(self.redis_db.exists(self.key))
 
     def push(self, element) -> bool:
-        """입력한 element를 redis_queue에 추가한다.
+        """입력한 element를 직렬화한 후, redis_queue에 추가한다.
 
         Args:
             element: model 객체 정보를 받는다.
@@ -196,7 +196,7 @@ class RedisQueue:
         Returns:
             bool: 추가 성공 시 True, 실패는 False를 반환
         """
-        return bool(self.redis_db.lpush(self.key, element))
+        return bool(self.redis_db.lpush(self.key, orjson.dumps(element)))
 
     def pop(self) -> Dict[str, Any] | None:
         """맨 마지막 인덱스에 해당하는 값을 얻고, 삭제한다.
