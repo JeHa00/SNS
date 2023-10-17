@@ -97,7 +97,9 @@ def like_post(
     Raises:
 
     - HTTPException (404 NOT FOUND): post_id에 해당하는 글이 없는 경우
-    - HTTPException (500 INTERNAL SERVER ERROR): 글 좋아요 작업에 실패한 경우
+    - HTTPException (500 INTERNAL SERVER ERROR): 다음 2가지 경우에 발생
+        - 글 좋아요에 실패한 경우 (code: FAILED_TO_LIKE_POST)
+        - 알림 생성에 실패한 경우 (code: FAILED_TO_CREATE_NOTIFICATION)
 
     Returns:
 
