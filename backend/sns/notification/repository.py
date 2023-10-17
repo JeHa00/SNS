@@ -1,4 +1,5 @@
-import json
+from typing import Dict, Any
+import orjson
 
 from sqlalchemy.orm import Session
 from redis.client import Redis
@@ -159,6 +160,7 @@ class RedisQueue:
         self.redis_db = db
         self.key = key
 
+    @property
     def size(self) -> int:
         """redis_queue의 전체 크기 값을 반환한다.
 
@@ -167,13 +169,14 @@ class RedisQueue:
         """
         return self.redis_db.llen(self.key)
 
-    def is_empty(self) -> bool:
+    @property
+    def empty(self) -> bool:
         """redis_queue가 빈 값인지 확인한다.
 
         Returns:
             bool: 빈 값 유무 값 반환
         """
-        return self.size() == 0
+        return self.size == 0
 
     def exists(self) -> bool:
         """self.key가 redis db에 존재하는지 판단하여, 있으면 True 없으면 False를 반환
@@ -184,7 +187,7 @@ class RedisQueue:
         """
         return bool(self.redis_db.exists(self.key))
 
-    def put(self, element) -> bool:
+    def push(self, element) -> bool:
         """입력한 element를 redis_queue에 추가한다.
 
         Args:
@@ -202,18 +205,16 @@ class RedisQueue:
         Returns:
             byte | None: 맨 마지막 인덱스 값 또는 None
         """
-        return json.loads(self.redis_db.rpop(self.key)) if not self.is_empty() else None
+        return orjson.loads(self.redis_db.rpop(self.key)) if not self.empty else None
 
-    def read(self) -> bytes:
+    def read(self) -> Dict[str, Any]:
         """맨 마지막 인덱스에 해당하는 값을 단지 읽는다. 제거하지 않는다.
 
         Returns:
-            bytes: 맨 마지막 값
+            Dict: 맨 마지막 값
         """
         return (
-            json.loads(self.redis_db.lindex(self.key, -1))
-            if not self.is_empty()
-            else None
+            orjson.loads(self.redis_db.lindex(self.key, -1)) if not self.empty else None
         )
 
     def clear(self) -> bool:
