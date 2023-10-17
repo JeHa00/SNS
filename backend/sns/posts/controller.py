@@ -5,7 +5,7 @@ from starlette.background import BackgroundTasks
 from sqlalchemy.orm import Session
 from redis.client import Redis
 
-from sns.common.session import db
+from sns.common.session import db, redis_db
 from sns.users.schema import Message, UserRead, UserBase
 from sns.users.service import UserService
 from sns.posts.service import PostService
@@ -50,7 +50,7 @@ def read_users_who_like(
     post_id: int,
     background_tasks: BackgroundTasks,
     post_service: PostService = Depends(PostService),
-    redis_db: Redis = Depends(db.get_redis_db),
+    redis_db: Redis = Depends(redis_db.get_db),
     db: Session = Depends(db.get_db),
 ) -> List[UserRead]:
     """post_id에 해당하는 글에 좋아요한 user들을 조회한다.
