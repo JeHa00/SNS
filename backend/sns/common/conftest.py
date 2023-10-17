@@ -100,7 +100,7 @@ def client(
 ):
     """
     테스트 전용 db fixture를 사용하는 FastAPI의 TestClient를 생성한다.
-    테스트 전용 db를 사용하기 위해서 기존에 'get_db'를 오버라이딩하여 매 테스트 케이스마다 db_session을 호출한다.
+    그리고 테스트 전용 db를 사용하기 위해 db 관련 기존 dependency들을 오버라이딩한다.
     """
 
     def _get_test_db():
