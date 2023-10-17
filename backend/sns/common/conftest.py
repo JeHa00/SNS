@@ -80,6 +80,15 @@ def db_session() -> Generator[TestingSessionLocal, Any, None]:
     session.close()
     transaction.rollback()
     connection.close()
+
+
+@pytest.fixture(scope="function")
+def redis_db_session() -> Generator[Redis, Any, None]:
+    """
+    test db에 연결된 redis connection을 반환하고, 다 사용하면 redis에 저장된 key들을 삭제한다.
+    """
+    redis_session = redis.Redis(connection_pool=redis_engine)
+    yield redis_session
     redis_session.flushdb()
 
 
@@ -87,7 +96,7 @@ def db_session() -> Generator[TestingSessionLocal, Any, None]:
 def client(
     app: FastAPI,
     db_session: TestingSessionLocal,
-    redis_db_session: Redis = redis_session,
+    redis_db_session: Redis,
 ):
     """
     테스트 전용 db fixture를 사용하는 FastAPI의 TestClient를 생성한다.
