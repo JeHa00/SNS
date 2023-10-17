@@ -28,6 +28,17 @@ def fake_comment(
     fake_user: dict,
     fake_post: Post,
 ) -> Comment:
+    """테스트용 댓글 데이터 1개를 생성한다.
+
+    Args:
+        client (TestClient): test용 db url에 연결된 client를 생성
+        db_session (Session): db session.
+        fake_user (dict): 테스트용으로 비로그인, 이메일 미인증 유저 1명을 생성
+        fake_post (Post): 테스트용 글 데이터 1개를 생성. fake_user가 작성한 글이다.
+
+    Returns:
+        Comment: fake_post에 달린 댓글 정보를 반환
+    """
     # writer 정보
     writer = fake_user.get("user")
 
@@ -55,6 +66,14 @@ def fake_multi_comments(
     fake_user: dict,
     fake_post: Post,
 ) -> None:
+    """테스트용 댓글 데이터 100개를 생성
+
+    Args:
+        client (TestClient): test용 db url에 연결된 client를 생성
+        db_session (Session): db session.
+        fake_user (dict): 테스트용으로 비로그인, 이메일 미인증 유저 1명을 생성
+        fake_post (Post): 테스트용 글 데이터 1개를 생성. fake_user가 작성한 글이다.
+    """
     # writer 정보
     writer = fake_user.get("user")
 

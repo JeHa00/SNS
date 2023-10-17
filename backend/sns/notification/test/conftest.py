@@ -1,3 +1,4 @@
+from typing import Dict
 import pytest
 import asyncio
 
@@ -40,12 +41,19 @@ def fake_follow_notifications(
     client: TestClient,
     db_session: Session,
     redis_db_session: Redis,
-    get_user_token_headers_and_login_data: dict,
+    get_user_token_headers_and_login_data: Dict,
     fake_multi_user: None,
 ):
     """
     로그인한 유저 1명과 로그인하지 않은 유저 10명을 생성한다. 로그인하지 않은 유저 10명이 로그인한 유저 1명을 팔로우한다.
     로그인하지 않은 유저 10명은 following이 되고, 로그인한 유저 1명은 follower가 된다.
+
+    Args:
+        client (TestClient): test용 db url에 연결된 client를 생성
+        db_session (Session): db session.
+        redis_db_session (Redis): Redis db.
+        get_user_token_headers_and_login_data (Dict): 인증 토큰 정보과 로그인 정보를 반환
+        fake_multi_user (None): 테스트용 비로그인된 유저 10명을 생성
     """
     follower_email = get_user_token_headers_and_login_data.get("login_data").get(
         "email",
@@ -85,11 +93,18 @@ def fake_postlike_notifications(
     db_session: Session,
     redis_db_session: Redis,
     fake_multi_post_by_user_logged_in: None,
-    fake_user: dict,
+    fake_user: Dict,
 ):
     """
     로그인한 유저와 로그인하지 않은 fake_user를 생성한 후, 로그인한 유저가 글 100개를 생성한다.
     그 다음, 생성된 글 100개에 fake_user가 좋아요를 실행한다.
+
+    Args:
+        client (TestClient): test용 db url에 연결된 client를 생성
+        db_session (Session): db session.
+        redis_db_session (Redis): Redis db.
+        fake_multi_post_by_user_logged_in (None): 테스트용으로 로그인한 유저가 생성한 글 100개
+        fake_user (Dict): 테스트용으로 로그인하지 않은 유저 1명
     """
     current_user_id = fake_user.get("user").id
 
