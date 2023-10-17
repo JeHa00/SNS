@@ -9,7 +9,7 @@ import redis
 import pytest
 
 from sns.common.config import settings
-from sns.common.session import db
+from sns.common.session import db, redis_db
 from sns.common.base import Base
 from sns.users.controller import router as users
 from sns.posts.controller import router as posts
@@ -107,6 +107,6 @@ def client(
             pass
 
     app.dependency_overrides[db.get_db] = _get_test_db
-    app.dependency_overrides[db.get_redis_db] = _get_test_redis_db
+    app.dependency_overrides[redis_db.get_db] = _get_test_redis_db
     with TestClient(app) as client:
         yield client
