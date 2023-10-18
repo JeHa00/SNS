@@ -92,6 +92,7 @@ def fake_postlike_notifications(
     client: TestClient,
     db_session: Session,
     redis_db_session: Redis,
+    get_user_token_headers_and_login_data: Dict,
     fake_multi_post_by_user_logged_in: None,
     fake_user: Dict,
 ):
@@ -108,6 +109,15 @@ def fake_postlike_notifications(
     """
     current_user_id = fake_user.get("user").id
 
+    notified_user_email = get_user_token_headers_and_login_data.get("login_data").get(
+        "email",
+    )
+
+    notified_user_id = user_crud.get_user(
+        db_session,
+        email=notified_user_email,
+    ).id
+
     total_post_counts = 100
 
     for post_id in range(1, total_post_counts + 1):
@@ -117,6 +127,7 @@ def fake_postlike_notifications(
             BackgroundTasks(),
             post_id,
             current_user_id,
+            notified_user_id,
         )
 
         new_postlike = post_crud.get_like(
@@ -129,4 +140,5 @@ def fake_postlike_notifications(
             db_session,
             redis_db_session,
             new_postlike,
+            notified_user_id,
         )
