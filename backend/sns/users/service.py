@@ -792,7 +792,7 @@ class UserService:
             raise self.USER_NOT_FOUND_ERROR
 
         try:
-            new_follow = user_crud.follow(
+            selected_follow = user_crud.follow(
                 db,
                 follower_id,
                 following_id,
@@ -802,7 +802,7 @@ class UserService:
                 self.create_and_add_notification,
                 db,
                 redis_db,
-                new_follow,
+                selected_follow,
             )
 
             return True
