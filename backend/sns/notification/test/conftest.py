@@ -1,11 +1,12 @@
 from typing import Dict
 import pytest
-import asyncio
 
 from starlette.background import BackgroundTasks
 from fastapi.testclient import TestClient
 from sqlalchemy.orm import Session
 from redis.client import Redis
+
+from sns.common.config import settings
 
 # flake8: noqa
 from sns.common.conftest import (
@@ -28,6 +29,7 @@ from sns.users.test.conftest import (
 from sns.users.service import user_service
 from sns.users.repositories.db import user_crud
 from sns.posts.test.conftest import (
+    fake_post,
     fake_postlike,
     fake_multi_posts,
     fake_multi_post_by_user_logged_in,
@@ -142,3 +144,22 @@ def fake_postlike_notifications(
             new_postlike,
             notified_user_id,
         )
+
+
+@pytest.fixture(scope="function")
+def fake_user_logged_in(
+    client: TestClient,
+    db_session: Session,
+    fake_user: Dict,
+):
+    user_logged_in = fake_user.get("user")
+    login_data = fake_user.get("login_data")
+
+    user_service.update(db_session, user_logged_in, {"verified": True})
+
+    response = client.post(f"{settings.API_V1_PREFIX}/login", json=login_data)
+
+    token = response.json()["access_token"]
+    headers = {"Authorization": f"Bearer {token}"}
+
+    return {"headers": headers}
