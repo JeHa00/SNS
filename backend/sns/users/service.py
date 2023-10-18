@@ -17,6 +17,7 @@ from sns.users.repositories.db import user_crud
 from sns.users.model import User, Follow
 from sns.users import schema
 from sns.notification.repository import notification_crud, RedisQueue
+from sns.notification.schema import FollowNotificationData
 
 
 class UserService:
@@ -792,7 +793,7 @@ class UserService:
             raise self.USER_NOT_FOUND_ERROR
 
         try:
-            selected_follow = user_crud.follow(
+            follow = user_crud.follow(
                 db,
                 follower_id,
                 following_id,
@@ -802,7 +803,7 @@ class UserService:
                 self.create_and_add_notification,
                 db,
                 redis_db,
-                selected_follow,
+                follow,
             )
 
             return True
@@ -898,13 +899,14 @@ class UserService:
                     "detail": "알림 생성에 실패했습니다.",
                 },
             )
-        notification_data = {
-            "type": new_notification.type,
-            "notification_id": new_notification.id,
-            "notified_user_id": new_follow.follower_id,
-            "following_id": new_follow.following_id,
-            "created_at": str(new_notification.created_at),
-        }
+
+        notification_data = FollowNotificationData(
+            type=new_notification.type,
+            notification_id=new_notification.id,
+            notified_user_id=new_follow.follower_id,
+            following_id=new_follow.following_id,
+            created_at=str(new_notification),
+        )
 
         # message_queue 초기화 및 알림 데이터 추가
         follower = user_crud.get_user(db, user_id=new_follow.follower_id)
@@ -914,7 +916,7 @@ class UserService:
             f"notification_useremail:{follower.email}",
         )
 
-        message_queue.push(notification_data)
+        message_queue.push(notification_data.dict())
 
         return True
 

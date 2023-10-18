@@ -9,8 +9,8 @@ from sns.users.repositories.db import user_crud
 from sns.users.model import User
 from sns.posts.repository import post_crud, post_redis_crud
 from sns.posts.model import Post, PostLike
-from sns.notification.repository import notification_crud
-from sns.notification.repository import RedisQueue
+from sns.notification.repository import notification_crud, RedisQueue
+from sns.notification.schema import PostLikeNotificationData
 
 
 class PostService:
@@ -568,21 +568,21 @@ class PostService:
                 },
             )
 
-        notification_data = {
-            "type": new_notification.type,
-            "notification_id": new_notification.id,
-            "notified_user_id": notified_user_id,
-            "user_id_who_like": new_post_like.user_id_who_like,
-            "liked_post_id": new_post_like.liked_post_id,
-            "created_at": str(new_post_like.created_at),
-        }
+        notification_data = PostLikeNotificationData(
+            type=new_notification.type,
+            notification_id=new_notification.id,
+            notified_user_id=notified_user_id,
+            user_id_who_like=new_post_like.user_id_who_like,
+            liked_post_id=new_post_like.liked_post_id,
+            created_at=str(new_post_like.created_at),
+        )
 
         # message_queue 초기화 및 알림 데이터 추가
         message_queue = RedisQueue(
             redis_db,
             f"notification_useremail:{new_notification.notified_user.email}",
         )
-        message_queue.push(notification_data)
+        message_queue.push(notification_data.dict())
 
         return True
 
