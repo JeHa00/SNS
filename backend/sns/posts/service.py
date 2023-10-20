@@ -447,7 +447,7 @@ class PostService:
         self.get_post_and_handle_none(db, post_id)
 
         try:
-            new_postlike = post_crud.like(
+            postlike = post_crud.like(
                 db,
                 current_user_id,
                 post_id,
@@ -457,7 +457,7 @@ class PostService:
                 self.create_and_add_notification,
                 db,
                 redis_db,
-                new_postlike,
+                postlike,
                 writer_id,
             )
 
