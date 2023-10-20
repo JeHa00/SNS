@@ -105,7 +105,7 @@ class NotificationService:
                         else f"event: {NotificationType.post_like}\n"
                     )
                     identifier = f"id: {last_event_id}\n"
-                    retry = f"retry: {settings.TIME_TO_RETRY_CONNECT}\n"
+                    retry = f"retry: {settings.TIME_TO_RETRY_CONNECTION}\n"
                     data = f"data: {message}\n\n"
 
                     event = event_type + identifier + retry + data

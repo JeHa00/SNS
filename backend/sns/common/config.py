@@ -35,6 +35,8 @@ class Settings(BaseSettings):
     EMAIL_ADDRESS = "only.for.pjt@gmail.com"
     EMAIL_PASSWORD = "wngvlgolokntjpas"
 
+    TIME_TO_RETRY_CONNECTION = 10000  # unit: millisecond
+
     class config:
         env_file = BASE_DIR / "env"
 
