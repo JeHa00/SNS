@@ -1,7 +1,8 @@
-from fastapi import APIRouter, status, Depends
+from fastapi import APIRouter, status, Depends, Request
 from sqlalchemy.orm import Session
+from redis.client import Redis
 
-from sns.common.session import db
+from sns.common.session import db, redis_db
 from sns.users.service import UserService
 from sns.users.schema import Message, UserBase
 from sns.notification.service import NotificationService
@@ -39,3 +40,20 @@ def mark_as_read(
         current_user.id,
     )
     return {"status": "success", "message": "상태가 읽음 표시로 변경되었습니다."}
+
+
+@router.get(
+    "/notifications",
+    status_code=status.HTTP_202_ACCEPTED,
+)
+async def send_event(
+    request: Request,
+    notification_service: NotificationService = Depends(NotificationService),
+    current_user: UserBase = Depends(UserService.get_current_user_verified),
+    redis_db: Redis = Depends(redis_db.get_db),
+):
+    return await notification_service.send_event(
+        redis_db,
+        request,
+        current_user.email,
+    )
