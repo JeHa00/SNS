@@ -195,7 +195,6 @@ class UserDB:
     def follow(
         self,
         db: Session,
-        selected_follow_data: None | Follow,
         follower_id: int,
         following_id: int,
     ) -> Follow:
@@ -208,11 +207,18 @@ class UserDB:
         Returns:
             Follow: 생성된 Follow 객체를 반환
         """
-        new_follow = selected_follow_data or Follow(
+        selected_follow = self.get_follow(
+            db,
+            follower_id,
+            following_id,
+        )
+
+        new_follow = selected_follow or Follow(
             is_followed=True,
             follower_id=follower_id,
             following_id=following_id,
         )
+
         if not new_follow.is_followed:
             new_follow.is_followed = True
 

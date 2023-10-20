@@ -9,6 +9,8 @@ from sns.users.repositories.db import user_crud
 from sns.users.model import User
 from sns.posts.repository import post_crud, post_redis_crud
 from sns.posts.model import Post, PostLike
+from sns.notification.repository import notification_crud, RedisQueue
+from sns.notification.schema import PostLikeNotificationData
 
 
 class PostService:
@@ -416,37 +418,57 @@ class PostService:
     def like_post(
         self,
         db: Session,
+        redis_db: Redis,
+        background_tasks: BackgroundTasks,
         post_id: int,
         current_user_id: int,
-    ) -> PostLike:
+        writer_id: int,
+    ) -> bool:
         """입력받은 정보를 PostLikeDB class에 전달하여 해당되는 PostLike 객체가 존재하지 않으면 새로 생성한다.
            하지만, 객체는 존재하지만 is_liked 정보가 False이면 True로 수정한다.
 
         Args:
             - db (Session): db session
-            - post_id (int): post의 id
-            - current_user_id (int): 현재 로그인한 user의 id
+            - redis_db (Redis): Redis db
+            - background_tasks (BackgroundTasks): background task를 위한 객체
+            - post_id (int): 좋아요를 받는 글의 id
+            - current_user_id (int): 좋아요를 하는 현재 로그인한 유저 id
+            - writer_id (int): 좋아요를 받는 글의 작성자 id
 
         Raises:
             - HTTPException (404 NOT FOUND): post_id에 해당하는 글이 없는 경우
-            - HTTPException (500 INTERNAL SERVER ERROR): post 좋아요 작업에 실패한 경우
+            - HTTPException (500 INTERNAL SERVER ERROR): 다음 2가지 경우에 발생
+                - 글 좋아요에 실패한 경우 (code: FAILED_TO_LIKE_POST)
+                - 알림 생성에 실패한 경우 (code: FAILED_TO_CREATE_NOTIFICATION)
 
         Returns:
-            - PostLike: 새로 생성되거나 변경된 PostLike 객체를 반환
+            - bool: 좋아요 성공 시 True, 실패 시 에러를 발생
         """
         self.get_post_and_handle_none(db, post_id)
 
         try:
-            post_crud.like(
+            postlike = post_crud.like(
                 db,
                 current_user_id,
                 post_id,
             )
+
+            background_tasks.add_task(
+                self.create_and_add_notification,
+                db,
+                redis_db,
+                postlike,
+                writer_id,
+            )
+
             return True
         except Exception:
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail="post 좋아요에 실패했습니다.",
+                detail={
+                    "code": "FAILED_TO_LIKE_POST",
+                    "detail": "post 좋아요에 실패했습니다.",
+                },
             )
 
     def unlike_post(
@@ -508,6 +530,64 @@ class PostService:
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 detail="post 좋아요 취소에 실패했습니다.",
             )
+
+    def create_and_add_notification(
+        self,
+        db: Session,
+        redis_db: Redis,
+        new_post_like: PostLike,
+        notified_user_id: int,
+    ) -> bool:
+        """주어진 데이터를 가지고 알림을 생성하고, message queue에 추가한다.
+        writer_id를 통해서 writer의 email 정보를 얻은 후, 이 정보를 queue의 key값으로 사용하여 queue를 생성한다.
+        그리고 이 queue에 bytestr 타입으로 post_like event data를 추가한다.
+
+        Args:
+            - db (Session): mysql db session
+            - redis_db (Redis): message queue에 접속하는 db
+            - message_queue (RedisQueue): redis_db를 통해 생성되는 message_queue
+            - new_post_like (PostLike): 새로 생성된 PostLike 객체
+            - notified_user_id (int): 알림 수신 유저의 id
+
+        Raises:
+            - HTTPException (500 INTERNAL SERVER ERROR): 알림 생성에 실패한 경우
+                - code: FAILED_TO_CREATE_NOTIFICATION
+
+        Returns:
+            - bool : 성공 시 True를 반환
+        """
+        try:
+            new_notification = notification_crud.create_notification_on_postlike(
+                db,
+                new_post_like.id,
+                notified_user_id,
+            )
+        except Exception:
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail={
+                    "code": "FAILED_TO_CREATE_NOTIFICATION",
+                    "detail": "알림 생성에 실패했습니다.",
+                },
+            )
+
+        notification_data = PostLikeNotificationData(
+            type=new_notification.type,
+            notification_id=new_notification.id,
+            notified_user_id=notified_user_id,
+            user_id_who_like=new_post_like.user_id_who_like,
+            liked_post_id=new_post_like.liked_post_id,
+            created_at=str(new_post_like.created_at),
+        )
+
+        # message_queue 초기화 및 알림 데이터 추가
+        message_queue = RedisQueue(
+            redis_db,
+            f"notification_useremail:{new_notification.notified_user.email}",
+        )
+        message_queue.push(notification_data.dict())
+
+        return True
 
 
 post_service = PostService()

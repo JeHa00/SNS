@@ -421,9 +421,10 @@ def follow_user(
 
     Raises:
 
-    - HTTPException (400 BAD REQUEST): 이미 Follow 관계가 맺어진 경우
-    - HTTPException (404 NOT FOUND): 전달된 정보에 일치하는 Follow 관계를 찾을 수 없을 때
-    - HTTPException (500 INTERNAL SERVER ERROR): Follow 관계에 실패할 경우
+    - HTTPException (404 NOT FOUND): follower_id에 해당하는 유저가 없을 경우
+    - HTTPException (500 INTERNAL SERVER ERROR): 다음 2가지 경우에 발생
+        - Follow 관계에 실패한 경우 (code: FAILED_TO_FOLLOW)
+        - 알림 생성에 실패한 경우 (code: FAILED_TO_CREATE_NOTIFICATION)
 
     Returns:
 

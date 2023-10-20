@@ -86,7 +86,7 @@ def fake_multi_posts(
 def fake_post_by_user_logged_in(
     client: TestClient,
     db_session: Session,
-    get_user_token_headers_and_login_data: dict,
+    get_user_token_headers_and_login_data: Dict,
 ) -> Post:
     """로그인 상태의 유저가 생성한 post 한 개를 반환한다.
 
@@ -116,8 +116,8 @@ def fake_post_by_user_logged_in(
 def fake_multi_post_by_user_logged_in(
     client: TestClient,
     db_session: Session,
-    get_user_token_headers_and_login_data: dict,
-):
+    get_user_token_headers_and_login_data: Dict,
+) -> None:
     """로그인 상태의 유저가 post 100개를 생성한다.
 
     Args:
@@ -147,9 +147,9 @@ def fake_multi_post_by_user_logged_in(
 def fake_postlike(
     client: TestClient,
     db_session: Session,
-    fake_user: dict,
+    fake_user: Dict,
     fake_multi_posts: None,
-):
+) -> None:
     """PostLike 객체를 생성한다.
     user 와 another user가 있다.
     user는 50개의 post에 좋아요를, another user는 100개의 post에 좋아요를 한다.
@@ -159,7 +159,6 @@ def fake_postlike(
         db_session (Session): db session.
         fake_user (dict): test 전용 user 생성
         fake_multi_posts (None): test 전용 post 생성
-
     """
     # fake_user 정보 가져오기
     user = fake_user.get("user")

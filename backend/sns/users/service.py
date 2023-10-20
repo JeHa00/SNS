@@ -7,14 +7,17 @@ from fastapi.security import OAuth2PasswordBearer
 from starlette.background import BackgroundTasks
 from passlib.context import CryptContext
 from sqlalchemy.orm import Session
+from redis.client import Redis
 from jose import jwt, JWTError
 
 from sns.common.config import settings
 from sns.common.session import db
 from sns.users.repositories.email_client import email_client
 from sns.users.repositories.db import user_crud
-from sns.users.model import User
+from sns.users.model import User, Follow
 from sns.users import schema
+from sns.notification.repository import notification_crud, RedisQueue
+from sns.notification.schema import FollowNotificationData
 
 
 class UserService:
@@ -760,6 +763,8 @@ class UserService:
     def follow_user(
         self,
         db: Session,
+        redis_db: Redis,
+        background_tasks: BackgroundTasks,
         follower_id: int,
         following_id: int,
     ) -> bool:
@@ -770,38 +775,45 @@ class UserService:
             follower_id는 팔로우를 당하는 유저의 id, following_id는 팔로우를 거는 유저의 id 를 말한다.
 
         Args:
-
-        - follower_id (int): 팔로우를 당하는 유저의 id
-        - following_id (int): 팔로우를 거는 유저의 id
+            - follower_id (int): 팔로우를 당하는 유저의 id
+            - following_id (int): 팔로우를 거는 유저의 id
 
         Raises:
-
-        - HTTPException (400 BAD REQUEST): 이미 Follow 관계가 맺어진 경우
-        - HTTPException (500 INTERNAL SERVER ERROR): Follow 관계에 실패할 경우
+            - HTTPException (404 NOT FOUND): follower_id에 해당하는 유저가 없을 경우
+            - HTTPException (500 INTERNAL SERVER ERROR): 다음 2가지 경우에 발생
+                - Follow 관계에 실패한 경우 (code: FAILED_TO_FOLLOW)
+                - 알림 생성에 실패한 경우 (code: FAILED_TO_CREATE_NOTIFICATION)
 
         Returns:
-
-        - bool: follow 관계 맺기 성공 시 True를 반환
+            - bool: follow 관계 맺기 성공 시 True를 반환, 실패 시 에러를 발생
         """
-        selected_follow = user_crud.get_follow(db, follower_id, following_id)
+        follower = user_crud.get_user(db, user_id=follower_id)
 
-        if selected_follow and selected_follow.is_followed:
-            raise HTTPException(
-                status_code=400,
-                detail="이미 Follow 관계가 맺어져 있습니다.",
-            )
+        if not follower:
+            raise self.USER_NOT_FOUND_ERROR
+
         try:
-            user_crud.follow(
+            follow = user_crud.follow(
                 db,
-                selected_follow,
                 follower_id,
                 following_id,
             )
+
+            background_tasks.add_task(
+                self.create_and_add_notification,
+                db,
+                redis_db,
+                follow,
+            )
+
             return True
         except Exception:
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail="follow 관계를 맺는데 실패하였습니다.",
+                detail={
+                    "code": "FAILED_TO_FOLLOW",
+                    "detail": "follow 관계를 맺는데 실패하였습니다.",
+                },
             )
 
     def unfollow_user(
@@ -848,6 +860,65 @@ class UserService:
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 detail="follow 관계 취소가 실패하였습니다.",
             )
+
+    def create_and_add_notification(
+        self,
+        db: Session,
+        redis_db: Redis,
+        new_follow: Follow,
+    ) -> bool:
+        """주어진 데이터를 가지고 알림을 생성하고, message queue에 추가한다.
+        follower_id를 통해서 follower의 email 정보를 얻은 후, 이 정보를 queue의 key값으로 사용하여 queue를 생성한다.
+        그리고 이 queue에 bytestr 타입으로 follow event data를 추가한다.
+
+        Args:
+            - db (Session): mysql db session
+            - redis_db (Redis): message queue에 접속하는 db
+            - message_queue (RedisQueue): redis_db를 통해 생성되는 message_queue
+            - new_follow (Follow): 새로 생성된 follow 객체
+
+        Raises:
+            - HTTPException (500 INTERNAL SERVER ERROR): 알림 생성에 실패한 경우
+                - code: FAILED_TO_CREATE_NOTIFICATION
+
+        Returns:
+            - bool : 성공 시 True를 반환
+        """
+
+        try:
+            new_notification = notification_crud.create_notification_on_follow(
+                db,
+                new_follow.id,
+                new_follow.follower_id,
+            )
+        except Exception:
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail={
+                    "code": "FAILED_TO_CREATE_NOTIFICATION",
+                    "detail": "알림 생성에 실패했습니다.",
+                },
+            )
+
+        notification_data = FollowNotificationData(
+            type=new_notification.type,
+            notification_id=new_notification.id,
+            notified_user_id=new_follow.follower_id,
+            following_id=new_follow.following_id,
+            created_at=str(new_notification),
+        )
+
+        # message_queue 초기화 및 알림 데이터 추가
+        follower = user_crud.get_user(db, user_id=new_follow.follower_id)
+
+        message_queue = RedisQueue(
+            redis_db,
+            f"notification_useremail:{follower.email}",
+        )
+
+        message_queue.push(notification_data.dict())
+
+        return True
 
 
 user_service = UserService()
