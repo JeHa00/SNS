@@ -15,6 +15,7 @@ from sns.common.conftest import (
     db_session,
     redis_db_session,
     client,
+    async_client,
 )
 
 # flake8: noqa
