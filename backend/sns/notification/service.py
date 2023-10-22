@@ -4,8 +4,8 @@ from sqlalchemy.orm import Session
 from redis.client import Redis
 import asyncio
 
-from sns.common.config import settings
 from sns.notification.repository import notification_crud, RedisQueue
+from sns.notification.schema import NotificationEventData
 from sns.notification.enums import NotificationType
 
 
@@ -71,7 +71,7 @@ class NotificationService:
             StreamingResponse: _description_
 
         Yields:
-            Iterator[StreamingResponse]: _description_
+            Iterator[StreamingResponse] (str): 클라이언트에게 보내는 이벤트 데이터
         """
         headers = {
             "Connection": "keep-alive",
@@ -91,30 +91,31 @@ class NotificationService:
                 if await request.is_disconnected():
                     break
 
-                if not message_queue.empty:
-                    message = message_queue.pop()
+                if message_queue.empty:
+                    await asyncio.sleep(5)
 
-                    last_event_id = request.headers.get(
-                        "lastEventId",
-                        message.get("created_at"),
-                    )
+                message = message_queue.pop()
+                event_converted_as_string = ""
 
-                    event_type = (
-                        f"event: {NotificationType.follow}\n"
-                        if message.get("type") == f"{NotificationType.follow}"
-                        else f"event: {NotificationType.post_like}\n"
-                    )
-                    identifier = f"id: {last_event_id}\n"
-                    retry = f"retry: {settings.TIME_TO_RETRY_CONNECTION}\n"
-                    data = f"data: {message}\n\n"
+                last_event_id = request.headers.get(
+                    "lastEventId",
+                    message.get("created_at"),
+                )
 
-                    event = event_type + identifier + retry + data
+                event = NotificationEventData(
+                    event=NotificationType.follow
+                    if message.get("type") == NotificationType.follow
+                    else NotificationType.post_like,
+                    id=last_event_id,
+                    data=message,
+                ).dict()
 
-                    yield event
+                for key, value in event.items():
+                    event_converted_as_string += f"{key}: {value}\n"
 
-                    await asyncio.sleep(1)
+                event_converted_as_string += "\n"
 
-                await asyncio.sleep(5)
+                yield event_converted_as_string
 
         return StreamingResponse(
             detect_and_send_event(),
