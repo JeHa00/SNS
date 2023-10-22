@@ -1,5 +1,6 @@
 from pydantic import BaseModel, Field
 
+from sns.common.config import settings
 from sns.notification.enums import NotificationType
 
 
@@ -28,3 +29,10 @@ class FollowNotificationData(NotificationBaseData):
 class PostLikeNotificationData(NotificationBaseData):
     user_id_who_like: int
     liked_post_id: int
+
+
+class NotificationEventData(NotificationBase):
+    event: NotificationType
+    id: str
+    retry: int = settings.TIME_TO_RETRY_CONNECTION
+    data: dict

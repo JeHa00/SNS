@@ -91,35 +91,37 @@ class NotificationService:
                 if await request.is_disconnected():
                     break
 
-                if message_queue.empty:
-                    await asyncio.sleep(5)
+                if not message_queue.empty:
+                    message = message_queue.pop()
 
-                message = message_queue.pop()
-                event_converted_as_string = ""
+                    event_converted_as_string = ""
 
-                last_event_id = request.headers.get(
-                    "lastEventId",
-                    message.get("created_at"),
-                )
+                    last_event_id = request.headers.get(
+                        "lastEventId",
+                        message.get("created_at"),
+                    )
 
-                event = NotificationEventData(
-                    event=NotificationType.follow
-                    if message.get("type") == NotificationType.follow
-                    else NotificationType.post_like,
-                    id=last_event_id,
-                    data=message,
-                ).dict()
+                    event = NotificationEventData(
+                        event=NotificationType.follow
+                        if message.get("type") == NotificationType.follow
+                        else NotificationType.post_like,
+                        id=last_event_id,
+                        data=message,
+                    ).dict()
 
-                for key, value in event.items():
-                    event_converted_as_string += f"{key}: {value}\n"
+                    for key, value in event.items():
+                        event_converted_as_string += f"{key}: {value}\n"
 
-                event_converted_as_string += "\n"
+                    event_converted_as_string += "\n"
 
-                yield event_converted_as_string
+                    yield event_converted_as_string
+
+                    await asyncio.sleep(1)
 
         return StreamingResponse(
             detect_and_send_event(),
             media_type="text/event-stream",
+            status_code=202,
             headers=headers,
         )
 
