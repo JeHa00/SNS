@@ -1,4 +1,5 @@
 from fastapi import APIRouter, status, Depends, Request
+from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session
 from redis.client import Redis
 
@@ -25,7 +26,6 @@ def mark_as_read(
 
     Args:
         - notification_id (int): 알림의 id
-        - read (NotificationUpdate): 읽기 상태 값 정보
 
     Raises:
         - HTTPException (403 FORBIDDEN): 수정 권한이 없는 경우
@@ -51,7 +51,13 @@ async def send_event(
     notification_service: NotificationService = Depends(NotificationService),
     current_user: UserBase = Depends(UserService.get_current_user_verified),
     redis_db: Redis = Depends(redis_db.get_db),
-):
+) -> StreamingResponse:
+    """실시간으로 생성된 알림 데이터를 클라이언트에게 전달한다.
+    없으면 전달하지 않는다. 새로 생성된 알림 데이터가 존재할 경우 문자열 타입의 알림 데이터를 1초 간격으로 전달한다.
+
+    Returns:
+        - StreamingResponse: 문자열 타입의 알림 데이터
+    """
     return await notification_service.send_event(
         redis_db,
         request,

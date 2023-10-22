@@ -60,7 +60,7 @@ class NotificationService:
         current_user_email: str,
     ) -> StreamingResponse:
         """current_user_email을 key 값으로 가지는 queue에 event가 존재하는지 확인한다.
-        존재하면 클라이언트에게 자동적으로 알림 데이터를 보내준다.
+        event가 존재할 때에만 클라이언트에게 자동적으로 알림 데이터를 보내준다.
 
         Args:
             redis_db (Redis): redis db
@@ -68,7 +68,7 @@ class NotificationService:
             current_user_email (str): 현재 로그인한 유저의 이메일
 
         Returns:
-            StreamingResponse: _description_
+            StreamingResponse (str): 실시간으로 생성된 이벤트 데이터를 클라이언트에게 문자열 데이터 타입으로 실시간으로 반환
 
         Yields:
             Iterator[StreamingResponse] (str): 클라이언트에게 보내는 이벤트 데이터
