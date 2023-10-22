@@ -905,7 +905,7 @@ class UserService:
             notification_id=new_notification.id,
             notified_user_id=new_follow.follower_id,
             following_id=new_follow.following_id,
-            created_at=str(new_notification),
+            created_at=str(new_notification.created_at),
         )
 
         # message_queue 초기화 및 알림 데이터 추가
