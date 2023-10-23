@@ -16,7 +16,7 @@ from sns.common.base import Base
 from sns.users.controller import router as users
 from sns.posts.controller import router as posts
 from sns.comments.controller import router as comments
-from sns.notification.controller import router as notifications
+from sns.notifications.controller import router as notifications
 
 
 # mysql

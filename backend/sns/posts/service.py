@@ -9,8 +9,8 @@ from sns.users.repositories.db import user_crud
 from sns.users.model import User
 from sns.posts.repository import post_crud, post_redis_crud
 from sns.posts.model import Post, PostLike
-from sns.notification.repository import notification_crud, RedisQueue
-from sns.notification.schema import PostLikeNotificationData
+from sns.notifications.repository import notification_crud, RedisQueue
+from sns.notifications.schema import PostLikeNotificationData
 
 
 class PostService:

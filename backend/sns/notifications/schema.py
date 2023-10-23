@@ -1,7 +1,7 @@
 from pydantic import BaseModel, Field
 
 from sns.common.config import settings
-from sns.notification.enums import NotificationType
+from sns.notifications.enums import NotificationType
 
 
 class NotificationBase(BaseModel):

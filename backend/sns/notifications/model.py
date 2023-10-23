@@ -2,7 +2,7 @@ from sqlalchemy import Column, Integer, ForeignKey, Enum, Boolean
 from sqlalchemy.orm import relationship
 
 from sns.common.base import Base, BaseMixin
-from sns.notification.enums import NotificationType
+from sns.notifications.enums import NotificationType
 
 
 class Notification(Base, BaseMixin):

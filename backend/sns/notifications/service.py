@@ -4,9 +4,9 @@ from sqlalchemy.orm import Session
 from redis.client import Redis
 import asyncio
 
-from sns.notification.repository import notification_crud, RedisQueue
-from sns.notification.schema import NotificationEventData
-from sns.notification.enums import NotificationType
+from sns.notifications.repository import notification_crud, RedisQueue
+from sns.notifications.schema import NotificationEventData
+from sns.notifications.enums import NotificationType
 
 
 class NotificationService:

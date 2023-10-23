@@ -6,7 +6,7 @@ from redis.client import Redis
 from sns.common.session import db, redis_db
 from sns.users.service import UserService
 from sns.users.schema import Message, UserBase
-from sns.notification.service import NotificationService
+from sns.notifications.service import NotificationService
 
 router = APIRouter()
 
