@@ -101,10 +101,14 @@ class NotificationService:
                         message.get("created_at"),
                     )
 
-                    event = NotificationEventData(
-                        event=NotificationType.follow
+                    event_type = (
+                        NotificationType.follow
                         if message.get("type") == NotificationType.follow
-                        else NotificationType.post_like,
+                        else NotificationType.post_like
+                    )
+
+                    event = NotificationEventData(
+                        event=event_type,
                         id=last_event_id,
                         data=message,
                     ).dict()
@@ -112,16 +116,14 @@ class NotificationService:
                     for key, value in event.items():
                         event_converted_as_string += f"{key}: {value}\n"
 
-                    event_converted_as_string += "\n"
+                    yield event_converted_as_string + "\n"
 
-                    yield event_converted_as_string
-
-                    await asyncio.sleep(1)
+                    await asyncio.sleep(1)  # unit: seconds
 
         return StreamingResponse(
             detect_and_send_event(),
             media_type="text/event-stream",
-            status_code=202,
+            status_code=status.HTTP_200_OK,
             headers=headers,
         )
 
