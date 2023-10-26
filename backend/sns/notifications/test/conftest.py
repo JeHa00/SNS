@@ -1,10 +1,15 @@
 from typing import Dict
-import pytest
 
 from starlette.background import BackgroundTasks
+from fastapi.responses import StreamingResponse
 from fastapi.testclient import TestClient
+from fastapi import status, Request, FastAPI
 from sqlalchemy.orm import Session
 from redis.client import Redis
+import pytest_asyncio
+import pytest
+import asyncio
+import httpx
 
 from sns.common.config import settings
 
@@ -37,6 +42,10 @@ from sns.posts.test.conftest import (
 )
 from sns.posts.service import post_service
 from sns.posts.repository import post_crud
+from sns.notifications.service import NotificationService
+from sns.notifications.repository import RedisQueue
+from sns.notifications.schema import NotificationEventData
+from sns.notifications.enums import NotificationType
 
 
 @pytest.fixture(scope="function")
@@ -64,11 +73,13 @@ def fake_follow_notifications(
 
     follower_id = user_crud.get_user(db_session, email=follower_email).id
 
-    first_following_user_id = 2
+    first_following_user_id = follower_id + 1
 
     total_following_user_count = 10
 
-    for following_id in range(first_following_user_id, total_following_user_count + 1):
+    last_following_user_id = follower_id + total_following_user_count
+
+    for following_id in range(first_following_user_id, last_following_user_id + 1):
         user_service.follow_user(
             db_session,
             redis_db_session,
