@@ -175,3 +175,79 @@ def fake_user_logged_in(
     headers = {"Authorization": f"Bearer {token}"}
 
     return {"headers": headers}
+
+
+class FakeNotificationService:
+    async def send_event(
+        self,
+        redis_db_session: Redis,
+        request: Request,
+        current_user_email: str,
+    ):
+        headers = {
+            "Connection": "keep-alive",
+            "Cache-Control": "no-cache",
+            "X-Accel-Buffering": "no",
+            "Access-Control-Allow-Credentials": "true",
+            "Access-Control-Allow-Origin": "*",
+        }
+
+        message_queue = RedisQueue(
+            redis_db_session,
+            f"notification_useremail:{current_user_email}",
+        )
+
+        async def detect_and_send_event():
+            while True:
+                if (
+                    await request.is_disconnected() or message_queue.empty
+                ):  #  production 코드와 다른 점
+                    break
+
+                if not message_queue.empty:
+                    message = message_queue.pop()
+
+                    event_converted_as_string = ""
+
+                    last_event_id = request.headers.get(
+                        "lastEventId",
+                        message.get("created_at"),
+                    )
+
+                    event_type = (
+                        NotificationType.follow
+                        if message.get("type") == NotificationType.follow
+                        else NotificationType.post_like
+                    )
+
+                    event = NotificationEventData(
+                        event=event_type,
+                        id=last_event_id,
+                        data=message,
+                    ).dict()
+
+                    for key, value in event.items():
+                        event_converted_as_string += f"{key}: {value}\n"
+
+                    yield event_converted_as_string + "\n"
+
+                    # 테스트를 위해 시간 1s -> 0.5s로 단축
+                    await asyncio.sleep(0.5)
+
+        return StreamingResponse(
+            detect_and_send_event(),
+            media_type="text/event-stream",
+            status_code=status.HTTP_200_OK,
+            headers=headers,
+        )
+
+
+@pytest_asyncio.fixture(scope="function")
+async def async_client_for_sse(app: FastAPI):
+    app.dependency_overrides[NotificationService] = FakeNotificationService
+
+    async with httpx.AsyncClient(
+        app=app,
+        base_url=f"http://localhost:8000{settings.API_V1_PREFIX}/",
+    ) as test_client:
+        yield test_client
