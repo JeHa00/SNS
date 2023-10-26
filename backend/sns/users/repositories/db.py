@@ -203,6 +203,8 @@ class UserDB:
         Args:
             db (Session): db session
             follow_data (dict): follower와 following의 id 정보
+            follower_id (int): follower의 id
+            following_id (int): following의 id
 
         Returns:
             Follow: 생성된 Follow 객체를 반환
