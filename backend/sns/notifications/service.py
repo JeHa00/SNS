@@ -87,10 +87,7 @@ class NotificationService:
         )
 
         async def detect_and_send_event():
-            while True:
-                if await request.is_disconnected():
-                    break
-
+            while not request.is_disconnected():
                 if not message_queue.empty:
                     message = message_queue.pop()
 

@@ -44,7 +44,7 @@ def mark_as_read(
 
 @router.get(
     "/notifications",
-    status_code=status.HTTP_202_ACCEPTED,
+    status_code=status.HTTP_200_OK,
 )
 async def send_event(
     request: Request,

@@ -140,7 +140,7 @@ async def test_send_events(
         "GET",
         "notifications",
         headers=header,
-    ) as response:  # 10초 후 assert 진입
+    ) as response:
         assert response.status_code == status.HTTP_200_OK
         assert response.headers.get("Cache-Control") == "no-cache"
         assert response.headers.get("Connection") == "keep-alive"
@@ -148,7 +148,6 @@ async def test_send_events(
         assert (
             response.headers.get("Content-Type") == "text/event-stream; charset=utf-8"
         )
-        # async for event in response.aiter_bytes():
         async for event in response.aiter_raw():
             contents = event.split(b"\n\n")
             contents.pop()  # 빈 문자열 제거

@@ -197,41 +197,38 @@ class FakeNotificationService:
         )
 
         async def detect_and_send_event():
-            while not request.is_disconnected():
-                if (
-                    await request.is_disconnected() or message_queue.empty
-                ):  #  production 코드와 다른 점
+            while not await request.is_disconnected():
+                if message_queue.empty:  #  production 코드와 다른 점
                     break
 
-                if not message_queue.empty:
-                    message = message_queue.pop()
+                message = message_queue.pop()
 
-                    event_converted_as_string = ""
+                event_converted_as_string = ""
 
-                    last_event_id = request.headers.get(
-                        "lastEventId",
-                        message.get("created_at"),
-                    )
+                last_event_id = request.headers.get(
+                    "lastEventId",
+                    message.get("created_at"),
+                )
 
-                    event_type = (
-                        NotificationType.follow
-                        if message.get("type") == NotificationType.follow
-                        else NotificationType.post_like
-                    )
+                event_type = (
+                    NotificationType.follow
+                    if message.get("type") == NotificationType.follow
+                    else NotificationType.post_like
+                )
 
-                    event = NotificationEventData(
-                        event=event_type,
-                        id=last_event_id,
-                        data=message,
-                    ).dict()
+                event = NotificationEventData(
+                    event=event_type,
+                    id=last_event_id,
+                    data=message,
+                ).dict()
 
-                    for key, value in event.items():
-                        event_converted_as_string += f"{key}: {value}\n"
+                for key, value in event.items():
+                    event_converted_as_string += f"{key}: {value}\n"
 
-                    yield event_converted_as_string + "\n"
+                yield event_converted_as_string + "\n"
 
-                    # 테스트를 위해 시간 1s -> 0.5s로 단축
-                    await asyncio.sleep(0.5)
+                # 테스트를 위해 시간 1s -> 0.5s로 단축
+                await asyncio.sleep(0.5)
 
         return StreamingResponse(
             detect_and_send_event(),
