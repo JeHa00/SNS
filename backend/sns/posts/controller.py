@@ -78,13 +78,12 @@ def read_users_who_like(
 
 
 @router.post(
-    "/posts/{post_id}/writer/{writer_id}/like",
+    "/posts/{post_id}/like",
     response_model=Message,
     status_code=status.HTTP_200_OK,
 )
 def like_post(
     post_id: int,
-    writer_id: int,
     background_tasks: BackgroundTasks,
     post_service: PostService = Depends(PostService),
     current_user: UserBase = Depends(UserService.get_current_user_verified),
@@ -96,7 +95,6 @@ def like_post(
     Args:
 
     - post_id (int): 현재 로그인된 user로부터 좋아요를 받을 글의 id
-    - writer_id (int): 좋아요를 받는 글의 작성자 유저 id
 
     Raises:
 
@@ -115,7 +113,6 @@ def like_post(
         background_tasks,
         post_id,
         current_user.id,
-        writer_id,
     )
     return {"status": "success", "message": "post 좋아요가 완료되었습니다."}
 

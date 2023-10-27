@@ -141,7 +141,6 @@ def fake_postlike_notifications(
             BackgroundTasks(),
             post_id,
             current_user_id,
-            notified_user_id,
         )
 
         new_postlike = post_crud.get_like(
@@ -198,7 +197,7 @@ class FakeNotificationService:
         )
 
         async def detect_and_send_event():
-            while True:
+            while not request.is_disconnected():
                 if (
                     await request.is_disconnected() or message_queue.empty
                 ):  #  production 코드와 다른 점

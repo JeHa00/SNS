@@ -104,13 +104,8 @@ def test_mark_as_read_if_writer_is_same_as_current_user(
     # 글 좋아요하기
     headers = get_user_token_headers_and_login_data.get("headers")
 
-    api_url = (
-        f"{settings.API_V1_PREFIX}/posts/{fake_post.id}/"
-        f"writer/{fake_post.writer_id}/like"
-    )
-
     response = client.post(
-        api_url,
+        f"{settings.API_V1_PREFIX}/posts/{fake_post.id}/like",
         headers=headers,
         json={"writer_id": fake_post.writer_id},
     )

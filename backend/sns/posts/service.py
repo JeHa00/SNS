@@ -422,7 +422,6 @@ class PostService:
         background_tasks: BackgroundTasks,
         post_id: int,
         current_user_id: int,
-        writer_id: int,
     ) -> bool:
         """입력받은 정보를 PostLikeDB class에 전달하여 해당되는 PostLike 객체가 존재하지 않으면 새로 생성한다.
            하지만, 객체는 존재하지만 is_liked 정보가 False이면 True로 수정한다.
@@ -433,7 +432,6 @@ class PostService:
             - background_tasks (BackgroundTasks): background task를 위한 객체
             - post_id (int): 좋아요를 받는 글의 id
             - current_user_id (int): 좋아요를 하는 현재 로그인한 유저 id
-            - writer_id (int): 좋아요를 받는 글의 작성자 id
 
         Raises:
             - HTTPException (404 NOT FOUND): post_id에 해당하는 글이 없는 경우
@@ -444,7 +442,7 @@ class PostService:
         Returns:
             - bool: 좋아요 성공 시 True, 실패 시 에러를 발생
         """
-        self.get_post_and_handle_none(db, post_id)
+        liked_post = self.get_post_and_handle_none(db, post_id)
 
         try:
             postlike = post_crud.like(
@@ -458,7 +456,7 @@ class PostService:
                 db,
                 redis_db,
                 postlike,
-                writer_id,
+                liked_post.writer_id,
             )
 
             return True
