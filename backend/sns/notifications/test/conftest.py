@@ -203,18 +203,14 @@ class FakeNotificationService:
 
                 message = message_queue.pop()
 
-                event_converted_as_string = ""
+                event_string = ""
 
                 last_event_id = request.headers.get(
                     "lastEventId",
                     message.get("created_at"),
                 )
 
-                event_type = (
-                    NotificationType.follow
-                    if message.get("type") == NotificationType.follow
-                    else NotificationType.post_like
-                )
+                event_type = NotificationType(message.get("type", "post_like"))
 
                 event = NotificationEventData(
                     event=event_type,
@@ -223,9 +219,9 @@ class FakeNotificationService:
                 ).dict()
 
                 for key, value in event.items():
-                    event_converted_as_string += f"{key}: {value}\n"
+                    event_string += f"{key}: {value}\n"
 
-                yield event_converted_as_string + "\n"
+                yield event_string + "\n"
 
                 # 테스트를 위해 시간 1s -> 0.5s로 단축
                 await asyncio.sleep(0.5)

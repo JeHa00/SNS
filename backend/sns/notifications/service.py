@@ -91,18 +91,14 @@ class NotificationService:
                 if not message_queue.empty:
                     message = message_queue.pop()
 
-                    event_converted_as_string = ""
+                    event_string = ""
 
                     last_event_id = request.headers.get(
                         "lastEventId",
                         message.get("created_at"),
                     )
 
-                    event_type = (
-                        NotificationType.follow
-                        if message.get("type") == NotificationType.follow
-                        else NotificationType.post_like
-                    )
+                    event_type = NotificationType(message.get("type", "post_like"))
 
                     event = NotificationEventData(
                         event=event_type,
@@ -111,9 +107,9 @@ class NotificationService:
                     ).dict()
 
                     for key, value in event.items():
-                        event_converted_as_string += f"{key}: {value}\n"
+                        event_string += f"{key}: {value}\n"
 
-                    yield event_converted_as_string + "\n"
+                    yield event_string + "\n"
 
                     await asyncio.sleep(1)  # unit: seconds
 
