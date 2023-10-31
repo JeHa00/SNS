@@ -1,3 +1,5 @@
+from contextlib import contextmanager
+
 from fastapi import FastAPI
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker, close_all_sessions
@@ -45,6 +47,7 @@ class SQLAlchemy:
 
         Base.metadata.create_all(bind=self._engine)
 
+    @contextmanager
     def get_db(self):
         """
         요청마다 DB 세션 유지하는 함수
