@@ -1,10 +1,15 @@
 from typing import Dict
-import pytest
 
 from starlette.background import BackgroundTasks
+from fastapi.responses import StreamingResponse
 from fastapi.testclient import TestClient
+from fastapi import status, Request, FastAPI
 from sqlalchemy.orm import Session
 from redis.client import Redis
+import pytest_asyncio
+import pytest
+import asyncio
+import httpx
 
 from sns.common.config import settings
 
@@ -15,6 +20,7 @@ from sns.common.conftest import (
     db_session,
     redis_db_session,
     client,
+    async_client,
 )
 
 # flake8: noqa
@@ -36,6 +42,10 @@ from sns.posts.test.conftest import (
 )
 from sns.posts.service import post_service
 from sns.posts.repository import post_crud
+from sns.notifications.service import NotificationService
+from sns.notifications.repository import RedisQueue
+from sns.notifications.schema import NotificationEventData
+from sns.notifications.enums import NotificationType
 
 
 @pytest.fixture(scope="function")
@@ -63,11 +73,13 @@ def fake_follow_notifications(
 
     follower_id = user_crud.get_user(db_session, email=follower_email).id
 
-    first_following_user_id = 2
+    first_following_user_id = follower_id + 1
 
     total_following_user_count = 10
 
-    for following_id in range(first_following_user_id, total_following_user_count + 1):
+    last_following_user_id = follower_id + total_following_user_count
+
+    for following_id in range(first_following_user_id, last_following_user_id + 1):
         user_service.follow_user(
             db_session,
             redis_db_session,
@@ -129,7 +141,6 @@ def fake_postlike_notifications(
             BackgroundTasks(),
             post_id,
             current_user_id,
-            notified_user_id,
         )
 
         new_postlike = post_crud.get_like(
@@ -163,3 +174,72 @@ def fake_user_logged_in(
     headers = {"Authorization": f"Bearer {token}"}
 
     return {"headers": headers}
+
+
+class FakeNotificationService:
+    async def send_event(
+        self,
+        redis_db_session: Redis,
+        request: Request,
+        current_user_email: str,
+    ):
+        headers = {
+            "Connection": "keep-alive",
+            "Cache-Control": "no-cache",
+            "X-Accel-Buffering": "no",
+            "Access-Control-Allow-Credentials": "true",
+            "Access-Control-Allow-Origin": "*",
+        }
+
+        message_queue = RedisQueue(
+            redis_db_session,
+            f"notification_useremail:{current_user_email}",
+        )
+
+        async def detect_and_send_event():
+            while not await request.is_disconnected():
+                if message_queue.empty:  #  production 코드와 다른 점
+                    break
+
+                message = message_queue.pop()
+
+                event_string = ""
+
+                last_event_id = request.headers.get(
+                    "lastEventId",
+                    message.get("created_at"),
+                )
+
+                event_type = NotificationType(message.get("type", "post_like"))
+
+                event = NotificationEventData(
+                    event=event_type,
+                    id=last_event_id,
+                    data=message,
+                ).dict()
+
+                for key, value in event.items():
+                    event_string += f"{key}: {value}\n"
+
+                yield event_string + "\n"
+
+                # 테스트를 위해 시간 1s -> 0.5s로 단축
+                await asyncio.sleep(0.5)
+
+        return StreamingResponse(
+            detect_and_send_event(),
+            media_type="text/event-stream",
+            status_code=status.HTTP_200_OK,
+            headers=headers,
+        )
+
+
+@pytest_asyncio.fixture(scope="function")
+async def async_client_for_sse(app: FastAPI):
+    app.dependency_overrides[NotificationService] = FakeNotificationService
+
+    async with httpx.AsyncClient(
+        app=app,
+        base_url=f"http://localhost:8000{settings.API_V1_PREFIX}/",
+    ) as test_client:
+        yield test_client

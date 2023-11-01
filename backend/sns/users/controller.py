@@ -3,8 +3,9 @@ from typing import List
 from fastapi import APIRouter, Depends, status, Body
 from starlette.background import BackgroundTasks
 from sqlalchemy.orm import Session
+from redis.client import Redis
 
-from sns.common.session import db
+from sns.common.session import db, redis_db
 from sns.users.service import UserService
 from sns.users.schema import (
     UserPasswordUpdate,
@@ -409,8 +410,10 @@ def read_followings(
 )
 def follow_user(
     user_id: int,
+    background_tasks: BackgroundTasks,
     user_service: UserService = Depends(UserService),
     current_user: UserBase = Depends(UserService.get_current_user_verified),
+    redis_db: Redis = Depends(redis_db.get_db),
     db: Session = Depends(db.get_db),
 ) -> Message:
     """현재 로그인한 유저가 user_id에 해당하는 유저를 팔로우한다.
@@ -432,6 +435,8 @@ def follow_user(
     """
     user_service.follow_user(
         db,
+        redis_db,
+        background_tasks,
         user_id,
         current_user.id,
     )

@@ -3,8 +3,8 @@ from sqlalchemy.orm import Session
 
 from sns.users.repositories.db import user_crud
 from sns.posts.repository import post_crud
-from sns.notification.repository import notification_crud
-from sns.notification.enums import NotificationType
+from sns.notifications.repository import notification_crud
+from sns.notifications.enums import NotificationType
 
 
 def test_create_and_get_notification_on_follow_then_mark_as_read(

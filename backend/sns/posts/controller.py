@@ -84,8 +84,10 @@ def read_users_who_like(
 )
 def like_post(
     post_id: int,
+    background_tasks: BackgroundTasks,
     post_service: PostService = Depends(PostService),
     current_user: UserBase = Depends(UserService.get_current_user_verified),
+    redis_db: Redis = Depends(redis_db.get_db),
     db: Session = Depends(db.get_db),
 ) -> Message:
     """현재 로그인한 user가 post_id에 해당하는 글에 좋아요를 한다.
@@ -105,7 +107,13 @@ def like_post(
 
     - Message: post 좋아요 성공 메세지를 반환
     """
-    post_service.like_post(db, post_id, current_user.id)
+    post_service.like_post(
+        db,
+        redis_db,
+        background_tasks,
+        post_id,
+        current_user.id,
+    )
     return {"status": "success", "message": "post 좋아요가 완료되었습니다."}
 
 

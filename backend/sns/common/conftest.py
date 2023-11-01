@@ -5,8 +5,10 @@ from fastapi.testclient import TestClient
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from redis.client import Redis
-import redis
+import pytest_asyncio
 import pytest
+import redis
+import httpx
 
 from sns.common.config import settings
 from sns.common.session import db, redis_db
@@ -14,9 +16,10 @@ from sns.common.base import Base
 from sns.users.controller import router as users
 from sns.posts.controller import router as posts
 from sns.comments.controller import router as comments
-from sns.notification.controller import router as notifications
+from sns.notifications.controller import router as notifications
 
 
+# mysql
 db_url = settings.SQLALCHEMY_DATABASE_URI.format(
     username="root",
     pw=settings.DB_PASSWORD.get_secret_value(),
@@ -119,3 +122,12 @@ def client(
     app.dependency_overrides[redis_db.get_db] = _get_test_redis_db
     with TestClient(app) as client:
         yield client
+
+
+@pytest_asyncio.fixture(scope="function")
+async def async_client(app: FastAPI):
+    async with httpx.AsyncClient(
+        app=app,
+        base_url=f"http://localhost:8000{settings.API_V1_PREFIX}/",
+    ) as test_client:
+        yield test_client

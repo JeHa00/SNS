@@ -16,8 +16,8 @@ from sns.users.repositories.email_client import email_client
 from sns.users.repositories.db import user_crud
 from sns.users.model import User, Follow
 from sns.users import schema
-from sns.notification.repository import notification_crud, RedisQueue
-from sns.notification.schema import FollowNotificationData
+from sns.notifications.repository import notification_crud, RedisQueue
+from sns.notifications.schema import FollowNotificationData
 
 
 class UserService:
@@ -905,7 +905,7 @@ class UserService:
             notification_id=new_notification.id,
             notified_user_id=new_follow.follower_id,
             following_id=new_follow.following_id,
-            created_at=str(new_notification),
+            created_at=str(new_notification.created_at),
         )
 
         # message_queue 초기화 및 알림 데이터 추가

@@ -4,8 +4,8 @@ import orjson
 from sqlalchemy.orm import Session
 from redis.client import Redis
 
-from sns.notification.model import Notification
-from sns.notification.enums import NotificationType
+from sns.notifications.model import Notification
+from sns.notifications.enums import NotificationType
 
 
 class NotificationDB:
