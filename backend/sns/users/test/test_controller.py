@@ -61,9 +61,11 @@ def test_verify_email_if_code_is_not_registered(client: TestClient):
 
     # 이메일 인증 및 결과
     response = client.post(f"{settings.API_V1_PREFIX}/verification-email/{code}")
-    result_message = response.json()["detail"]
+    result_code = response.json()["detail"]["code"]
+    result_message = response.json()["detail"]["message"]
 
     assert response.status_code == status.HTTP_404_NOT_FOUND
+    assert result_code == "USER_NOT_FOUND"
 
     # code가 등록되지 않았다는 건 아직 회원가입을 시도하지 않은 유저라는 의미다.
     assert result_message == "해당되는 유저를 찾을 수 없습니다."
@@ -178,9 +180,11 @@ def test_reset_password_if_not_user(client: TestClient):
         f"{settings.API_V1_PREFIX}/password-reset",
         json=not_registered_email,
     )
-    result_message = response.json()["detail"]
+    result_code = response.json()["detail"]["code"]
+    result_message = response.json()["detail"]["message"]
 
     assert response.status_code == status.HTTP_404_NOT_FOUND
+    assert result_code == "USER_NOT_FOUND"
     assert result_message == "해당되는 유저를 찾을 수 없습니다."
 
 
@@ -273,9 +277,11 @@ def test_read_user_if_not_registered(
     # 유저 조회 및 결과
     user_id = randint(2, 10)  # 임의로 생성한 user_id
     response = client.get(f"{settings.API_V1_PREFIX}/users/{user_id}", headers=headers)
-    result_message = response.json()["detail"]
+    result_code = response.json()["detail"]["code"]
+    result_message = response.json()["detail"]["message"]
 
     assert response.status_code == status.HTTP_404_NOT_FOUND
+    assert result_code == "USER_NOT_FOUND"
     assert result_message == "해당되는 유저를 찾을 수 없습니다."
 
 

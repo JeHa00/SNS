@@ -46,8 +46,8 @@ def signup(
     - HTTPException (400 BAD REQUEST): 이미 인증된 이메일인 경우
     - HTTPException (401 UNAUTHORIZED): 등록은 되었지만 이메일 인증이 미완료 상태인 경우
     - HTTPException (500 INTERNAL SERVER ERROR): 다음 2가지 경우에 발생한다.
-        - 유저 생성에 실패했을 때
-        - 이메일 인증을 위한 이메일 발송에 실패했을 때
+        - 유저 생성에 실패할 경우 (code: FAILED_TO_CREATE)
+        - 이메일 인증을 위한 이메일 발송에 실패할 경우 (code: FAILED_TO_SEND_A_EMAIL)
 
     Returns:
 
@@ -80,7 +80,7 @@ def verify_email(
     Raises:
 
     - HTTPException (404 NOT FOUND): 다음 경우에 발생한다.
-        - verification code가 code 값과 일치하는 user를 찾지 못한 경우
+        - verification code가 code 값과 일치하는 user를 찾지 못한 경우 (code: USER_NOT_FOUND)
     - HTTPException (500 INTERNAL SERVER ERROR): 인증 상태값 변경에 실패한 경우
 
     Returns:
@@ -117,6 +117,7 @@ def login(
     - HTTPException (400 BAD REQUEST): 입력한 비밀번호가 회원가입 시 입력한 비밀번호와 다른 경우
     - HTTPException (401 UNAUTHORIZED): 등록은 되었지만 이메일 인증이 미완료 상태인 경우
     - HTTPException (404 NOT FOUND): email에 해당하는 user를 찾지 못한 경우
+        - code: USER_NOT_FOUND
 
     Returns:
 
@@ -151,8 +152,9 @@ def reset_password(
 
     - HTTPException (401 UNAUTHORIZED): 등록은 되었지만 이메일 인증이 미완료 상태인 경우
     - HTTPException (404 NOT FOUND): email에 해당하는 user를 찾지 못한 경우
+        - code: USER_NOT_FOUND
     - HTTPException (500 INTERNAL SERVER ERROR): 다음 경우에 발생한다.
-        - 비밀번호 초기화를 위한 이메일 발송에 실패했을 때
+        - 비밀번호 초기화를 위한 이메일 발송에 실패했을 때 (code: FAILED_TO_SEND_A_MAIL)
 
     Returns:
 
@@ -192,6 +194,7 @@ def change_password(
     - HTTPException (400 BAD REQUEST): 입력한 비밀번호가 회원가입 시 입력한 비밀번호와 다른 경우
     - HTTPException (401 UNAUTHORIZED): 등록은 되었지만 이메일 인증이 미완료 상태인 경우
     - HTTPException (404 NOT FOUND): email에 해당하는 user를 찾지 못한 경우
+        - code: USER_NOT_FOUND
     - HTTPException (500 INTERNAL SERVER ERROR): 비밀번호 변경에 실패한 경우
 
      Returns:
@@ -221,6 +224,7 @@ def read_private_data(
     Raises:
 
     - HTTPException (404 NOT FOUND): email에 해당하는 user를 찾지 못한 경우
+        - code: USER_NOT_FOUND
 
     Returns:
 
@@ -255,6 +259,7 @@ def read_user(
     Raises:
 
     - HTTPException (404 NOT FOUND): email에 해당하는 user를 찾지 못한 경우
+        - code: USER_NOT_FOUND
 
     Returns:
 
@@ -292,6 +297,7 @@ def update_user(
     - HTTPException (401 UNAUTHORIZED): 등록은 되었지만 이메일 인증이 미완료 상태인 경우
     - HTTPException (403 FORBIDDEN): 수정 권한이 없는 경우
     - HTTPException (404 NOT FOUND): email에 해당하는 user를 찾지 못한 경우
+        - code: USER_NOT_FOUND
     - HTTPException (500 INTERNAL SERVER ERROR): 유저 정보 변경에 실패한 경우
 
     Returns:
@@ -329,6 +335,7 @@ def delete_user(
     - HTTPException (401 UNAUTHORIZED): 등록은 되었지만 이메일 인증이 미완료 상태인 경우
     - HTTPException (403 FORBIDDEN): 삭제 권한이 없는 경우
     - HTTPException (404 NOT FOUND): email에 해당하는 user를 찾지 못한 경우
+        - code: USER_NOT_FOUND
     - HTTPException (500 INTERNAL SERVER ERROR): 유저 정보 삭제에 실패한 경우
 
     Returns:
@@ -425,6 +432,7 @@ def follow_user(
     Raises:
 
     - HTTPException (404 NOT FOUND): follower_id에 해당하는 유저가 없을 경우
+        - code: USER_NOT_FOUND
     - HTTPException (500 INTERNAL SERVER ERROR): 다음 2가지 경우에 발생
         - Follow 관계에 실패한 경우 (code: FAILED_TO_FOLLOW)
         - 알림 생성에 실패한 경우 (code: FAILED_TO_CREATE_NOTIFICATION)

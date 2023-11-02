@@ -10,6 +10,7 @@ from sqlalchemy.orm import Session
 from redis.client import Redis
 from jose import jwt, JWTError
 
+from sns.common.http_exceptions import CommonHTTPExceptions
 from sns.common.config import settings
 from sns.common.session import db
 from sns.users.repositories.email_client import email_client
@@ -24,7 +25,13 @@ class UserService:
     __pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
     __oauth2_scheme = OAuth2PasswordBearer(tokenUrl=f"{settings.API_V1_PREFIX}/token")
 
-    USER_NOT_FOUND_ERROR = HTTPException(status_code=404, detail="해당되는 유저를 찾을 수 없습니다.")
+    ERROR_TO_SEND_A_EMAIL = HTTPException(
+        status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        detail={
+            "code": "FAILED_TO_SEND_A_EMAIL",
+            "message": "이메일 발송 과정에서 에러가 발생했습니다. 다시 시도하세요.",
+        },
+    )
 
     def get_pwd_context(
         cls,
@@ -32,7 +39,7 @@ class UserService:
         """클래스 변수에 직접 접근하기보다는 클래스 메서드를 통해 pwd_context 를 얻는다.
 
         Returns:
-            CryptContext: 암호화된 패스워드를 얻거나, 암호화된 패스워드와 일반 패스워드의 일치 유무를 확인할 때 사용하기 위해 반환
+            - CryptContext: 암호화된 패스워드를 얻거나, 암호화된 패스워드와 일반 패스워드의 일치 유무를 확인할 때 사용하기 위해 반환
         """
         return cls.__pwd_context
 
@@ -44,11 +51,11 @@ class UserService:
         """주어진 데이터를 바탕으로 access token을 생성한다.
 
         Args:
-            data (dict): 로그인 시 입력되는 이메일 객체 정보를 의미
-            expires (Optional): 토큰 유효기간 정보. Defaults to None.
+            - data (dict): 로그인 시 입력되는 이메일 객체 정보를 의미
+            - expires (Optional): 토큰 유효기간 정보. Defaults to None.
 
         Returns:
-            Token: 생성된 jwt을 반환
+            - Token: 생성된 jwt을 반환
         """
         to_encode = data.copy()
         if expires:
@@ -89,7 +96,7 @@ class UserService:
             return True
         else:
             raise HTTPException(
-                status_code=400,
+                status_code=status.HTTP_400_BAD_REQUEST,
                 detail="입력한 비밀번호가 기존 비밀번호와 일치하지 않습니다.",
             )
 
@@ -146,32 +153,35 @@ class UserService:
 
         Raises:
             - HTTPException (500): 이메일 전송과정에서 문제 발생 시 등록한 유저 삭제와 에러를 일으킨다.
+                - code: FAILED_TO_SEND_A_MAIL
         """
         try:
             code = secrets.token_urlsafe(10)  # verification_code의 최소 길이 10
+
             new_user = user_crud.get_user(
                 db,
                 email=email,
             )
+
             self.update(
                 db,
                 user=new_user,
                 data_to_be_updated={"verification_code": code},
             )
+
             url = (
                 f"http://0.0.0.0:8000{settings.API_V1_PREFIX}/verification-email/{code}"
             )
-            data = {"email_to": email, "url": url}
-            background_tasks.add_task(email_client.send_new_account_email, **data)
+
+            background_tasks.add_task(
+                email_client.send_new_account_email,
+                email,
+                url,
+            )
         except Exception:
-            user_crud.remove(
-                db,
-                new_user,
-            )
-            raise HTTPException(
-                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail="이메일 발송 과정에서 에러가 발생했습니다. 다시 회원가입 정보를 입력하세요",
-            )
+            user_crud.remove(db, new_user)
+
+            raise self.ERROR_TO_SEND_A_EMAIL
 
     def send_password_reset_email(
         self,
@@ -187,6 +197,7 @@ class UserService:
 
         Raises:
             - HTTPException (500 INTERNAL SERVER ERROR): 이메일 전송과정에서 문제가 생기면 에러를 발생시킨다.
+                - code: FAILED_TO_SEND_A_MAIL
         """
         try:
             temporary_password = secrets.token_urlsafe(8)  # 패스워드의 최소 길이 8
@@ -202,16 +213,13 @@ class UserService:
                 data_to_be_updated={"password": hashed_password},
             )
 
-            data = {"email_to": email, "password": temporary_password}
             background_tasks.add_task(
                 email_client.send_reset_password_email,
-                **data,
+                email,
+                temporary_password,
             )
         except Exception:
-            raise HTTPException(
-                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail="이메일 발송 과정에서 에러가 발생했습니다. 다시 시도하세요.",
-            )
+            raise self.ERROR_TO_SEND_A_EMAIL
 
     @staticmethod
     def get_current_user(
@@ -297,6 +305,7 @@ class UserService:
 
         Raises:
             - HTTPException (500 INTERNAL SERVER ERROR): user 등록 과정에서 문제가 생기면 에러를 발생시킨다.
+                - code: FAILED_TO_CREATE
 
         Returns:
             - User: 생성된 user 객체
@@ -396,8 +405,8 @@ class UserService:
             - HTTPException (400 BAD REQUEST): 이미 인증된 이메일인 경우
             - HTTPException (401 UNAUTHORIZED): 등록은 되었지만 이메일 인증이 미완료 상태인 경우
             - HTTPException (500 INTERNAL SERVER ERROR): 다음 2가지 경우에 발생한다.
-                - 유저 생성에 실패할 경우
-                - 이메일 인증을 위한 이메일 발송에 실패할 경우
+                - 유저 생성에 실패할 경우 (code: FAILED_TO_CREATE)
+                - 이메일 인증을 위한 이메일 발송에 실패할 경우 (code: FAILED_TO_SEND_A_EMAIL)
         """
         user = user_crud.get_user(
             db,
@@ -406,14 +415,15 @@ class UserService:
 
         if user and self.is_verified(user):
             raise HTTPException(
-                status_code=400,
+                status_code=status.HTTP_400_BAD_REQUEST,
                 detail="이미 인증된 이메일입니다.",
             )
 
+        # 미인증 유저 생성
         self.create(
             db,
             data_for_signup,
-        )  # 미인증 유저 생성
+        )
 
         # 이메일 인증 메일 발송하기
         self.send_verification_email(
@@ -430,11 +440,12 @@ class UserService:
         """code 정보를 받아 user를 조회하여 해당 user의 인증 상태를 True로 바꾼다.
 
         Args:
-          - code (str) : url에 담겨진 인증 code 정보
+            - code (str) : url에 담겨진 인증 code 정보
 
         Raises:
             - HTTPException (404 NOT FOUND): 다음 경우에 발생한다.
                 - verification code가 code 값과 일치하는 user를 찾지 못한 경우
+                    - code: USER_NOT_FOUND
             - HTTPException (500 INTERNAL SERVER ERROR): 인증 상태값 변경에 실패한 경우
         """
         user = user_crud.get_user(
@@ -443,7 +454,7 @@ class UserService:
         )
 
         if not user:
-            raise self.USER_NOT_FOUND_ERROR
+            raise CommonHTTPExceptions.USER_NOT_FOUND_ERROR
 
         self.update(
             db,
@@ -460,15 +471,19 @@ class UserService:
         """login 정보를 입력하면 access token을 발행한다.
 
         Args:
+
         - email: 로그인 시 입력한 email
         - password: 로그인 시 입력한 password
 
         Raises:
+
         - HTTPException (400 BAD REQUEST): 입력한 비밀번호가 회원가입 시 입력한 비밀번호와 다른 경우
         - HTTPException (401 UNAUTHORIZED): 등록은 되었지만 이메일 인증이 미완료 상태인 경우
         - HTTPException (404 NOT FOUND): email에 해당하는 user를 찾지 못한 경우
+            - code: USER_NOT_FOUND
 
         Returns:
+
         - str: 생성된 access token을 반환
         """
         user = user_crud.get_user(
@@ -477,13 +492,12 @@ class UserService:
         )
 
         if not user:
-            raise self.USER_NOT_FOUND_ERROR
+            raise CommonHTTPExceptions.USER_NOT_FOUND_ERROR
 
         self.verify_password(password, user.password)
 
         if self.is_verified(user):
-            access_token = self.create_access_token({"sub": email})
-            return access_token
+            return self.create_access_token({"sub": email})  # access token 반환
 
     def reset_password(
         self,
@@ -494,11 +508,14 @@ class UserService:
         """로그인 시 비밀번호를 잊었을 때, 입력한 이메일 주소로 임시 비밀번호를 보낸다.
 
         Args:
+
         - email: 로그인 시 입력한 이메일 주소
 
         Raises:
+
         - HTTPException (401 UNAUTHORIZED): 등록은 되었지만 이메일 인증이 미완료 상태인 경우
         - HTTPException (404 NOT FOUND): email에 해당하는 user를 찾지 못한 경우
+            - code: USER_NOT_FOUND
         - HTTPException (500 INTERNAL SERVER ERROR): 다음 경우에 발생한다.
             - 비밀번호 초기화를 위한 이메일 발송에 실패했을 때
         """
@@ -508,7 +525,7 @@ class UserService:
         )
 
         if not user:
-            raise self.USER_NOT_FOUND_ERROR
+            raise CommonHTTPExceptions.USER_NOT_FOUND_ERROR
 
         if self.is_verified(user):
             self.send_password_reset_email(
@@ -529,14 +546,17 @@ class UserService:
             일치하지 않으면 변경하지 않는다.
 
         Args:
+
         - email (str): 유저의 email 정보
         - current_password: 현재 패스워드
         - new_password: 새 패스워드
 
         Raises:
+
         - HTTPException (400 BAD REQUEST): 입력한 비밀번호가 회원가입 시 입력한 비밀번호와 다른 경우
         - HTTPException (401 UNAUTHORIZED): 등록은 되었지만 이메일 인증이 미완료 상태인 경우
         - HTTPException (404 NOT FOUND): email에 해당하는 user를 찾지 못한 경우
+            - USER_NOT_FOUND
         - HTTPException (500 INTERNAL SERVER ERROR): 비밀번호 변경에 실패한 경우
         """
         user = user_crud.get_user(
@@ -545,7 +565,7 @@ class UserService:
         )
 
         if not user:
-            raise self.USER_NOT_FOUND_ERROR
+            raise CommonHTTPExceptions.USER_NOT_FOUND_ERROR
 
         if self.verify_password(
             current_password,
@@ -566,12 +586,16 @@ class UserService:
         """로그인한 유저 이외의 유저 프로필 정보를 조회한다.
 
         Args:
+
         - user_id (int): db에 저장된 user id
 
         Raises:
+
         - HTTPException (404 NOT FOUND): email에 해당하는 user를 찾지 못할 때 발생
+            - code: USER_NOT_FOUND
 
         Returns:
+
         - UserRead:
             - id: 조회하려는 프로필의 id
             - name: user_id에 해당되는 user의 name
@@ -583,7 +607,7 @@ class UserService:
         )
 
         if not selected_user:
-            raise self.USER_NOT_FOUND_ERROR
+            raise CommonHTTPExceptions.USER_NOT_FOUND_ERROR
 
         return schema.UserRead(
             id=selected_user.id,
@@ -599,12 +623,16 @@ class UserService:
         """로그인한 유저의 프로필 정보를 반환한다.
 
         Args:
-        - email (str): 로그인 상태인 유저의 email 정보
+
+         - email (str): 로그인 상태인 유저의 email 정보
 
         Raises:
-        - HTTPException (401 UNAUTHORIZED): 등록은 되었지만 이메일 인증이 미완료 상태인 경우
+
+         - HTTPException (404 NOT FOUND): email에 해당하는 user를 찾지 못할 때 발생
+            - code: USER_NOT_FOUND
 
         Returns:
+
         - UserRead:
             - id: 위 email 정보를 가지고 있는 유저의 id
             - email: 로그인한 유저의 email
@@ -617,7 +645,7 @@ class UserService:
         )
 
         if not selected_user:
-            raise self.USER_NOT_FOUND_ERROR
+            raise CommonHTTPExceptions.USER_NOT_FOUND_ERROR
 
         return schema.UserRead(
             id=selected_user.id,
@@ -636,16 +664,20 @@ class UserService:
         """user_id와 현재 user id와 같으면 유저 자신의 정보를 수정한다.
 
         Args:
+
         - user_id (int): db에 저장된 user id
         - email (str): token에서 가져온 현재 유저의 email 정보
         - data_to_be_updated (dict): 업데이트할 user 정보
 
         Raises:
+
         - HTTPException (403 FORBIDDEN): 수정 권한이 없는 경우
-        - HTTPException (404 NOT FOUND): email에 해당하는 user를 찾지 못한 경우
+        - HTTPException (404 NOT FOUND): email에 해당하는 user를 찾지 못할 때 발생
+            - code: USER_NOT_FOUND
         - HTTPException (500 INTERNAL SERVER ERROR): 유저 정보 변경에 실패한 경우
 
         Returns:
+
         - User: 변경된 user 정보를 반환
         """
         selected_user = user_crud.get_user(
@@ -654,7 +686,7 @@ class UserService:
         )
 
         if not selected_user:
-            raise self.USER_NOT_FOUND_ERROR
+            raise CommonHTTPExceptions.USER_NOT_FOUND_ERROR
 
         if selected_user.email == email:
             updated_user = self.update(
@@ -678,12 +710,15 @@ class UserService:
         """user_id와 현재 user id와 같으면 유저 자신의 계정을 삭제한다.
 
         Args:
+
         - user_id (int): db에 저장된 user id
         - email (str): 유저의 이메일 정보
 
         Raises:
+
         - HTTPException (403 FORBIDDEN): 삭제 권한이 없는 경우
-        - HTTPException (404 NOT FOUND): email에 해당하는 user를 찾지 못한 경우
+        - HTTPException (404 NOT FOUND): email에 해당하는 user를 찾지 못할 때 발생
+            - code: USER_NOT_FOUND
         - HTTPException (500 INTERNAL SERVER ERROR): 유저 정보 삭제에 실패한 경우
         """
         selected_user = user_crud.get_user(
@@ -692,7 +727,7 @@ class UserService:
         )
 
         if not selected_user:
-            raise self.USER_NOT_FOUND_ERROR
+            raise CommonHTTPExceptions.USER_NOT_FOUND_ERROR
 
         if selected_user.email == email:
             self.remove(
@@ -726,7 +761,7 @@ class UserService:
         """
         followers = user_crud.get_followers(db, following_id)
 
-        if len(followers) == 0:
+        if not followers:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail="해당 유저는 팔로워가 없습니다.",
@@ -741,7 +776,8 @@ class UserService:
         """follower_id에 해당하는 유저를 따르는 팔로잉들을 조회한다.
 
         Args:
-            follower_id (int): 유저의 id
+
+        - follower_id (int): 유저의 id
 
         Raises:
 
@@ -752,7 +788,7 @@ class UserService:
         """
         followings = user_crud.get_followings(db, follower_id)
 
-        if len(followings) == 0:
+        if not followings:
             raise HTTPException(
                 status_code=404,
                 detail="해당 유저는 팔로잉이 없습니다.",
@@ -775,22 +811,25 @@ class UserService:
             follower_id는 팔로우를 당하는 유저의 id, following_id는 팔로우를 거는 유저의 id 를 말한다.
 
         Args:
-            - follower_id (int): 팔로우를 당하는 유저의 id
-            - following_id (int): 팔로우를 거는 유저의 id
+
+        - follower_id (int): 팔로우를 당하는 유저의 id
+        - following_id (int): 팔로우를 거는 유저의 id
 
         Raises:
-            - HTTPException (404 NOT FOUND): follower_id에 해당하는 유저가 없을 경우
-            - HTTPException (500 INTERNAL SERVER ERROR): 다음 2가지 경우에 발생
-                - Follow 관계에 실패한 경우 (code: FAILED_TO_FOLLOW)
-                - 알림 생성에 실패한 경우 (code: FAILED_TO_CREATE_NOTIFICATION)
+
+        - HTTPException (404 NOT FOUND): follower_id에 해당하는 유저가 없을 경우
+            - code: USER_NOT_FOUND
+        - HTTPException (500 INTERNAL SERVER ERROR): 다음 2가지 경우에 발생
+            - Follow 관계에 실패한 경우 (code: FAILED_TO_FOLLOW)
+            - 알림 생성에 실패한 경우 (code: FAILED_TO_CREATE_NOTIFICATION)
 
         Returns:
-            - bool: follow 관계 맺기 성공 시 True를 반환, 실패 시 에러를 발생
+        - bool: follow 관계 맺기 성공 시 True를 반환, 실패 시 에러를 발생
         """
         follower = user_crud.get_user(db, user_id=follower_id)
 
         if not follower:
-            raise self.USER_NOT_FOUND_ERROR
+            raise CommonHTTPExceptions.USER_NOT_FOUND_ERROR
 
         try:
             follow = user_crud.follow(
@@ -870,17 +909,20 @@ class UserService:
         그리고 이 queue에 bytestr 타입으로 follow event data를 추가한다.
 
         Args:
-            - db (Session): mysql db session
-            - redis_db (Redis): message queue에 접속하는 db
-            - message_queue (RedisQueue): redis_db를 통해 생성되는 message_queue
-            - new_follow (Follow): 새로 생성된 follow 객체
+
+        - db (Session): mysql db session
+        - redis_db (Redis): message queue에 접속하는 db
+        - message_queue (RedisQueue): redis_db를 통해 생성되는 message_queue
+        - new_follow (Follow): 새로 생성된 follow 객체
 
         Raises:
-            - HTTPException (500 INTERNAL SERVER ERROR): 알림 생성에 실패한 경우
-                - code: FAILED_TO_CREATE_NOTIFICATION
+
+        - HTTPException (500 INTERNAL SERVER ERROR): 알림 생성에 실패한 경우
+            - code: FAILED_TO_CREATE_NOTIFICATION
 
         Returns:
-            - bool : 성공 시 True를 반환
+
+        - bool : 성공 시 True를 반환
         """
 
         try:
