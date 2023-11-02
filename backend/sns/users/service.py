@@ -13,7 +13,7 @@ from jose import jwt, JWTError
 from sns.common.http_exceptions import CommonHTTPExceptions
 from sns.common.config import settings
 from sns.common.session import db
-from sns.users.repositories.email_client import email_client
+from sns.users.repositories.email_client import EmailClient
 from sns.users.repositories.db import user_crud
 from sns.users.model import User, Follow
 from sns.users import schema
@@ -142,8 +142,9 @@ class UserService:
     def send_verification_email(
         self,
         db: Session,
-        email: str,
+        email_client: EmailClient,
         background_tasks: BackgroundTasks,
+        email: str,
     ) -> None:
         """입력 받은 email 주소로 이메일 인증 메일을 보낸다.
 
@@ -186,8 +187,9 @@ class UserService:
     def send_password_reset_email(
         self,
         db: Session,
-        email: str,
+        email_client: EmailClient,
         background_tasks: BackgroundTasks,
+        email: str,
     ) -> None:
         """입력 받은 email 주소로 임시 비밀번호를 발송한다.
 
@@ -214,7 +216,7 @@ class UserService:
             )
 
             background_tasks.add_task(
-                email_client.send_reset_password_email,
+                email_client.send_password_reset_email,
                 email,
                 temporary_password,
             )
@@ -393,6 +395,7 @@ class UserService:
     def signup(
         self,
         db: Session,
+        email_client: EmailClient,
         background_tasks: BackgroundTasks,
         data_for_signup: dict,
     ) -> None:
@@ -428,8 +431,9 @@ class UserService:
         # 이메일 인증 메일 발송하기
         self.send_verification_email(
             db,
-            email=data_for_signup.get("email"),
-            background_tasks=background_tasks,
+            email_client,
+            background_tasks,
+            data_for_signup.get("email"),
         )
 
     def verify_email(
@@ -502,8 +506,9 @@ class UserService:
     def reset_password(
         self,
         db: Session,
-        email: str,
+        email_client: EmailClient,
         background_task: BackgroundTasks,
+        email: str,
     ) -> None:
         """로그인 시 비밀번호를 잊었을 때, 입력한 이메일 주소로 임시 비밀번호를 보낸다.
 
@@ -517,7 +522,7 @@ class UserService:
         - HTTPException (404 NOT FOUND): email에 해당하는 user를 찾지 못한 경우
             - code: USER_NOT_FOUND
         - HTTPException (500 INTERNAL SERVER ERROR): 다음 경우에 발생한다.
-            - 비밀번호 초기화를 위한 이메일 발송에 실패했을 때
+            - 비밀번호 초기화를 위한 이메일 발송에 실패했을 때 (code: FAILED_TO_SEND_A_MAIL)
         """
         user = user_crud.get_user(
             db,
@@ -530,8 +535,9 @@ class UserService:
         if self.is_verified(user):
             self.send_password_reset_email(
                 db,
-                email,
+                email_client,
                 background_task,
+                email,
             )
 
     def change_password(

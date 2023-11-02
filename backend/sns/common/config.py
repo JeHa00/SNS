@@ -6,7 +6,6 @@ from sns.common.path import BASE_DIR
 
 class Settings(BaseSettings):
     PROJECT_NAME: str = "SNS"
-    PROJECT_URL: str = "http://0.0.0.0:8000"
     API_V1_PREFIX: str = "/api/v1"
 
     # Mysql
