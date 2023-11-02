@@ -850,8 +850,6 @@ class UserService:
                 detail="해당 정보에 일치하는 Follow 관계를 찾을 수 없습니다.",
             )
 
-        if not selected_follow.is_followed:
-            raise HTTPException(status_code=400, detail="이미 Follow 관계가 취소되었습니다.")
         try:
             user_crud.unfollow(db, selected_follow)
             return True

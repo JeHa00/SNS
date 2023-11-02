@@ -1,11 +1,19 @@
 from typing import Dict
 
-import pytest
+from starlette.background import BackgroundTasks
 from fastapi.testclient import TestClient
 from sqlalchemy.orm import Session
+from redis.client import Redis
+import pytest
 
 # flake8: noqa
-from sns.common.conftest import start_app, app, db_session, client, redis_db_session
+from sns.common.conftest import (
+    start_app,
+    app,
+    db_session,
+    client,
+    redis_db_session,
+)
 
 # flake8: noqa
 from sns.users.test.conftest import fake_user, get_user_token_headers_and_login_data
@@ -147,6 +155,7 @@ def fake_multi_post_by_user_logged_in(
 def fake_postlike(
     client: TestClient,
     db_session: Session,
+    redis_db_session: Redis,
     fake_user: Dict,
     fake_multi_posts: None,
 ) -> None:
@@ -173,7 +182,19 @@ def fake_postlike(
     another_user = user_service.create(db_session, data_for_signup.dict())
 
     for post_id in range(1, 51):
-        post_service.like_post(db_session, post_id, user.id)
+        post_service.like_post(
+            db_session,
+            redis_db_session,
+            BackgroundTasks(),
+            post_id,
+            user.id,
+        )
 
     for post_id in range(1, 101):
-        post_service.like_post(db_session, post_id, another_user.id)
+        post_service.like_post(
+            db_session,
+            redis_db_session,
+            BackgroundTasks(),
+            post_id,
+            another_user.id,
+        )

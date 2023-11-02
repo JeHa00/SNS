@@ -61,7 +61,11 @@ def get_user_token_headers_and_login_data(
     fake_user = user_service.create(db_session, signup_data.dict())
 
     # verified 업데이트
-    user_service.update(db_session, fake_user, {"verified": True})
+    user_service.update(
+        db_session,
+        fake_user,
+        {"verified": True},
+    )
 
     # 로그인
     login_data = {"email": email, "password": password}
@@ -97,7 +101,11 @@ def fake_multi_user(
         fake_user = user_service.create(db_session, signup_data.dict())
 
         # verified 업데이트
-        user_service.update(db_session, fake_user, {"verified": True})
+        user_service.update(
+            db_session,
+            fake_user,
+            {"verified": True},
+        )
 
 
 @pytest.fixture(scope="function")
@@ -119,5 +127,8 @@ def fake_follow(
         for follower_id in range(1, 11):
             if following_id == follower_id:
                 continue
-            follow_data = {"following_id": following_id, "follower_id": follower_id}
-            user_crud.follow(db_session, None, **follow_data)
+            user_crud.follow(
+                db_session,
+                follower_id,
+                following_id,
+            )

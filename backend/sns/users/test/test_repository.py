@@ -173,10 +173,12 @@ def test_delete_user_by_model_object(fake_user: Dict, db_session: Session):
 
 def test_follow(client: TestClient, db_session: Session, fake_multi_user: None):
     # following_id가 1인 user의 follow 요청
+
     for follower_id in range(2, 11):
-        follow_data = {"following_id": 1, "follower_id": follower_id}
-        user_crud.follow(db_session, None, **follow_data)
+        following_id = 1
+        user_crud.follow(db_session, follower_id, following_id)
         follow = user_crud.get_follow(db_session, follower_id, 1)
+
         assert follow is not None
         assert hasattr(follow, "is_followed")
         assert hasattr(follow, "following")
@@ -188,9 +190,10 @@ def test_follow(client: TestClient, db_session: Session, fake_multi_user: None):
 
     # following_id가 2인 user의 follow 요청
     for follower_id in range(3, 11):
-        follow_data = {"following_id": 2, "follower_id": follower_id}
-        user_crud.follow(db_session, None, **follow_data)
+        following_id = 2
+        user_crud.follow(db_session, follower_id, following_id)
         follow = user_crud.get_follow(db_session, follower_id, 2)
+
         assert follow is not None
         assert hasattr(follow, "is_followed")
         assert hasattr(follow, "following")

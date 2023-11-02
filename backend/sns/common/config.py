@@ -33,7 +33,7 @@ class Settings(BaseSettings):
     SMTP_TLS: bool = True
     SMTP_PORT: int = 587 if SMTP_TLS else 465
     EMAIL_ADDRESS = "only.for.pjt@gmail.com"
-    EMAIL_PASSWORD = "wngvlgolokntjpas"
+    EMAIL_PASSWORD = "mgfm vjkj mdzr jgcz"
 
     TIME_TO_RETRY_CONNECTION = 10000  # unit: millisecond
 

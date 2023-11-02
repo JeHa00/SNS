@@ -523,35 +523,6 @@ def test_follow_user_if_success(
         assert result_message == "follow 관계 맺기에 성공했습니다."
 
 
-@pytest.mark.follow_user
-def test_follow_user_if_already_follow(
-    client: TestClient,
-    db_session: Session,
-    fake_multi_user: None,
-    get_user_token_headers_and_login_data: dict,
-):
-    # current_user 정보
-    headers = get_user_token_headers_and_login_data.get("headers")
-
-    for user_id in range(1, 11):
-        # 팔로우 신청
-        response = client.post(
-            f"{settings.API_V1_PREFIX}/users/{user_id}/follow",
-            headers=headers,
-        )
-
-        # 팔로우 재신청
-        response = client.post(
-            f"{settings.API_V1_PREFIX}/users/{user_id}/follow",
-            headers=headers,
-        )
-
-        result_message = response.json()["detail"]
-
-        assert response.status_code == status.HTTP_400_BAD_REQUEST
-        assert result_message == "이미 Follow 관계가 맺어져 있습니다."
-
-
 @pytest.mark.unfollow_user
 def test_unfollow_user_if_success(
     client: TestClient,
@@ -580,32 +551,6 @@ def test_unfollow_user_if_success(
         assert response.status_code == status.HTTP_200_OK
         assert result_status_text == "success"
         assert result_message == "follow 관계 취소에 성공했습니다."
-
-
-@pytest.mark.unfollow_user
-def test_unfollow_user_if_already_unfollow(
-    client: TestClient,
-    db_session: Session,
-    get_user_token_headers_and_login_data: dict,
-    fake_follow: None,
-):
-    # current_user 정보
-    headers = get_user_token_headers_and_login_data.get("headers")
-
-    # unfollow 대상 유저 정보
-    user_id = 2
-
-    # 중복으로 언팔로우 하기
-    for _ in range(2):
-        response = client.post(
-            f"{settings.API_V1_PREFIX}/users/{user_id}/unfollow",
-            headers=headers,
-        )
-
-    result_message = response.json()["detail"]
-
-    assert response.status_code == status.HTTP_400_BAD_REQUEST
-    assert result_message == "이미 Follow 관계가 취소되었습니다."
 
 
 @pytest.mark.unfollow_user
