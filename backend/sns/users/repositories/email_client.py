@@ -5,6 +5,7 @@ from email.message import EmailMessage
 
 from sns.common.path import EMAIL_TEMPLATE_DIR
 from sns.common.config import settings
+from sns.users.enums import EmailTemplateType, FileType
 
 
 class EmailClient:
@@ -73,8 +74,8 @@ class EmailClient:
             context (dict): template_name을 가진 email template을 렌더링하기 위해 전달되는 값
         """
         env = Environment(loader=FileSystemLoader(EMAIL_TEMPLATE_DIR))
-        template = env.get_template(f"{self._template_name}.html")
-        message.set_content(template.render(**context), subtype="html")
+        template = env.get_template(f"{self._template_name}.{str(FileType.html)}")
+        message.set_content(template.render(**context), subtype=str(FileType.html))
         with smtplib.SMTP(settings.SMTP_SERVER, settings.SMTP_PORT) as smtp:
             smtp.starttls()
             smtp.login(settings.EMAIL_ADDRESS, settings.EMAIL_PASSWORD)
@@ -82,30 +83,38 @@ class EmailClient:
 
     def send_new_account_email(
         self,
-        email_to: str,
+        receiver_email: str,
         url: str,
     ) -> None:
         """새로운 계정 생성 이메일 메세지를 생성하여 send_email에 전달한다.
 
         Args:
-            email_to (str): 새로 등록한 유저의 이메일
+            receiver_email (str): 새로 등록한 유저의 이메일
             url (str): 발송된 이메일에 첨부된 이메일 인증 url
         """
-        data = self.make_massage(email_to, "new_account", url=url)
+        data = self.make_massage(
+            receiver_email,
+            str(EmailTemplateType.new_account),
+            url=url,
+        )
         self.send_email(**data)
 
-    def send_reset_password_email(
+    def send_password_reset_email(
         self,
-        email_to: str,
+        receiver_email: str,
         password: str,
     ) -> None:
         """비밀번호 초기화 이메일 메세지를 생성하여 send_email에 전달한다.
 
         Args:
-            email_to (str): 수신자
+            receiver_email (str): 수신자
             password (str): 임시 비밀번호
         """
-        data = self.make_massage(email_to, "reset_password", password=password)
+        data = self.make_massage(
+            receiver_email,
+            str(EmailTemplateType.reset_password),
+            password=password,
+        )
         self.send_email(**data)
 
     def get_verification_url(
