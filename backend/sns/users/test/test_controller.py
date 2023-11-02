@@ -21,7 +21,7 @@ def test_signup_if_email_is_not_verified(
     fake_user: dict,
 ):
     # fake_user 정보
-    login_data = fake_user["login_data"]
+    login_data = fake_user.get("login_data")
 
     # 회원가입 및 결과
     response = client.post(
@@ -41,8 +41,8 @@ def test_signup_if_email_is_already_verified(
     db_session: Session,
 ):
     # fake_user 정보
-    user = fake_user["user"]
-    signup_data = fake_user["login_data"]
+    user = fake_user.get("user")
+    signup_data = fake_user.get("login_data")
 
     # verified 정보 업데이트
     user_service.update(db_session, user, {"verified": True})
@@ -80,7 +80,7 @@ def test_verify_email_if_code_is_registered(
     code = secrets.token_urlsafe(10)  # 인증 코드 생성
     user_service.update(
         db_session,
-        user=fake_user["user"],
+        user=fake_user.get("user"),
         data_to_be_updated={"verification_code": code},
     )  # 유저 정보에 인증 코드 저장
 
@@ -97,12 +97,15 @@ def test_verify_email_if_code_is_registered(
 @pytest.mark.login
 def test_login_if_user_is_not_verified(client: TestClient, fake_user: Dict):
     # fake_user 정보
-    login_data = fake_user["login_data"]
+    login_data = fake_user.get("login_data")
 
     # 로그인 및 결과
     response = client.post(
         f"{settings.API_V1_PREFIX}/login",
-        json={"email": login_data["email"], "password": login_data["password"]},
+        json={
+            "email": login_data.get("email"),
+            "password": login_data.get("password"),
+        },
     )
     result_message = response.json()["detail"]
 
@@ -113,14 +116,14 @@ def test_login_if_user_is_not_verified(client: TestClient, fake_user: Dict):
 @pytest.mark.login
 def test_login_if_login_information_is_wrong(client: TestClient, fake_user: Dict):
     # fake_user 정보
-    user = fake_user["user"]
+    user = fake_user.get("user")
 
     # 로그인 및 결과
     response = client.post(
         f"{settings.API_V1_PREFIX}/login",
         json={"email": user.email, "password": random_lower_string(k=8)},
     )
-    result_message = response.json()["detail"]  # 로그인 결과
+    result_message = response.json()["detail"]
 
     assert response.status_code == status.HTTP_400_BAD_REQUEST
     assert result_message == "입력한 비밀번호가 기존 비밀번호와 일치하지 않습니다."
@@ -133,8 +136,8 @@ def test_login_if_user_registered(
     fake_user: Dict,
 ):
     # fake_user 정보
-    user = fake_user["user"]
-    login_data = fake_user["login_data"]
+    user = fake_user.get("user")
+    login_data = fake_user.get("login_data")
 
     # token 생성
     access_token_01 = user_service.create_access_token(data={"sub": user.email})
@@ -160,7 +163,7 @@ def test_login_if_user_registered(
 @pytest.mark.reset_password
 def test_reset_password_if_not_verified_email(client: TestClient, fake_user: Dict):
     # fake_user 정보
-    user = fake_user["user"]
+    user = fake_user.get("user")
 
     # 패스워드 초기화 및 결과
     response = client.patch(f"{settings.API_V1_PREFIX}/password-reset", json=user.email)
@@ -195,7 +198,7 @@ def test_reset_password_if_registered(
     fake_user: Dict,
 ):
     # fake_user 정보
-    user = fake_user["user"]
+    user = fake_user.get("user")
 
     # verified 값 true로 변경
     user_service.update(db_session, user, {"verified": True})
@@ -295,7 +298,7 @@ def test_read_user_if_user_is_not_same_as_current_user(
     headers = get_user_token_headers_and_login_data["headers"]
 
     # 다른 유저 조회 및 결과
-    other_user = fake_user["user"]
+    other_user = fake_user.get("user")
     response = client.get(
         f"{settings.API_V1_PREFIX}/users/{other_user.id}",
         headers=headers,
@@ -353,7 +356,7 @@ def test_update_user_on_profile_text_if_not_authorized(
     current_user_email = current_user_data["email"]
 
     # 다른 유저 정보
-    not_authorized_user = fake_user["user"]
+    not_authorized_user = fake_user.get("user")
     email_of_not_authorized_user = not_authorized_user.email
 
     # 변경할 유저 정보
@@ -406,7 +409,7 @@ def test_delete_user_if_not_authorized(
     headers = get_user_token_headers_and_login_data["headers"]
 
     # 유저 삭제 및 결과
-    not_authorized_user = fake_user["user"]
+    not_authorized_user = fake_user.get("user")
     response = client.delete(
         f"{settings.API_V1_PREFIX}/users/{not_authorized_user.id}",
         headers=headers,
@@ -466,7 +469,7 @@ def test_read_followers_if_not_exist_follower(
     db_session: Session,
     fake_user: dict,
 ):
-    user_id = fake_user["user"].id
+    user_id = fake_user.get("user").id
     response = client.get(f"{settings.API_V1_PREFIX}/users/{user_id}/followers")
     result_message = response.json()["detail"]
 
@@ -497,7 +500,7 @@ def test_read_followings_if_not_exist_following(
     db_session: Session,
     fake_user: dict,
 ):
-    user_id = fake_user["user"].id
+    user_id = fake_user.get("user").id
     response = client.get(f"{settings.API_V1_PREFIX}/users/{user_id}/followings")
     result_message = response.json()["detail"]
 
