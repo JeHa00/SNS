@@ -6,6 +6,7 @@ from sqlalchemy.orm import Session
 from redis.client import Redis
 
 from sns.common.session import db, redis_db
+from sns.users.repositories.email_client import EmailClient
 from sns.users.service import UserService
 from sns.users.schema import (
     UserPasswordUpdate,
@@ -30,6 +31,7 @@ def signup(
     data_for_signup: UserCreate,
     background_tasks: BackgroundTasks,
     user_service: UserService = Depends(UserService),
+    email_client: EmailClient = Depends(EmailClient),
     db: Session = Depends(db.get_db),
 ):
     """email과 password로 새 user를 등록한다.
@@ -55,6 +57,7 @@ def signup(
     """
     user_service.signup(
         db,
+        email_client,
         background_tasks,
         data_for_signup.dict(),
     )
@@ -140,6 +143,7 @@ def reset_password(
     background_tasks: BackgroundTasks,
     email: str = Body(...),
     user_service: UserService = Depends(UserService),
+    email_client: EmailClient = Depends(EmailClient),
     db: Session = Depends(db.get_db),
 ):
     """로그인 시 비밀번호를 잊었을 때, 입력한 이메일 주소로 임시 비밀번호를 보낸다.
@@ -162,8 +166,9 @@ def reset_password(
     """
     user_service.reset_password(
         db,
-        email,
+        email_client,
         background_tasks,
+        email,
     )
     return {"status": "success", "message": "비밀번호 초기화를 위한 이메일 송신이 완료되었습니다."}
 
