@@ -22,19 +22,7 @@ class NotificationDB:
             db (Session): db session
             notified_user_id (int): 알림 수신자의 id
             skip (int, optional): 조회 시 시작할 데이터 id 값. Defaults to 0.
-            limit (int, optional): _description_. Defaults to 10.
-
-        Returns:
-            List[Notification]: _description_
-        """
-
-        """current_user_id에 해당하는 유저에게 생성된 알림 데이터들을 조회한다.
-        페이지당 조회되는 알림 데이터는 10개다.
-
-        Args:
-            db (Session): db session
-            current_user_id (int): 현재 로그인한 유저의 id
-            page (int): 조회 시 offset 하기 위한 page
+            limit (int, optional): 조회 시 얻을 데이터의 갯수. Defaults to 10.
 
         Returns:
             List[Notification]: Notification 데이터가 List 형태로 반환
