@@ -1,4 +1,4 @@
-from typing import Dict, Any
+from typing import Dict, Any, List
 import orjson
 
 from sqlalchemy.orm import Session
@@ -9,6 +9,45 @@ from sns.notifications.enums import NotificationType
 
 
 class NotificationDB:
+    def get_notifications_by_notified_user_id(
+        self,
+        db: Session,
+        notified_user_id: int,
+        skip: int = 0,
+        limit: int = 10,
+    ) -> List[Notification]:
+        """알림 수신자가 notified_user_id인 알림 정보를 10개씩 조회한다.
+
+        Args:
+            db (Session): db session
+            notified_user_id (int): 알림 수신자의 id
+            skip (int, optional): 조회 시 시작할 데이터 id 값. Defaults to 0.
+            limit (int, optional): _description_. Defaults to 10.
+
+        Returns:
+            List[Notification]: _description_
+        """
+
+        """current_user_id에 해당하는 유저에게 생성된 알림 데이터들을 조회한다.
+        페이지당 조회되는 알림 데이터는 10개다.
+
+        Args:
+            db (Session): db session
+            current_user_id (int): 현재 로그인한 유저의 id
+            page (int): 조회 시 offset 하기 위한 page
+
+        Returns:
+            List[Notification]: Notification 데이터가 List 형태로 반환
+        """
+        return (
+            db.query(Notification)
+            .filter(Notification.notified_user_id == notified_user_id)
+            .order_by(Notification.created_at.desc())
+            .offset(skip)
+            .limit(limit)
+            .all()
+        )
+
     def get_notification_by_id(
         self,
         db: Session,
