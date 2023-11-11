@@ -4,6 +4,8 @@ import orjson
 from sqlalchemy.orm import Session
 from redis.client import Redis
 
+from sns.users.model import Follow
+from sns.posts.model import PostLike
 from sns.notifications.model import Notification
 from sns.notifications.enums import NotificationType
 
@@ -27,14 +29,29 @@ class NotificationDB:
         Returns:
             List[Notification]: Notification 데이터가 List 형태로 반환
         """
-        return (
+        subquery = (
             db.query(Notification)
             .filter(Notification.notified_user_id == notified_user_id)
             .order_by(Notification.created_at.desc())
             .offset(skip)
             .limit(limit)
-            .all()
+            .subquery()
         )
+
+        return (
+            db.query(
+                subquery.c.id,
+                subquery.c.type,
+                subquery.c.read,
+                subquery.c.notified_user_id,
+                subquery.c.created_at,
+                PostLike.liked_post_id,
+                PostLike.user_id_who_like,
+                Follow.following_id,
+            )
+            .outerjoin(Follow, subquery.c.follow_id == Follow.id)
+            .outerjoin(PostLike, subquery.c.post_like_id == PostLike.id)
+        ).all()
 
     def get_notification_by_id(
         self,
