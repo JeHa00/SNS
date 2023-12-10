@@ -1,6 +1,6 @@
 from typing import List
 
-from fastapi import APIRouter, Depends, status, Body
+from fastapi import APIRouter, Depends, status, Body, Request
 from starlette.background import BackgroundTasks
 from sqlalchemy.orm import Session
 from redis.client import Redis
@@ -28,11 +28,12 @@ router = APIRouter()
     status_code=status.HTTP_201_CREATED,
 )
 def signup(
+    request: Request,
     data_for_signup: UserCreate,
     background_tasks: BackgroundTasks,
     user_service: UserService = Depends(UserService),
     email_client: EmailClient = Depends(EmailClient),
-    db: Session = Depends(db.get_db),
+    # db: Session = Depends(db.get_db),
 ):
     """email과 password로 새 user를 등록한다.
 
@@ -56,7 +57,7 @@ def signup(
     - Message: 이메일 전송 성공 유무 메세지 반환
     """
     user_service.signup(
-        db,
+        request.state.db,
         email_client,
         background_tasks,
         data_for_signup.dict(),

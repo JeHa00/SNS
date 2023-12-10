@@ -1,5 +1,3 @@
-from contextlib import contextmanager
-
 from fastapi import FastAPI
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker, close_all_sessions
@@ -47,22 +45,14 @@ class SQLAlchemy:
 
         Base.metadata.create_all(bind=self._engine)
 
-    @contextmanager
     def get_db(self):
         """
-        요청마다 DB 세션 유지하는 함수
+        요청마다 DB 세션을 반환한다.
         """
         if self._session is None:
             self.init_app(self._app)
 
-        db_session = self._session()
-
-        try:
-            yield db_session
-        except Exception:
-            db_session.rollback()
-        finally:
-            db_session.close()
+        return self._session()
 
     @property
     def engine(self):
