@@ -26,7 +26,31 @@ class PostDB:
         """
         return db.query(Post).get(post_id)
 
-    def get_multi_posts(
+    def get_posts(
+        self,
+        db: Session,
+        skip: int = 0,
+    ) -> List[Post]:
+        """전체 post들을 조회하여 생성날짜를 기준으로 최신순으로 정렬하여 반환한다.
+
+        Args:
+            db (Session): db session
+            skip (int, optional): 쿼리 조회 시 건너띌 갯수. 기본 값은 0
+
+        Returns:
+            List[Post]: post 객체 정보들이 list 배열에 담겨져 반환
+        """
+        limit = 5  # 쿼리 조회 시 가져올 최대 갯수
+
+        return (
+            db.query(Post)
+            .order_by(Post.created_at.desc())
+            .offset(skip)
+            .limit(limit)
+            .all()
+        )
+
+    def get_posts_of_a_user(
         self,
         db: Session,
         writer_id: int,
@@ -39,7 +63,7 @@ class PostDB:
             db (Session): db session
             writer_id (int): writer user의 id
             skip (int, optional): 쿼리 조회 시 건너띌 갯수. 기본 값은 0
-            limit (int, optional): 쿼리 조회 시 가져올 최대 갯수. 기본 값은 100
+            limit (int, optional): 쿼리 조회 시 가져올 최대 갯수. 기본 값은 5
 
         Returns:
             List[Post]: post 객체 정보들이 list 배열에 담겨져 반환

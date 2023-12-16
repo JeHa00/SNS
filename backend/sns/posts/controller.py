@@ -177,11 +177,38 @@ def read_post(
 
 
 @router.get(
-    "/users/{user_id}/posts",
+    "/posts",
     response_model=List[schema.Post],
     status_code=status.HTTP_200_OK,
 )
 def read_posts(
+    page: int,
+    post_service: PostService = Depends(PostService),
+    db: Session = Depends(db.get_db),
+) -> List[schema.Post]:
+    """전체 글 목록을 조회한다. 하나도 없을 경우 404 에러를 일으킨다.
+
+    Args:
+
+    - page (int): page 번호
+
+    Raises:
+
+    - HTTPException (404 NOT FOUND): 작작성된 글이 없는 경우 (code: POST_NOT_FOUND)
+
+    Returns:
+
+    - List[schema.Post]: 여러 개의 글 정보가 list 배열에 담겨져 반환
+    """
+    return post_service.read_posts(db, page)
+
+
+@router.get(
+    "/users/{user_id}/posts",
+    response_model=List[schema.Post],
+    status_code=status.HTTP_200_OK,
+)
+def read_posts_of_a_user(
     user_id: int,
     page: int,
     post_service: PostService = Depends(PostService),
@@ -206,7 +233,7 @@ def read_posts(
 
      - List[Post]: 여러 글 정보가 list 배열에 담겨져 반환
     """
-    return post_service.read_posts(db, user_id, page)
+    return post_service.read_posts_of_a_user(db, user_id, page)
 
 
 @router.post(

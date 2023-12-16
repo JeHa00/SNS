@@ -59,7 +59,29 @@ def test_get_post(
     assert hasattr(post, "updated_at")
 
 
-def test_get_multi_posts(
+def test_get_posts(
+    client: TestClient,
+    db_session: Session,
+    fake_multi_posts: List[Post],
+):
+    for page in range(20):
+        posts = post_crud.get_posts(
+            db_session,
+            skip=page * 5,
+        )
+
+        assert len(posts) == 5
+
+        for post in posts:
+            assert hasattr(post, "id")
+            assert hasattr(post, "content")
+            assert hasattr(post, "writer_id")
+            assert hasattr(post, "writer")
+            assert hasattr(post, "created_at")
+            assert hasattr(post, "updated_at")
+
+
+def test_get_post_of_a_user(
     client: TestClient,
     db_session: Session,
     fake_multi_posts: List[Post],
@@ -67,7 +89,7 @@ def test_get_multi_posts(
 ):
     writer = fake_user.get("user")
     for page in range(20):
-        posts = post_crud.get_multi_posts(
+        posts = post_crud.get_posts_of_a_user(
             db_session,
             writer.id,
             skip=page * 5,
@@ -115,7 +137,7 @@ def test_update_multi_posts_by_model_object(
 ):
     # 생성한 post 목록들
     user = fake_user.get("user")
-    posts = post_crud.get_multi_posts(
+    posts = post_crud.get_posts_of_a_user(
         db_session,
         user.id,
     )
@@ -159,7 +181,7 @@ def test_delete_multi_posts_by_model_object(
     user = fake_user.get("user")
 
     # fake_post로 생성한 수가 100개
-    posts = post_crud.get_multi_posts(
+    posts = post_crud.get_posts_of_a_user(
         db_session,
         user.id,
         limit=100,
@@ -171,7 +193,7 @@ def test_delete_multi_posts_by_model_object(
             post,
         )
 
-    posts = post_crud.get_multi_posts(
+    posts = post_crud.get_posts_of_a_user(
         db_session,
         user.id,
     )
@@ -190,7 +212,7 @@ def test_delete_user_having_multi_posts(
         db_session,
         user,
     )
-    posts = post_crud.get_multi_posts(
+    posts = post_crud.get_posts_of_a_user(
         db_session,
         user.id,
     )

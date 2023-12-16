@@ -47,7 +47,38 @@ def test_read_post_not_existed(
 
 
 @pytest.mark.read_posts
-def test_read_posts_if_not_registered(
+def test_read_posts_if_posts_not_exist(client: TestClient):
+    # page number
+    page = 1
+
+    # 글 조회 및 결과
+    response = client.get(f"{settings.API_V1_PREFIX}/posts?page={page}")
+    result_code = response.json()["detail"]["code"]
+    result_message = response.json()["detail"]["message"]
+
+    assert response.status_code == status.HTTP_404_NOT_FOUND
+    assert result_code == "POST_NOT_FOUND"
+    assert result_message == "해당되는 글을 찾을 수 없습니다."
+
+
+@pytest.mark.read_posts
+def test_read_posts_if_posts_exist(
+    client: TestClient,
+    fake_multi_posts: None,
+):
+    for page in range(20):
+        # 글 조회 및 결과
+        response = client.get(
+            f"{settings.API_V1_PREFIX}/posts?page={page}",
+        )
+        result = response.json()
+
+        assert response.status_code == status.HTTP_200_OK
+        assert len(result) == 5
+
+
+@pytest.mark.read_posts_of_a_user
+def test_read_posts_of_a_user_if_not_registered(
     client: TestClient,
 ):
     # 가짜 유저 id
@@ -66,8 +97,8 @@ def test_read_posts_if_not_registered(
     assert result_message == "해당되는 유저를 찾을 수 없습니다."
 
 
-@pytest.mark.read_posts
-def test_read_posts_if_post_not_exist(
+@pytest.mark.read_posts_of_a_user
+def test_read_posts_of_a_user_if_post_not_exist(
     client: TestClient,
     fake_user: Dict,
 ):
@@ -87,8 +118,8 @@ def test_read_posts_if_post_not_exist(
     assert result_message == "해당되는 글을 찾을 수 없습니다."
 
 
-@pytest.mark.read_posts
-def test_read_posts_if_post_exist(
+@pytest.mark.read_posts_of_a_user
+def test_read_posts_of_a_user_if_post_exist(
     client: TestClient,
     fake_user: Dict,
     fake_multi_posts: None,

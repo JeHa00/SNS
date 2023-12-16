@@ -161,6 +161,34 @@ class PostService:
     def read_posts(
         self,
         db: Session,
+        page: int,
+    ) -> List[Post]:
+        """전체 글 목록을 조회한다.
+
+        Args:
+            page (int): 페이지 번호
+
+        Raises:
+            - HTTPException(404 NOT FOUND): 작성된 글이 없는 경우 (code: POST_NOT_FOUND)
+
+        Returns:
+            - List[Post]: post 객체 정보들이 list 배열에 담겨져 반환
+        """
+        post_size_per_page = 5
+
+        posts = post_crud.get_posts(
+            db,
+            skip=page * post_size_per_page,
+        )
+
+        if not posts:
+            raise CommonHTTPExceptions.POST_NOT_FOUND_ERROR
+
+        return posts
+
+    def read_posts_of_a_user(
+        self,
+        db: Session,
         writer_id: int,
         page: int,
         limit: int = 5,
@@ -193,7 +221,7 @@ class PostService:
             raise CommonHTTPExceptions.USER_NOT_FOUND_ERROR
 
         # post 조회
-        posts = post_crud.get_multi_posts(
+        posts = post_crud.get_posts_of_a_user(
             db,
             writer_id,
             skip=page * post_size_per_page,
