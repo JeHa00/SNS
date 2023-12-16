@@ -63,7 +63,7 @@ def read_users_who_like(
 
     - HTTPException(404 NOT FOUND): 다음 2가지 경우에 발생한다.
         - post_id에 해당하는 post를 조회하지 못한 경우 (code: POST_NOT_FOUND)
-        - 해당 글에 좋아요를 한 user들이 없는 경우 (code: LIKER_NOT_FOUND)
+        - 해당 글에 좋아요를 한 user들이 없는 경우 (code: USER_WHO_LIKE_NOT_FOUND)
 
     Returns:
 
