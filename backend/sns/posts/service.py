@@ -5,6 +5,7 @@ from fastapi import HTTPException, status
 from sqlalchemy.orm import Session
 from redis.client import Redis
 
+from sns.common.http_exceptions import CommonHTTPExceptions
 from sns.users.repositories.db import user_crud
 from sns.users.model import User
 from sns.posts.repository import post_crud, post_redis_crud
@@ -14,13 +15,6 @@ from sns.notifications.schema import PostLikeNotificationData
 
 
 class PostService:
-    POST_SIZE_PER_PAGE = 5
-
-    POST_NOT_FOUND_ERROR = HTTPException(
-        status_code=status.HTTP_404_NOT_FOUND,
-        detail="주어진 정보에 일치하는 글을 찾을 수 없습니다.",
-    )
-
     def get_post_and_handle_none(
         self,
         db: Session,
@@ -44,7 +38,7 @@ class PostService:
         )
 
         if not selected_post:
-            raise self.POST_NOT_FOUND_ERROR
+            raise CommonHTTPExceptions.POST_NOT_FOUND_ERROR
 
         return selected_post
 
@@ -160,7 +154,7 @@ class PostService:
             post_id,
         )
         if not post:
-            raise self.POST_NOT_FOUND_ERROR
+            raise CommonHTTPExceptions.POST_NOT_FOUND_ERROR
 
         return post
 
@@ -195,13 +189,7 @@ class PostService:
         )
 
         if not selected_user:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail={
-                    "code": "USER_NOT_FOUND",
-                    "message": "해당되는 유저를 찾을 수 없습니다.",
-                },
-            )
+            raise CommonHTTPExceptions.USER_NOT_FOUND_ERROR
 
         # post 조회
         posts = post_crud.get_multi_posts(
@@ -212,13 +200,8 @@ class PostService:
         )
 
         if len(posts) == 0:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail={
-                    "code": "POST_NOT_FOUND",
-                    "message": "주어진 정보에 일치하는 글을 찾을 수 없습니다.",
-                },
-            )
+            raise CommonHTTPExceptions.POST_NOT_FOUND_ERROR
+
         return posts
 
     def create_post(
@@ -346,19 +329,7 @@ class PostService:
         Returns:
             - List[User]: 해당 post에 좋아요를 유저들을 반환
         """
-        selected_post = post_crud.get_post(
-            db,
-            liked_post_id,
-        )
-
-        if not selected_post:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail={
-                    "code": "POST_NOT_FOUND",
-                    "message": "주어진 정보에 일치하는 글을 찾을 수 없습니다.",
-                },
-            )
+        self.get_post_and_handle_none(db, liked_post_id)
 
         cache = post_redis_crud.get_cache(redis_db, f"post::{liked_post_id}")
 

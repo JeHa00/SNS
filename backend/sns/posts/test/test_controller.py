@@ -38,10 +38,12 @@ def test_read_post_not_existed(
 ):
     post_id = randint(fake_post.id + 1, 100)
     response = client.get(f"{settings.API_V1_PREFIX}/posts/{post_id}")
-    result_message = response.json()["detail"]
+    result_code = response.json()["detail"]["code"]
+    result_message = response.json()["detail"]["message"]
 
     assert response.status_code == status.HTTP_404_NOT_FOUND
-    assert result_message == "주어진 정보에 일치하는 글을 찾을 수 없습니다."
+    assert result_code == "POST_NOT_FOUND"
+    assert result_message == "해당되는 글을 찾을 수 없습니다."
 
 
 @pytest.mark.read_posts
@@ -82,7 +84,7 @@ def test_read_posts_if_post_not_exist(
 
     assert response.status_code == status.HTTP_404_NOT_FOUND
     assert result_code == "POST_NOT_FOUND"
-    assert result_message == "주어진 정보에 일치하는 글을 찾을 수 없습니다."
+    assert result_message == "해당되는 글을 찾을 수 없습니다."
 
 
 @pytest.mark.read_posts
@@ -209,10 +211,12 @@ def test_update_post_if_post_not_exist(
         headers=headers,
         json=content.dict(),
     )
-    result_message = response.json()["detail"]
+    result_code = response.json()["detail"]["code"]
+    result_message = response.json()["detail"]["message"]
 
     assert response.status_code == status.HTTP_404_NOT_FOUND
-    assert result_message == "주어진 정보에 일치하는 글을 찾을 수 없습니다."
+    assert result_code == "POST_NOT_FOUND"
+    assert result_message == "해당되는 글을 찾을 수 없습니다."
 
 
 @pytest.mark.update_post
@@ -371,12 +375,12 @@ def test_read_users_who_like_if_post_not_exist(
     response = client.get(
         f"{settings.API_V1_PREFIX}/posts/{not_exist_post_id}/users_who_like",
     )
-    result = response.json()["detail"]
-    result_code = result.get("code")
-    result_message = result.get("message")
+    result_code = response.json()["detail"]["code"]
+    result_message = response.json()["detail"]["message"]
 
+    assert response.status_code == status.HTTP_404_NOT_FOUND
     assert result_code == "POST_NOT_FOUND"
-    assert result_message == "주어진 정보에 일치하는 글을 찾을 수 없습니다."
+    assert result_message == "해당되는 글을 찾을 수 없습니다."
 
 
 @pytest.mark.read_users_who_like
@@ -490,10 +494,12 @@ def test_like_post_if_post_not_exist(
         f"{settings.API_V1_PREFIX}/posts/{post_id}/like",
         headers=headers,
     )
-    result_message = response.json()["detail"]
+    result_code = response.json()["detail"]["code"]
+    result_message = response.json()["detail"]["message"]
 
     assert response.status_code == status.HTTP_404_NOT_FOUND
-    assert result_message == "주어진 정보에 일치하는 글을 찾을 수 없습니다."
+    assert result_code == "POST_NOT_FOUND"
+    assert result_message == "해당되는 글을 찾을 수 없습니다."
 
 
 @pytest.mark.unlike_post
