@@ -222,7 +222,7 @@ class CommentService:
         comments = comment_crud.get_comments_by_post_id(
             db,
             post_id,
-            skip=page * self.COMMENT_COUNT_PER_PAGE,
+            skip=(page - 1) * self.COMMENT_COUNT_PER_PAGE,
         )
 
         if not comments:

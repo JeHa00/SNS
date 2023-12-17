@@ -1,3 +1,5 @@
+from typing import List
+
 from fastapi import APIRouter, status, Depends, Request
 from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session
@@ -7,6 +9,7 @@ from sns.common.session import db, redis_db
 from sns.users.service import UserService
 from sns.users.schema import Message, UserBase
 from sns.notifications.service import NotificationService
+from sns.notifications.schema import NotificationData
 
 router = APIRouter()
 
@@ -44,6 +47,33 @@ def mark_as_read(
 
 @router.get(
     "/notifications",
+    response_model=List[NotificationData],
+    status_code=status.HTTP_200_OK,
+)
+def read_notifications(
+    page: int,
+    notification_service: NotificationService = Depends(NotificationService),
+    current_user: UserBase = Depends(UserService.get_current_user_verified),
+    db: Session = Depends(db.get_db),
+) -> List[NotificationData]:
+    """current_user_id가 수신자인 알림 데이터를 10개씩 조회한다.
+       page 값은 /notifications?page=page_number 형식으로 입력한다.
+
+    Args:
+        page (int): 조회할 페이지 번호
+
+    Returns:
+        List[NotificationData]: 조회된 알림 데이터들
+    """
+    return notification_service.read_notifications(
+        db,
+        current_user.id,
+        page,
+    )
+
+
+@router.get(
+    "/notifications/stream",
     status_code=status.HTTP_200_OK,
 )
 async def send_event(

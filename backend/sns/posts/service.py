@@ -181,7 +181,6 @@ class PostService:
         Returns:
             - List[Post]: post 객체 정보들이 list 배열에 담겨져 반환
         """
-        post_size_per_page = 5
 
         # user 유무 확인
         selected_user = user_crud.get_user(
@@ -196,7 +195,7 @@ class PostService:
         posts = post_crud.get_multi_posts(
             db,
             writer_id,
-            skip=page * post_size_per_page,
+            skip=(page - 1) * self.POST_SIZE_PER_PAGE,
             limit=limit,
         )
 

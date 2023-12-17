@@ -55,6 +55,8 @@ markers = [
     "update_comment",
     "delete_comment",
     "mark_as_read",
+    "send_events",
+    "read_notifications",
 ]
 
 
