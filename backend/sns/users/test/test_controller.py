@@ -582,3 +582,70 @@ def test_unfollow_user_if_not_found_follow(
 
         assert response.status_code == status.HTTP_404_NOT_FOUND
         assert result_message == "해당 정보에 일치하는 Follow 관계를 찾을 수 없습니다."
+
+
+@pytest.mark.read_is_followed
+def test_read_is_followed_if_is_followed_True_and_False(
+    client: TestClient,
+    db_session: Session,
+    get_user_token_headers_and_login_data: dict,
+    fake_user: None,
+):
+    # current_user 정보
+    headers = get_user_token_headers_and_login_data.get("headers")
+
+    # other user 정보
+    other_user = fake_user.get("user")
+
+    # follow 관계 맺기
+    response = client.post(
+        f"{settings.API_V1_PREFIX}/users/{other_user.id}/follow",
+        headers=headers,
+    )
+    assert response.status_code == status.HTTP_200_OK
+
+    # follow 관계 유무 확인하기
+    response = client.get(
+        f"{settings.API_V1_PREFIX}/users/{other_user.id}/follow",
+        headers=headers,
+    )
+    assert response.status_code == status.HTTP_200_OK
+    assert response.json() is True
+
+    # follow 관계 취소하기
+    response = client.post(
+        f"{settings.API_V1_PREFIX}/users/{other_user.id}/unfollow",
+        headers=headers,
+    )
+    assert response.status_code == status.HTTP_200_OK
+
+    # follow 관계 유무 확인하기
+    response = client.get(
+        f"{settings.API_V1_PREFIX}/users/{other_user.id}/follow",
+        headers=headers,
+    )
+    assert response.status_code == status.HTTP_200_OK
+    assert response.json() is False
+
+
+@pytest.mark.read_is_followed
+def test_read_is_followed_if_Follow_not_exist(
+    client: TestClient,
+    db_session: Session,
+    get_user_token_headers_and_login_data: dict,
+    fake_user: dict,
+):
+    # current_user 정보
+    headers = get_user_token_headers_and_login_data.get("headers")
+
+    # other user 정보
+    other_user = fake_user.get("user")
+
+    # follow 요청 및 결과
+    response = client.get(
+        f"{settings.API_V1_PREFIX}/users/{other_user.id}/follow",
+        headers=headers,
+    )
+
+    assert response.status_code == status.HTTP_200_OK
+    assert response.json() is False

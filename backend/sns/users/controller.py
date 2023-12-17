@@ -415,6 +415,31 @@ def read_followings(
     )
 
 
+@router.get(
+    "/users/{user_id}/follow",
+    response_model=bool,
+    status_code=status.HTTP_200_OK,
+)
+def read_is_followed(
+    user_id: int,
+    user_service: UserService = Depends(UserService),
+    current_user: UserBase = Depends(UserService.get_current_user_verified),
+    db: Session = Depends(db.get_db),
+) -> bool:
+    """현재 로그인한 유저와 다른 유저 간 팔로우 관계가 맺어져 있는지 확인한다.
+
+    Args:
+
+    - current_user_id (int): 현재 로그인한 유저의 id
+    - checked_user_id (int): 확인받는 유저의 id
+
+    Returns:
+
+    - bool: 팔로우 관계가 맺어져 있으면 True, 아니면 False를 반환
+    """
+    return user_service.read_is_followed(db, current_user.id, user_id)
+
+
 @router.post(
     "/users/{user_id}/follow",
     response_model=Message,

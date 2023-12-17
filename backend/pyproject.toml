@@ -47,6 +47,7 @@ markers = [
     "unlike_post",
     "read_followers",
     "read_followings",
+    "read_is_followed",
     "follow_user",
     "unfollow_user",
     "get_comments_on_a_post",
