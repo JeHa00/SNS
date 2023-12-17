@@ -821,10 +821,6 @@ class UserService:
         """
         follow: Follow = user_crud.get_follow(
             db,
-            follower_id=current_user_id,
-            following_id=checked_user_id,
-        ) or user_crud.get_follow(
-            db,
             follower_id=checked_user_id,
             following_id=current_user_id,
         )
