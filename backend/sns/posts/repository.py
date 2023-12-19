@@ -251,7 +251,7 @@ class PostDB:
             List[User]: list 데이터 타입에 담겨진 User 객체
         """
         subquery = (
-            db.query(PostLike)
+            db.query(PostLike.user_id_who_like)
             .filter(PostLike.liked_post_id == liked_post_id, PostLike.is_liked)
             .order_by(PostLike.updated_at.desc())
             .subquery()
@@ -276,7 +276,7 @@ class PostDB:
             List[Post]: list 데이터 타입에 담겨진 Post 객체 정보들
         """
         subquery = (
-            db.query(PostLike)
+            db.query(PostLike.liked_post_id)
             .filter(PostLike.user_id_who_like == user_id_who_like, PostLike.is_liked)
             .order_by(PostLike.updated_at.desc())
             .subquery()
