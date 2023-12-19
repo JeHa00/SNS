@@ -138,8 +138,8 @@ def test_read_posts_of_a_user_if_post_exist(
         assert len(result) == 5
 
 
-@pytest.mark.get_posts_of_followers
-def test_get_posts_of_followers_if_followers_not_exist(
+@pytest.mark.read_posts_of_followers
+def test_read_posts_of_followers_if_followers_not_exist(
     client: TestClient,
     get_user_token_headers_and_login_data: dict,
 ):
@@ -158,8 +158,8 @@ def test_get_posts_of_followers_if_followers_not_exist(
     assert response.json()["detail"] == "팔로우한 유저가 없습니다."
 
 
-@pytest.mark.get_posts_of_followers
-def test_get_posts_of_followers_if_success_and_posts_not_exist(
+@pytest.mark.read_posts_of_followers
+def test_read_posts_of_followers_if_success_and_posts_not_exist(
     client: TestClient,
     get_user_token_headers_and_login_data: dict,
     fake_user: dict,
