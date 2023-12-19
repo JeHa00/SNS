@@ -138,3 +138,73 @@ def test_create_and_get_notification_on_postlike_then_mark_as_read(
         )
 
         assert new_notification_about_postlike.read is True
+
+
+def test_get_notifications_on_follow_by_notified_user_id(
+    client: TestClient,
+    db_session: Session,
+    fake_follow: None,
+):
+    total_user_count = 10
+    for follower_id in range(1, total_user_count + 1):
+        for following_id in range(1, total_user_count + 1):
+            if follower_id == following_id:
+                continue
+
+            selected_follow = user_crud.get_follow(
+                db_session,
+                follower_id=follower_id,
+                following_id=following_id,
+            )
+
+            notification_crud.create_notification_on_follow(
+                db_session,
+                selected_follow.id,
+                selected_follow.follower_id,
+            )
+
+        results = notification_crud.get_notifications_by_notified_user_id(
+            db_session,
+            follower_id,
+        )
+
+        assert len(results) == 9
+
+
+def test_get_notifications_on_postlike_by_notified_user_id(
+    client: TestClient,
+    db_session: Session,
+    fake_postlike: None,
+):
+    selected_post_count = 50
+    total_user_count = 2
+
+    writer_id = 1
+
+    for user_id in range(1, total_user_count + 1):
+        for post_id in range(1, selected_post_count + 1):
+            selected_post_like = post_crud.get_like(
+                db_session,
+                user_id_who_like=user_id,
+                liked_post_id=post_id,
+            )
+
+            notification_crud.create_notification_on_postlike(
+                db_session,
+                selected_post_like.id,
+                selected_post_like.liked_post.writer.id,
+            )
+
+    total_count = 0
+
+    for skip in range(0, 100, 10):
+        results = notification_crud.get_notifications_by_notified_user_id(
+            db_session,
+            writer_id,
+            skip=skip,
+        )
+        total_count += len(results)
+        assert len(results) == 10
+
+    # 총 읽어온 알림의 수량 확인
+    assert total_count == 100

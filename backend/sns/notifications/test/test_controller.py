@@ -128,6 +128,7 @@ def test_mark_as_read_if_writer_is_same_as_current_user(
 
 
 @pytest.mark.asyncio
+@pytest.mark.send_events
 async def test_send_events(
     async_client_for_sse: AsyncClient,
     db_session: Session,
@@ -138,7 +139,7 @@ async def test_send_events(
 
     async with async_client_for_sse.stream(
         "GET",
-        "notifications",
+        "notifications/stream",
         headers=header,
     ) as response:
         assert response.status_code == status.HTTP_200_OK
@@ -184,3 +185,45 @@ async def test_send_events(
                 assert type(deserialized_data["following_id"]) == int
                 assert "created_at" in deserialized_data
                 assert type(deserialized_data["created_at"]) == str
+
+
+@pytest.mark.read_notifications
+def test_read_notifications(
+    client: TestClient,
+    db_session: Session,
+    get_user_token_headers_and_login_data: None,
+    fake_follow_notifications: None,
+    fake_postlike_notifications: None,
+):
+    header = get_user_token_headers_and_login_data.get("headers")
+
+    for page_number in range(1, 12):
+        response = client.get(
+            f"{settings.API_V1_PREFIX}/notifications?page={page_number}",
+            headers=header,
+        )
+        assert response.status_code == status.HTTP_200_OK
+
+        results = response.json()
+        assert len(results) == 10
+
+        for data in results:
+            assert "id" in data
+            assert "type" in data
+
+            assert "notified_user_id" in data
+            assert data.get("notified_user_id") == 1
+
+            assert "read" in data
+            assert data.get("read") is False
+
+            assert "user_id_who_like" in data
+            assert "liked_post_id" in data
+            assert "following_id" in data
+            assert "created_at" in data
+
+            if data.get("type") == "follow":
+                assert data.get("user_id_who_like") is None
+                assert data.get("liked_post_id") is None
+            else:
+                assert data.get("following_id") is None
