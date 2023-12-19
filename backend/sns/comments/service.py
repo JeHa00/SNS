@@ -13,7 +13,7 @@ from sns.comments.repository import comment_crud
 
 
 class CommentService:
-    COMMENT_COUNT_PER_PAGE = 30
+    COMMENTS_PER_A_PAGE = 30
 
     def get_a_comment_and_handle_none(
         self,
@@ -222,7 +222,7 @@ class CommentService:
         comments = comment_crud.get_comments_by_post_id(
             db,
             post_id,
-            skip=(page - 1) * self.COMMENT_COUNT_PER_PAGE,
+            skip=page * self.COMMENTS_PER_A_PAGE,
         )
 
         if not comments:
@@ -259,7 +259,7 @@ class CommentService:
         comments = comment_crud.get_comments_by_writer_id(
             db,
             user_id,
-            skip=page * self.COMMENT_COUNT_PER_PAGE,
+            skip=page * self.COMMENTS_PER_A_PAGE,
         )
 
         if not comments:

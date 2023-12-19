@@ -15,7 +15,7 @@ from sns.comments.schema import CommentCreate, CommentUpdate
 
 
 @pytest.mark.get_comments_on_a_post
-def test_comments_on_a_post_if_post_not_exist(
+def test_get_comments_on_a_post_if_post_not_exist(
     client: TestClient,
     db_session: Session,
 ):
@@ -33,7 +33,7 @@ def test_comments_on_a_post_if_post_not_exist(
 
 
 @pytest.mark.get_comments_of_a_user
-def test_comments_of_a_post_if_post_exist_but_comments_not_exist(
+def test_get_comments_of_a_post_if_post_exist_but_comments_not_exist(
     client: TestClient,
     db_session: Session,
     fake_post: Post,
@@ -51,7 +51,7 @@ def test_comments_of_a_post_if_post_exist_but_comments_not_exist(
 
 
 @pytest.mark.get_comments_on_a_post
-def test_comments_on_a_post_if_post_and_comments_exist(
+def test_get_comments_on_a_post_if_post_and_comments_exist(
     client: TestClient,
     db_session: Session,
     fake_post: Post,
@@ -69,7 +69,7 @@ def test_comments_on_a_post_if_post_and_comments_exist(
 
 
 @pytest.mark.get_comments_of_a_user
-def test_comments_of_a_user_if_not_registered(
+def test_get_comments_of_a_user_if_not_registered(
     client: TestClient,
     db_session: Session,
 ):
@@ -87,7 +87,7 @@ def test_comments_of_a_user_if_not_registered(
 
 
 @pytest.mark.get_comments_of_a_user
-def test_comments_of_a_user_if_comment_not_exist(
+def test_get_comments_of_a_user_if_comment_not_exist(
     client: TestClient,
     db_session: Session,
     fake_user: dict,
@@ -106,7 +106,7 @@ def test_comments_of_a_user_if_comment_not_exist(
 
 
 @pytest.mark.get_comments_of_a_user
-def test_comments_of_a_user_if_comments_exist(
+def test_get_comments_of_a_user_if_comments_exist(
     client: TestClient,
     db_session: Session,
     fake_user: dict,
