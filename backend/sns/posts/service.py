@@ -15,6 +15,8 @@ from sns.notifications.schema import PostLikeNotificationData
 
 
 class PostService:
+    POSTS_PER_A_PAGE = 5
+
     def get_post_and_handle_none(
         self,
         db: Session,
@@ -174,11 +176,54 @@ class PostService:
         Returns:
             - List[Post]: post 객체 정보들이 list 배열에 담겨져 반환
         """
-        post_size_per_page = 5
-
         posts = post_crud.get_posts(
             db,
-            skip=page * post_size_per_page,
+            skip=page * self.POSTS_PER_A_PAGE,
+        )
+
+        if not posts:
+            raise CommonHTTPExceptions.POST_NOT_FOUND_ERROR
+
+        return posts
+
+    def read_posts_of_followers(
+        self,
+        db: Session,
+        current_user_id: int,
+        page: int = 0,
+    ) -> List[Post]:
+        """현재 로그인한 유저의 팔로워 유저들이 작성한 글들을 조회한다.
+           작성된 글들은 생성 날짜를 기준으로 정렬되어 받는다.
+
+        Args:
+
+        - current_user_id (int): 현재 로그인한 유저의 id
+        - page (int): 조회할 page 번호.
+
+        Raises:
+
+        - HTTPException (404 NOT FOUND): 다음 경우에 대해서 발생한다.
+            - 팔로우 유저가 없는 경우
+            - 팔로우 유저가 작성한 글이 없는 경우 (code: POST_NOT_FOUND)
+            - 해당 page에 글이 없는 경우 (code: POST_NOT_FOUND)
+
+        Returns:
+
+        -  List[Post]: 조회된 글들의 목록
+        """
+
+        followers = user_crud.get_followers(db, current_user_id)
+
+        if not followers:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="팔로우한 유저가 없습니다.",
+            )
+
+        posts = post_crud.get_posts_of_followers(
+            db,
+            current_user_id,
+            skip=page * self.POSTS_PER_A_PAGE,
         )
 
         if not posts:
@@ -209,7 +254,6 @@ class PostService:
         Returns:
             - List[Post]: post 객체 정보들이 list 배열에 담겨져 반환
         """
-        post_size_per_page = 5
 
         # user 유무 확인
         selected_user = user_crud.get_user(
@@ -224,7 +268,7 @@ class PostService:
         posts = post_crud.get_posts_of_a_user(
             db,
             writer_id,
-            skip=page * post_size_per_page,
+            skip=page * self.POSTS_PER_A_PAGE,
             limit=limit,
         )
 

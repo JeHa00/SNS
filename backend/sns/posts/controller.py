@@ -42,6 +42,43 @@ def read_liked_posts(
 
 
 @router.get(
+    "/posts/followers",
+    response_model=List[schema.Post],
+    status_code=status.HTTP_200_OK,
+)
+def read_posts_of_followers(
+    page: int,
+    post_service: PostService = Depends(PostService),
+    current_user: UserBase = Depends(UserService.get_current_user_verified),
+    db: Session = Depends(db.get_db),
+) -> List[schema.Post]:
+    """현재 로그인한 유저의 팔로워 유저들이 작성한 글들을 조회한다.
+        작성된 글들은 생성 날짜를 기준으로 정렬되어 받는다.
+
+    Args:
+
+    - current_user_id (int): 현재 로그인한 유저의 id
+    - page (int): 조회할 page 번호.
+
+    Raises:
+
+    - HTTPException (404 NOT FOUND): 다음 경우에 대해서 발생한다.
+        - 팔로우 유저가 없는 경우
+        - 팔로우 유저가 작성한 글이 없는 경우 (code: POST_NOT_FOUND)
+        - 해당 page에 글이 없는 경우 (code: POST_NOT_FOUND)
+
+    Returns:
+
+    -  List[Post]: 조회된 글들의 목록
+    """
+    return post_service.read_posts_of_followers(
+        db,
+        current_user.id,
+        page,
+    )
+
+
+@router.get(
     "/posts/{post_id}/users_who_like",
     response_model=List[UserRead],
     status_code=status.HTTP_200_OK,

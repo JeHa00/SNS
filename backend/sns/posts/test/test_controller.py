@@ -138,6 +138,65 @@ def test_read_posts_of_a_user_if_post_exist(
         assert len(result) == 5
 
 
+@pytest.mark.get_posts_of_followers
+def test_get_posts_of_followers_if_followers_not_exist(
+    client: TestClient,
+    get_user_token_headers_and_login_data: dict,
+):
+    # current_user 정보
+    headers = get_user_token_headers_and_login_data["headers"]
+
+    page_number = 0
+
+    # 팔로워들의 글 정보 요청
+    response = client.get(
+        f"{settings.API_V1_PREFIX}/posts/followers?page={page_number}",
+        headers=headers,
+    )
+
+    assert response.status_code == status.HTTP_404_NOT_FOUND
+    assert response.json()["detail"] == "팔로우한 유저가 없습니다."
+
+
+@pytest.mark.get_posts_of_followers
+def test_get_posts_of_followers_if_success_and_posts_not_exist(
+    client: TestClient,
+    get_user_token_headers_and_login_data: dict,
+    fake_user: dict,
+    fake_multi_posts,
+):
+    # current_user 정보
+    headers = get_user_token_headers_and_login_data["headers"]
+
+    follower_id = fake_user.get("user").id
+
+    # follow 요청
+    response = client.post(
+        f"{settings.API_V1_PREFIX}/users/{follower_id}/follow",
+        headers=headers,
+    )
+
+    for page_number in range(21):
+        # 팔로워들의 글 정보 요청
+        response = client.get(
+            f"{settings.API_V1_PREFIX}/posts/followers?page={page_number}",
+            headers=headers,
+        )
+
+        if page_number == 20:
+            assert response.status_code == status.HTTP_404_NOT_FOUND
+
+            result = response.json()["detail"]
+            result_code = result.get("code")
+            result_message = result.get("message")
+
+            assert result_code == "POST_NOT_FOUND"
+            assert result_message == "해당되는 글을 찾을 수 없습니다."
+        else:
+            assert response.status_code == status.HTTP_200_OK
+            assert len(response.json()) == 5
+
+
 @pytest.mark.create_post
 def test_create_post_if_unauthorized(
     client: TestClient,
