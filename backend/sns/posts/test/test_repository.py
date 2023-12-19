@@ -5,6 +5,7 @@ from sqlalchemy.orm import Session
 
 from sns.users.test.utils import random_lower_string
 from sns.users.service import user_service
+from sns.users.repositories.db import user_crud
 from sns.posts.repository import post_crud
 from sns.posts.model import Post, PostLike
 from sns.posts import schema
@@ -79,6 +80,58 @@ def test_get_posts(
             assert hasattr(post, "writer")
             assert hasattr(post, "created_at")
             assert hasattr(post, "updated_at")
+
+
+def test_get_posts_of_followers(
+    client: TestClient,
+    db_session: Session,
+    get_user_token_headers_and_login_data: dict,
+    fake_user: dict,
+    fake_multi_posts: None,
+    fake_multi_user: None,
+):
+    following_user_id = 1  # 로그인한 유저
+
+    # follow 맺기
+    for follower_id in range(2, 12):
+        new_follow = user_crud.follow(
+            db_session,
+            following_id=following_user_id,
+            follower_id=follower_id,
+        )
+
+        assert hasattr(new_follow, "id")
+        assert hasattr(new_follow, "following_id")
+        assert hasattr(new_follow, "follower_id")
+        assert hasattr(new_follow, "created_at")
+        assert hasattr(new_follow, "updated_at")
+
+    for _ in range(5):
+        content = random_lower_string(k=1000)
+        writer_id = 3
+        post_crud.create(db_session, writer_id, content=content)
+
+    # follower 의 post 조회하기
+    PAGES_PER_A_PAGE = 5
+
+    for page in range(21):
+        posts = post_crud.get_posts_of_followers(
+            db_session,
+            following_user_id,
+            PAGES_PER_A_PAGE * page,
+        )
+        assert len(posts) == PAGES_PER_A_PAGE
+
+        for post in posts:
+            assert hasattr(post, "id")
+            assert hasattr(post, "content")
+            assert hasattr(post, "writer_id")
+            assert hasattr(post, "created_at")
+            assert hasattr(post, "updated_at")
+            if page != 20:
+                assert post.writer_id == 2
+            else:
+                assert post.writer_id == 3
 
 
 def test_get_post_of_a_user(
