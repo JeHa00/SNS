@@ -1,11 +1,11 @@
 from typing import List, Any
-import json
+import orjson
 
 from fastapi.encoders import jsonable_encoder
 from sqlalchemy.orm import Session
 from redis.client import Redis
 
-from sns.users.model import User
+from sns.users.model import User, Follow
 from sns.posts.model import Post, PostLike
 
 
@@ -49,6 +49,44 @@ class PostDB:
             .limit(limit)
             .all()
         )
+
+    def get_posts_of_followers(
+        self,
+        db: Session,
+        following_id: int,
+        skip: int = 0,
+        limit: int = 5,
+    ) -> List[Post]:
+        """팔로잉 유저의 팔로워들이 작성한 글들을 조회한다.
+
+        Args:
+            db (Session): db session
+            following_id (int): 팔로잉 유저의 id
+            skip (int, optional): 건너뛸 row의 갯수. Defaults to 0.
+            limit (int, optional): 조회해서 가져올 row의 갯수. Defaults to 5.
+
+        Returns:
+            List[Post]: Post 객체의 목록
+        """
+
+        # following_id에 해당하는 follower 유저 id 조회
+        subquery = (
+            db.query(Follow.follower_id)
+            .filter(Follow.following_id == following_id)
+            .subquery()
+        )
+
+        # follower 들이 작성한 Post 조회
+        posts = (
+            db.query(Post)
+            .join(subquery, Post.writer_id == subquery.c.follower_id)
+            .order_by(Post.created_at)
+            .offset(skip)
+            .limit(limit)
+            .all()
+        )
+
+        return posts
 
     def get_posts_of_a_user(
         self,
@@ -325,7 +363,7 @@ class PostRedisDB:
         cache = redis_db.get(key)
         if not cache:
             return cache
-        return json.loads(cache)
+        return orjson.loads(cache)
 
     def set_cache(
         self,
@@ -343,7 +381,7 @@ class PostRedisDB:
         Returns:
             bool: cache에 저장되면 True
         """
-        serialized_value = json.dumps(jsonable_encoder(value))
+        serialized_value = orjson.dumps(jsonable_encoder(value))
         redis_db.set(key, serialized_value)
         redis_db.expire(key, 300)
 
