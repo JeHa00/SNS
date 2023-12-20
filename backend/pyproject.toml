@@ -36,7 +36,7 @@ markers = [
     "read_private_data",
     "update_user",
     "delete_user",
-    "read_post",
+    "read_a_post",
     "read_posts",
     "create_post",
     "update_post",
