@@ -857,20 +857,6 @@ class UserService:
                 detail="follow 관계 취소가 실패하였습니다.",
             )
 
-    def search_users(
-        self,
-        db: Session,
-        name: str,
-        page: int,
-    ) -> List[User]:
-        users_per_a_page = 10
-
-        user = user_crud.find_users(db, name, skip=page * users_per_a_page)
-
-        print(user)
-
-        return user
-
     def create_and_add_notification(
         self,
         db: Session,
