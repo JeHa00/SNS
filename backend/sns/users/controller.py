@@ -256,11 +256,13 @@ def find_users(
     """해당 name을 가지고 있는 유저들을 조회한다. 한 page 당 최대 유저 10명이 조회된다.
 
     Args:
-        name (str): 조회할 유저의 name
-        page (int): 조회할 page. 시작 page 번호는 0.
+
+    - name (str): 조회할 유저의 name
+    - page (int): 조회할 page. 시작 page 번호는 0.
 
     Returns:
-        List[UserRead]: 조회된 유저 목록
+
+    - List[UserRead]: 조회된 유저 목록
     """
     return user_service.find_users(db, name, page)
 

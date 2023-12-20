@@ -529,6 +529,23 @@ class PostService:
                 detail="post 좋아요 취소에 실패했습니다.",
             )
 
+    def find_posts(
+        self,
+        db: Session,
+        keyword: str,
+        page: int,
+    ) -> List[Post]:
+        """글의 내용에 keyword가 포함된 글을 조회한다.
+
+        Args:
+            keyword (str): content에 포함하고 keyword
+            page (int): page 번호
+
+        Returns:
+            List[Post]: Post 목록
+        """
+        return post_crud.get_posts_by_keyword(db, keyword, page * self.POSTS_PER_A_PAGE)
+
     def create_and_add_notification(
         self,
         db: Session,

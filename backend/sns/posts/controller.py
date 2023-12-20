@@ -76,6 +76,32 @@ def read_posts_of_followers(
 
 
 @router.get(
+    "/posts/list",
+    response_model=List[schema.Post],
+    status_code=status.HTTP_200_OK,
+)
+def find_posts(
+    keyword: str,
+    page: int,
+    post_service: PostService = Depends(PostService),
+    current_user: UserBase = Depends(UserService.get_current_user_verified),
+    db: Session = Depends(db.get_db),
+) -> List[schema.Post]:
+    """글의 내용에 keyword가 포함된 글을 조회한다.
+
+    Args:
+
+    - keyword (str): content에 포함하고 keyword
+    - page (int): page 번호
+
+    Returns:
+
+    - List[Post]: Post 목록
+    """
+    return post_service.find_posts(db, keyword, page)
+
+
+@router.get(
     "/posts/{post_id}/users_who_like",
     response_model=List[UserRead],
     status_code=status.HTTP_200_OK,
