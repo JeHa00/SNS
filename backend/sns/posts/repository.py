@@ -30,6 +30,7 @@ class PostDB:
         self,
         db: Session,
         skip: int = 0,
+        limit: int = 5,
     ) -> List[Post]:
         """전체 post들을 조회하여 생성날짜를 기준으로 최신순으로 정렬하여 반환한다.
 
@@ -40,8 +41,6 @@ class PostDB:
         Returns:
             List[Post]: post 객체 정보들이 list 배열에 담겨져 반환
         """
-        limit = 5  # 쿼리 조회 시 가져올 최대 갯수
-
         return (
             db.query(Post)
             .order_by(Post.created_at.desc())
