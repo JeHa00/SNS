@@ -114,7 +114,7 @@ class PostDB:
             .all()
         )
 
-    def find_posts(
+    def get_posts_by_keyword(
         self,
         db: Session,
         keyword: str,

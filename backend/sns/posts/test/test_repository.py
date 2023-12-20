@@ -374,3 +374,34 @@ def test_like_if_post_like_already_exist(
         user_who_like = post_crud.get_users_who_like(db_session, post_id)
 
         assert len(user_who_like) == 2
+
+
+def test_find_posts(
+    client: TestClient,
+    db_session: Session,
+    fake_multi_posts: None,
+):
+    # content 내용 변경
+    for id in range(1, 101):
+        post = post_crud.get_post(db_session, id)
+
+        assert f"test{id}" not in post.content
+
+        post_crud.update(db_session, post, content=f"test{id}")
+
+        assert f"test{id}" in post.content
+
+    posts_per_a_page = 5
+
+    # test 문자열이 있는 post 조회
+    for page in range(21):
+        posts = post_crud.get_posts_by_keyword(
+            db_session,
+            "test",
+            skip=page * posts_per_a_page,
+        )
+
+        if page == 20:
+            assert len(posts) == 0
+        else:
+            assert len(posts) == 5
