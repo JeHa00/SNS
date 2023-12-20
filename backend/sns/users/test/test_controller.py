@@ -590,3 +590,59 @@ def test_unfollow_user_if_not_found_follow(
 
         assert response.status_code == status.HTTP_404_NOT_FOUND
         assert result_message == "해당 정보에 일치하는 Follow 관계를 찾을 수 없습니다."
+
+
+@pytest.mark.find_users
+def test_find_users(
+    client: TestClient,
+    db_session: Session,
+    fake_multi_user: None,
+    get_user_token_headers_and_login_data: dict,
+):
+    # current_user 정보
+    headers = get_user_token_headers_and_login_data.get("headers")
+
+    name = "test"
+
+    page = 0
+
+    # 인증 정보가 없는 경우
+    response = client.get(
+        f"{settings.API_V1_PREFIX}/users/list?name={name}&page={page}",
+    )
+
+    assert response.status_code == status.HTTP_401_UNAUTHORIZED
+
+    # name에 해당되는 유저가 없는 경우
+    response = client.get(
+        f"{settings.API_V1_PREFIX}/users/list?name={name}&page={page}",
+        headers=headers,
+    )
+
+    assert len(response.json()) == 0
+
+    # name에 해당하는 유저가 있는 경우
+    # 각 유저마다 인증 토큰이 필요하므로 repository layer를 통해 직접 수정
+    for id in range(1, 11):
+        user = user_crud.get_user(db_session, user_id=id)
+        if id < 6:
+            user_crud.update(db_session, user, name=f"test{id}")
+        else:
+            user_crud.update(db_session, user, name=f"TEST{id}")
+
+    response = client.get(
+        f"{settings.API_V1_PREFIX}/users/list?name={name}&page={0}",
+        headers=headers,
+    )
+
+    assert len(response.json()) == 10
+
+    # 다음 page를 조회 + 해당되는 유저가 더 없는 경우
+    next_page = 1
+
+    response = client.get(
+        f"{settings.API_V1_PREFIX}/users/list?name={name}&page={next_page}",
+        headers=headers,
+    )
+
+    assert len(response.json()) == 0

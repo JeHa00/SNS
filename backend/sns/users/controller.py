@@ -242,6 +242,30 @@ def read_private_data(
 
 
 @router.get(
+    "/users/list",
+    response_model=List[UserRead],
+    status_code=status.HTTP_200_OK,
+)
+def find_users(
+    name: str,
+    page: int,
+    user_service: UserService = Depends(UserService),
+    current_user: UserBase = Depends(UserService.get_current_user_verified),
+    db: Session = Depends(db.get_db),
+) -> List[UserRead]:
+    """해당 name을 가지고 있는 유저들을 조회한다. 한 page 당 최대 유저 10명이 조회된다.
+
+    Args:
+        name (str): 조회할 유저의 name
+        page (int): 조회할 page. 시작 page 번호는 0.
+
+    Returns:
+        List[UserRead]: 조회된 유저 목록
+    """
+    return user_service.find_users(db, name, page)
+
+
+@router.get(
     "/users/{user_id}",
     status_code=status.HTTP_200_OK,
     response_model=UserReadWithFollowed,
