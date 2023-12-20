@@ -37,7 +37,7 @@ class UserDB:
             )
         return user
 
-    def find_users(
+    def get_users_by_name(
         self,
         db: Session,
         name: str,

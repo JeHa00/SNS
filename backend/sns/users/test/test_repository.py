@@ -204,19 +204,31 @@ def test_follow(client: TestClient, db_session: Session, fake_multi_user: None):
         assert follow.follower_id == follower_id
 
 
-def test_get_followers(client: TestClient, db_session: Session, fake_follow: None):
+def test_get_followers(
+    client: TestClient,
+    db_session: Session,
+    fake_follow: None,
+):
     for following_id in range(1, 11):
         followers = user_crud.get_followers(db_session, following_id=following_id)
         assert len(followers) == 9
 
 
-def test_get_followings(client: TestClient, db_session: Session, fake_follow: None):
+def test_get_followings(
+    client: TestClient,
+    db_session: Session,
+    fake_follow: None,
+):
     for follower_id in range(1, 11):
         followings = user_crud.get_followings(db_session, follower_id=follower_id)
         assert len(followings) == 9
 
 
-def test_unfollow(client: TestClient, db_session: Session, fake_follow: None):
+def test_unfollow(
+    client: TestClient,
+    db_session: Session,
+    fake_follow: None,
+):
     for following_id in range(1, 11):
         for follower_id in range(1, 11):
             if following_id == follower_id:
@@ -228,3 +240,30 @@ def test_unfollow(client: TestClient, db_session: Session, fake_follow: None):
             )
             follow_object = user_crud.unfollow(db_session, selected_follow)
             assert follow_object.is_followed is False
+
+
+def test_get_users_by_name(
+    client: TestClient,
+    db_session: Session,
+    fake_multi_user: None,
+):
+    users = user_crud.get_users_by_name(db_session, "test", 0)
+
+    assert len(users) == 0
+
+    for id in range(1, 11):
+        user = user_crud.get_user(db_session, user_id=id)
+        if id < 6:
+            user_crud.update(db_session, user, name=f"test{id}")
+        else:
+            user_crud.update(db_session, user, name=f"TEST{id}")
+
+    users = user_crud.get_users_by_name(db_session, "test", 0)
+
+    assert len(users) == 10
+
+    for user in users:
+        if user.id < 6:
+            assert "test" in user.name
+        else:
+            assert "TEST" in user.name
