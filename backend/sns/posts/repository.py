@@ -114,6 +114,32 @@ class PostDB:
             .all()
         )
 
+    def find_posts(
+        self,
+        db: Session,
+        keyword: str,
+        skip: int = 0,
+        limit: int = 5,
+    ) -> List[Post]:
+        """내용에 주어진 keyword를 포함하고 있는 Post들을 조회한다. 한 번에 조회하는 기본 갯수는 5개다.
+
+        Args:
+            db (Session): db session
+            keyword (str): 검색하려는 keyword
+            skip (int, optional): 쿼리 조회 시 건너띌 갯수. 기본 값은 0
+            limit (int, optional): 쿼리 조회 시 가져올 최대 갯수. 기본 값은 5
+
+        Returns:
+            List[Post]: post 객체 정보들이 list에 담겨져 반환
+        """
+        return (
+            db.query(Post)
+            .filter(Post.content.ilike(f"%{keyword}%"))
+            .offset(skip)
+            .limit(limit)
+            .all()
+        )
+
     def create(
         self,
         db: Session,
