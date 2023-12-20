@@ -41,13 +41,19 @@ class UserBase(Base):
     email: EmailStr
 
 
-class UserRead(UserBase):
-    email: EmailStr | None
+class UserPrivateRead(UserBase):
+    name: str
+    profile_text: str | None
+
+
+class UserRead(Base):
+    id: int
     name: str
     profile_text: str | None
 
 
 class UserUpdate(Base):
+    name: str | None
     profile_text: str | None
 
 

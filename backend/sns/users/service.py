@@ -588,7 +588,7 @@ class UserService:
         self,
         db: Session,
         user_id: int,
-    ) -> schema.UserRead:
+    ) -> User:
         """로그인한 유저 이외의 유저 프로필 정보를 조회한다.
 
         Args:
@@ -602,10 +602,7 @@ class UserService:
 
         Returns:
 
-        - UserRead:
-            - id: 조회하려는 프로필의 id
-            - name: user_id에 해당되는 user의 name
-            - profile_text: user_id에 해당되는 user의 profile text
+        - User: 조회된 유저 정보
         """
         selected_user = user_crud.get_user(
             db,
@@ -615,50 +612,7 @@ class UserService:
         if not selected_user:
             raise CommonHTTPExceptions.USER_NOT_FOUND_ERROR
 
-        return schema.UserRead(
-            id=selected_user.id,
-            name=selected_user.name,
-            profile_text=selected_user.profile_text,
-        )
-
-    def read_private_data(
-        self,
-        db: Session,
-        email: str,
-    ) -> schema.UserRead:
-        """로그인한 유저의 프로필 정보를 반환한다.
-
-        Args:
-
-         - email (str): 로그인 상태인 유저의 email 정보
-
-        Raises:
-
-         - HTTPException (404 NOT FOUND): email에 해당하는 user를 찾지 못할 때 발생
-            - code: USER_NOT_FOUND
-
-        Returns:
-
-        - UserRead:
-            - id: 위 email 정보를 가지고 있는 유저의 id
-            - email: 로그인한 유저의 email
-            - name: 위 email 정보를 가지고 있는 유저의 name
-            - profile_text: 위 email 정보를 가지고 있는 유저의 profile_text
-        """
-        selected_user = user_crud.get_user(
-            db,
-            email=email,
-        )
-
-        if not selected_user:
-            raise CommonHTTPExceptions.USER_NOT_FOUND_ERROR
-
-        return schema.UserRead(
-            id=selected_user.id,
-            email=selected_user.email,
-            name=selected_user.name,
-            profile_text=selected_user.profile_text,
-        )
+        return selected_user
 
     def update_user(
         self,
@@ -695,12 +649,11 @@ class UserService:
             raise CommonHTTPExceptions.USER_NOT_FOUND_ERROR
 
         if selected_user.email == email:
-            updated_user = self.update(
+            return self.update(
                 db,
                 selected_user,
                 data_to_be_updated,
             )
-            return updated_user
         else:
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
@@ -903,6 +856,20 @@ class UserService:
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 detail="follow 관계 취소가 실패하였습니다.",
             )
+
+    def search_users(
+        self,
+        db: Session,
+        name: str,
+        page: int,
+    ) -> List[User]:
+        users_per_a_page = 10
+
+        user = user_crud.find_users(db, name, skip=page * users_per_a_page)
+
+        print(user)
+
+        return user
 
     def create_and_add_notification(
         self,
