@@ -154,7 +154,7 @@ def unlike_post(
     response_model=schema.Post,
     status_code=status.HTTP_200_OK,
 )
-def read_post(
+def read_a_post(
     post_id: int,
     post_service: PostService = Depends(PostService),
     db: Session = Depends(db.get_db),
@@ -173,7 +173,7 @@ def read_post(
 
     - Post: post_id에 해당되는 글을 반환
     """
-    return post_service.read_post(db, post_id=post_id)
+    return post_service.read_a_post(db, post_id=post_id)
 
 
 @router.get(

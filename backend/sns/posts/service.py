@@ -133,7 +133,7 @@ class PostService:
                 detail="글 삭제에 실패하였습니다.",
             )
 
-    def read_post(
+    def read_a_post(
         self,
         db: Session,
         post_id: int,

@@ -10,6 +10,7 @@ from sns.users.repositories.email_client import EmailClient
 from sns.users.service import UserService
 from sns.users.schema import (
     UserPasswordUpdate,
+    UserPrivateRead,
     UserCreate,
     UserUpdate,
     UserRead,
@@ -33,7 +34,7 @@ def signup(
     user_service: UserService = Depends(UserService),
     email_client: EmailClient = Depends(EmailClient),
     db: Session = Depends(db.get_db),
-):
+) -> Message:
     """email과 password로 새 user를 등록한다.
 
     Args:
@@ -73,7 +74,7 @@ def verify_email(
     code: str,
     user_service: UserService = Depends(UserService),
     db: Session = Depends(db.get_db),
-):
+) -> Message:
     """code 정보를 받아 user를 조회하여 해당 user의 인증 상태를 True로 바꾼다.
 
     Args:
@@ -107,7 +108,7 @@ def login(
     password: str = Body(...),
     user_service: UserService = Depends(UserService),
     db: Session = Depends(db.get_db),
-):
+) -> Token:
     """login 정보를 입력하면 access token을 발행한다.
 
     Args:
@@ -145,7 +146,7 @@ def reset_password(
     user_service: UserService = Depends(UserService),
     email_client: EmailClient = Depends(EmailClient),
     db: Session = Depends(db.get_db),
-):
+) -> Message:
     """로그인 시 비밀번호를 잊었을 때, 입력한 이메일 주소로 임시 비밀번호를 보낸다.
 
     Args:
@@ -183,7 +184,7 @@ def change_password(
     user_service: UserService = Depends(UserService),
     current_user: UserBase = Depends(UserService.get_current_user_verified),
     db: Session = Depends(db.get_db),
-):
+) -> Message:
     """임시 비밀번호로 로그인 후, 다른 패스워드로 변경한다.
         기존 패스워드 정보가 현재 로그인된 유저의 패스워드 정보와 일치하면 새로운 패스워드로 변경한다.
         일치하지 않으면 변경하지 않는다.
@@ -215,16 +216,16 @@ def change_password(
 
 
 @router.get(
-    "/users/current-user/private-data",
+    "/users/private-data",
     status_code=status.HTTP_200_OK,
-    response_model=UserRead,
+    response_model=UserPrivateRead,
 )
 def read_private_data(
     user_service: UserService = Depends(UserService),
     current_user: UserBase = Depends(UserService.get_current_user_verified),
     db: Session = Depends(db.get_db),
-):
-    """jwt를 사용하여 유저를 인증하고, 로그인한 유저의 상세 정보를 반환한다.
+) -> UserPrivateRead:
+    """로그인한 유저의 상세 정보를 반환한다.
 
     Raises:
 
@@ -238,9 +239,9 @@ def read_private_data(
     - name: 현재 로그인된 user의 name
     - profile_text: 현재 로그인된 user의 profile text
     """
-    return user_service.read_private_data(
+    return user_service.read_user(
         db,
-        current_user.email,
+        current_user.id,
     )
 
 
@@ -309,13 +310,12 @@ def update_user(
 
     - UserRead: 업데이트된 user 정보를 반환
     """
-    updated_user = user_service.update_user(
+    return user_service.update_user(
         db,
         user_id,
         current_user.email,
         data_to_be_updated.dict(exclude_unset=True),
     )
-    return updated_user
 
 
 @router.delete(
@@ -328,7 +328,7 @@ def delete_user(
     user_service: UserService = Depends(UserService),
     current_user: UserBase = Depends(UserService.get_current_user_verified),
     db: Session = Depends(db.get_db),
-):
+) -> Message:
     """user_id와 현재 user id와 같으면 유저 자신의 계정을 삭제한다.
 
     Args:
