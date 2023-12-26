@@ -125,8 +125,8 @@ class PostDB:
 
         Args:
             db (Session): db session
-            post_data (PostCreate): 생성될 post의 content 정보
             writer_id (int): post를 생성하는 user id
+            post_data (PostCreate): 생성될 post의 content 정보
 
         Returns:
             Post: 생성된 post 정보를 반환
@@ -152,8 +152,8 @@ class PostDB:
 
         Args:
             db (Session): db session
-            post_data (Post): 수정할 post 객체 정보로, Post model 또는 id 값으로 전달된다.
-            data_to_be_updated (PostUpdate): 수정 시 반영할 내용
+            post (Post): 수정할 post 객체 정보로, Post model 또는 id 값으로 전달된다.
+            kwargs: 수정 시 반영할 내용
 
         Returns:
             Post: 수정된 post 객체를 반환

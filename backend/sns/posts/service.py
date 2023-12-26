@@ -25,6 +25,7 @@ class PostService:
         """post_id 값을 가지고 있는 user를 조회한다. none일 경우 에러를 발생시킨다.
 
         Args:
+            - db (Session): db session
             - post_id (int): 조회할 post의 id
 
         Raises:
@@ -53,6 +54,7 @@ class PostService:
         """입력받은 정보를 PostDB class에 전달하여 해당 정보를 가지는 post를 생성한다.
 
         Args:
+            - db (Session): db session
             - writer_id (int): post를 생성하는 user id
             - post_data (dict): 생성될 post의 content 정보
 
@@ -85,7 +87,8 @@ class PostService:
            post_data에 해당되는 Post 객체에 data_to_be_updated 정보로 수정한다.
 
         Args:
-            - post_data (Post): 수정할 post 객체 정보로, Post model 또는 id 값으로 전달된다.
+            - db (Session): db session
+            - post_data (Post): 수정할 post 객체 정보
             - data_to_be_updated (dict): 수정 시 반영할 내용
 
         Raises:
@@ -115,6 +118,7 @@ class PostService:
         """입력받은 정보를 PostDB class에 전달하여 post_to_be_deleted 해당되는 post 객체를 삭제한다.
 
         Args:
+            - db (Session): db session
             - post_to_be_deleted (Post): 삭제할 post 객체 정보로, Post model 또는 id 값으로 전달된다.
 
         Raises:
@@ -143,6 +147,7 @@ class PostService:
         """입력받은 정보를 PostDB class에 전달하여 post_id에 해당하는 Post 정보를 조회한다.
 
         Args:
+            - db (Session): db session
             - post_id (int): 읽어올 post의 id
 
         Raises:
@@ -161,12 +166,11 @@ class PostService:
         """전체 글 목록을 조회한다.
 
         Args:
-
-        - page (int): 페이지 번호
+            - db (Session): db session
+            - page (int): 페이지 번호
 
         Returns:
-
-        - List[Post]: post 객체 정보들이 list 배열에 담겨져 반환
+            - List[Post]: post 객체 정보들이 list 배열에 담겨져 반환
         """
         return post_crud.get_posts(
             db,
@@ -180,17 +184,16 @@ class PostService:
         page: int,
     ) -> List[Post]:
         """현재 로그인한 유저의 팔로워 유저들이 작성한 글들을 조회한다.
-        팔로워가 없는 경우와 해당 page에 글이 없는 경우 빈 리스트를 반환한다.
+           팔로워가 없는 경우와 해당 page에 글이 없는 경우 빈 리스트를 반환한다.
            작성된 글들은 생성 날짜를 기준으로 정렬되어 받는다.
 
         Args:
-
-        - current_user_id (int): 현재 로그인한 유저의 id
-        - page (int): 조회할 page 번호.
+            - db (Session): db session
+            - current_user_id (int): 현재 로그인한 유저의 id
+            - page (int): 조회할 page 번호.
 
         Returns:
-
-        -  List[Post]: 조회된 글들의 목록
+            -  List[Post]: 조회된 글들의 목록
         """
 
         followers = user_crud.get_followers(db, current_user_id)
@@ -213,18 +216,15 @@ class PostService:
         """입력받은 정보를 PostDB class에 전달하여 writer_id 값에 해당되는 user가 작성한 여러 post들을 조회한다.
 
         Args:
-
+            - db (Session): db session
             - writer_id (int): writer user의 id
-            - skip (int, optional): 쿼리 조회 시 건너띌 갯수. 기본 값은 0
+            - page (int): 조회할 page 번호.
 
         Raises:
-
-            - HTTPException(404 NOT FOUND): 다음 경우에 발생
-                - writer_id에 해당되는 user를 찾지 못한 경우 (code: USER_NOT_FOUND)
-                - writer_id에 해당되는 user가 작성한 글이 없는 경우 (code: POST_NOT_FOUND)
+            - HTTPException(404 NOT FOUND): writer_id에 해당되는 user를 찾지 못한 경우
+                - code: USER_NOT_FOUND
 
         Returns:
-
             - List[Post]: post 객체 정보들이 list 배열에 담겨져 반환
         """
 
@@ -254,6 +254,7 @@ class PostService:
         """user_id가 current_user와 동일할 때 post를 생성한다.
 
         Args:
+            - db (Session): db session
             - writer_id (int): 글을 작성할 user의 id
             - current_user_id (int): 현재 로그인된 유저의 id
             - data_to_be_created (PostCreate): 생성할 post의 content 정보
@@ -288,6 +289,7 @@ class PostService:
         """user_id가 현재 user id와 동일하여 수정 권한이 있을 때 post_id에 해당되는 post를 수정한다.
 
         Args:
+            - db (Session): db session
             - post_id (int): 수정될 post의 id
             - current_user_id (int): 현재 로그인된 유저의 id
             - data_to_be_updated (PostUpdate): 업데이트할 정보
