@@ -151,14 +151,7 @@ class PostService:
         Returns:
             - Post: post_id에 해당되는 post 반환
         """
-        post = post_crud.get_post(
-            db,
-            post_id,
-        )
-        if not post:
-            raise CommonHTTPExceptions.POST_NOT_FOUND_ERROR
-
-        return post
+        return self.get_post_and_handle_none(db, post_id)
 
     def read_posts(
         self,
@@ -168,44 +161,32 @@ class PostService:
         """전체 글 목록을 조회한다.
 
         Args:
-            page (int): 페이지 번호
 
-        Raises:
-            - HTTPException(404 NOT FOUND): 작성된 글이 없는 경우 (code: POST_NOT_FOUND)
+        - page (int): 페이지 번호
 
         Returns:
-            - List[Post]: post 객체 정보들이 list 배열에 담겨져 반환
+
+        - List[Post]: post 객체 정보들이 list 배열에 담겨져 반환
         """
-        posts = post_crud.get_posts(
+        return post_crud.get_posts(
             db,
             skip=page * self.POSTS_PER_A_PAGE,
         )
-
-        if not posts:
-            raise CommonHTTPExceptions.POST_NOT_FOUND_ERROR
-
-        return posts
 
     def read_posts_of_followers(
         self,
         db: Session,
         current_user_id: int,
-        page: int = 0,
+        page: int,
     ) -> List[Post]:
         """현재 로그인한 유저의 팔로워 유저들이 작성한 글들을 조회한다.
+        팔로워가 없는 경우와 해당 page에 글이 없는 경우 빈 리스트를 반환한다.
            작성된 글들은 생성 날짜를 기준으로 정렬되어 받는다.
 
         Args:
 
         - current_user_id (int): 현재 로그인한 유저의 id
         - page (int): 조회할 page 번호.
-
-        Raises:
-
-        - HTTPException (404 NOT FOUND): 다음 경우에 대해서 발생한다.
-            - 팔로우 유저가 없는 경우
-            - 팔로우 유저가 작성한 글이 없는 경우 (code: POST_NOT_FOUND)
-            - 해당 page에 글이 없는 경우 (code: POST_NOT_FOUND)
 
         Returns:
 
@@ -215,43 +196,35 @@ class PostService:
         followers = user_crud.get_followers(db, current_user_id)
 
         if not followers:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="팔로우한 유저가 없습니다.",
-            )
+            return []
 
-        posts = post_crud.get_posts_of_followers(
+        return post_crud.get_posts_of_followers(
             db,
             current_user_id,
             skip=page * self.POSTS_PER_A_PAGE,
         )
 
-        if not posts:
-            raise CommonHTTPExceptions.POST_NOT_FOUND_ERROR
-
-        return posts
-
-    def read_posts_of_a_user(
+    def read_user_posts(
         self,
         db: Session,
         writer_id: int,
         page: int,
-        limit: int = 5,
     ) -> List[Post]:
         """입력받은 정보를 PostDB class에 전달하여 writer_id 값에 해당되는 user가 작성한 여러 post들을 조회한다.
 
         Args:
+
             - writer_id (int): writer user의 id
             - skip (int, optional): 쿼리 조회 시 건너띌 갯수. 기본 값은 0
-            - limit (int, optional): 쿼리 조회 시 가져올 최대 갯수. 기본 값은 5
 
         Raises:
+
             - HTTPException(404 NOT FOUND): 다음 경우에 발생
                 - writer_id에 해당되는 user를 찾지 못한 경우 (code: USER_NOT_FOUND)
                 - writer_id에 해당되는 user가 작성한 글이 없는 경우 (code: POST_NOT_FOUND)
-                - 해당 page에 작성된 글이 없는 경우 (code: POST_NOT_FOUND)
 
         Returns:
+
             - List[Post]: post 객체 정보들이 list 배열에 담겨져 반환
         """
 
@@ -265,17 +238,11 @@ class PostService:
             raise CommonHTTPExceptions.USER_NOT_FOUND_ERROR
 
         # post 조회
-        posts = post_crud.get_posts_of_a_user(
+        return post_crud.get_posts_of_a_user(
             db,
             writer_id,
             skip=page * self.POSTS_PER_A_PAGE,
-            limit=limit,
         )
-
-        if len(posts) == 0:
-            raise CommonHTTPExceptions.POST_NOT_FOUND_ERROR
-
-        return posts
 
     def create_post(
         self,
