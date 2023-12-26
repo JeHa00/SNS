@@ -162,7 +162,7 @@ def test_get_post_of_a_user(
             assert hasattr(post, "updated_at")
 
 
-def test_update_only_one_by_model_object(
+def test_update_only_one(
     client: TestClient,
     db_session: Session,
     fake_post: Post,
@@ -182,7 +182,7 @@ def test_update_only_one_by_model_object(
     assert content_before_update != content_after_update
 
 
-def test_update_multi_posts_by_model_object(
+def test_update_multi_posts(
     client: TestClient,
     db_session: Session,
     fake_user: dict,
@@ -206,7 +206,7 @@ def test_update_multi_posts_by_model_object(
         assert post.content == "Hello World!"
 
 
-def test_delete_only_one_by_model_object(
+def test_delete_only_one(
     client: TestClient,
     db_session: Session,
     fake_post: Post,
@@ -224,7 +224,7 @@ def test_delete_only_one_by_model_object(
     assert post is None
 
 
-def test_delete_multi_posts_by_model_object(
+def test_delete_multi_posts(
     client: TestClient,
     db_session: Session,
     fake_user: dict,
