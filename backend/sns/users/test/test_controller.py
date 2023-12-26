@@ -480,10 +480,9 @@ def test_read_followers_if_not_exist_follower(
 ):
     user_id = fake_user.get("user").id
     response = client.get(f"{settings.API_V1_PREFIX}/users/{user_id}/followers")
-    result_message = response.json()["detail"]
 
-    assert response.status_code == status.HTTP_404_NOT_FOUND
-    assert result_message == "해당 유저는 팔로워가 없습니다."
+    assert response.status_code == status.HTTP_200_OK
+    assert response.json() == []
 
 
 @pytest.mark.read_followings
@@ -512,10 +511,9 @@ def test_read_followings_if_not_exist_following(
 ):
     user_id = fake_user.get("user").id
     response = client.get(f"{settings.API_V1_PREFIX}/users/{user_id}/followings")
-    result_message = response.json()["detail"]
 
-    assert response.status_code == status.HTTP_404_NOT_FOUND
-    assert result_message == "해당 유저는 팔로잉이 없습니다."
+    assert response.status_code == status.HTTP_200_OK
+    assert response.json() == []
 
 
 @pytest.mark.follow_user

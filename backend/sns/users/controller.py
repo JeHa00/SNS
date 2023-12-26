@@ -364,18 +364,15 @@ def read_followers(
     db: Session = Depends(db.get_db),
 ) -> List[UserRead]:
     """user_id에 해당하는 유저의 팔로워들을 조회한다.
+        팔로워가 없으면 빈 리스트(배열)을 반환한다.
 
     Args:
 
     - user_id (int): user의 id
 
-    Raises:
-
-    - HTTPException (404 NOT FOUND): 팔로워가 없을 때
-
     Returns:
 
-    - List[UserRead]: 팔로워 목록
+    - List[UserRead] or []: 팔로워 목록
     """
     return user_service.get_followers(
         db,
@@ -394,18 +391,15 @@ def read_followings(
     db: Session = Depends(db.get_db),
 ) -> List[UserRead]:
     """user_id에 해당하는 유저의 팔로잉들을 조회한다.
+        팔로잉이 존재하지 않으면 빈 리스트(배열)을 반환한다.
 
     Args:
 
     - user_id (int): user의 id
 
-    Raises:
-
-    - HTTPException (404 NOT FOUND): 팔로잉이 없을 때
-
     Returns:
 
-    - List[UserRead]: 팔로잉 목록
+    - List[UserRead] or []: 팔로잉 목록
     """
     return user_service.get_followings(
         db,

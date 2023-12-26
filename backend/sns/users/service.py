@@ -746,27 +746,17 @@ class UserService:
         following_id: int,
     ) -> List[User]:
         """following_id에 해당하는 유저의 팔로워들을 조회한다.
+        팔로워가 없으면 빈 리스트를 반환한다.
 
         Args:
 
         - following_id (int): user의 id
 
-        Raises:
-
-        - HTTPException (404 NOT FOUND): 팔로워가 없을 때
-
         Returns:
 
         - List[User]: 팔로워 목록
         """
-        followers = user_crud.get_followers(db, following_id)
-
-        if not followers:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="해당 유저는 팔로워가 없습니다.",
-            )
-        return followers
+        return user_crud.get_followers(db, following_id)
 
     def get_followings(
         self,
@@ -774,27 +764,17 @@ class UserService:
         follower_id: int,
     ) -> List[User]:
         """follower_id에 해당하는 유저를 따르는 팔로잉들을 조회한다.
+        팔로잉이 존재하지 않으면 빈 리스트를 반환한다.
 
         Args:
 
         - follower_id (int): 유저의 id
 
-        Raises:
-
-        - HTTPException (404 NOT FOUND): 팔로잉이 없을 때
-
         Returns:
-            List[User]: 팔로잉 목록
+
+        - List[User]: 팔로잉 목록
         """
-        followings = user_crud.get_followings(db, follower_id)
-
-        if not followings:
-            raise HTTPException(
-                status_code=404,
-                detail="해당 유저는 팔로잉이 없습니다.",
-            )
-
-        return followings
+        return user_crud.get_followings(db, follower_id)
 
     def follow_user(
         self,
