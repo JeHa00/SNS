@@ -36,6 +36,21 @@ class UserCreate(Base):
         return value
 
 
+class UserPasswordUpdate(Base):
+    current_password: str = Field(min_length=8)
+    new_password: str = Field(min_length=8)
+
+    @validator("new_password")
+    def passwords_update_match(
+        cls,
+        value,
+        values,
+    ):
+        if "current_password" in values and value == values["current_password"]:
+            raise ValueError("새로 입력한 패스워드가 기존 패스워드와 동일합니다.")
+        return value
+
+
 class UserBase(Base):
     id: int
     email: EmailStr
@@ -52,21 +67,10 @@ class UserRead(Base):
     profile_text: str | None
 
 
+class UserReadWithFollowed(UserRead):
+    followed: bool
+
+
 class UserUpdate(Base):
     name: str | None
     profile_text: str | None
-
-
-class UserPasswordUpdate(Base):
-    current_password: str = Field(min_length=8)
-    new_password: str = Field(min_length=8)
-
-    @validator("new_password")
-    def passwords_update_match(
-        cls,
-        value,
-        values,
-    ):
-        if "current_password" in values and value == values["current_password"]:
-            raise ValueError("새로 입력한 패스워드가 기존 패스워드와 동일합니다.")
-        return value
