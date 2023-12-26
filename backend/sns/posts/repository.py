@@ -37,6 +37,7 @@ class PostDB:
         Args:
             db (Session): db session
             skip (int, optional): 쿼리 조회 시 건너띌 갯수. 기본 값은 0
+            limit (int, optional): 조회해서 가져올 row의 갯수. 기본 값은 5
 
         Returns:
             List[Post]: post 객체 정보들이 list 배열에 담겨져 반환
@@ -100,7 +101,7 @@ class PostDB:
             db (Session): db session
             writer_id (int): writer user의 id
             skip (int, optional): 쿼리 조회 시 건너띌 갯수. 기본 값은 0
-            limit (int, optional): 쿼리 조회 시 가져올 최대 갯수. 기본 값은 5
+            limit (int, optional): 조회해서 가져올 row의 갯수. 기본 값은 5
 
         Returns:
             List[Post]: post 객체 정보들이 list 배열에 담겨져 반환
