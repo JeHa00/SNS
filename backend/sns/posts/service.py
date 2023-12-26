@@ -238,7 +238,7 @@ class PostService:
             raise CommonHTTPExceptions.USER_NOT_FOUND_ERROR
 
         # post 조회
-        return post_crud.get_posts_of_a_user(
+        return post_crud.get_user_posts(
             db,
             writer_id,
             skip=page * self.POSTS_PER_A_PAGE,

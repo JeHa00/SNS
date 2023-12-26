@@ -77,7 +77,8 @@ class PostDB:
         )
 
         # follower 들이 작성한 Post 조회
-        posts = (
+
+        return (
             db.query(Post)
             .join(subquery, Post.writer_id == subquery.c.follower_id)
             .order_by(Post.created_at)
@@ -86,9 +87,7 @@ class PostDB:
             .all()
         )
 
-        return posts
-
-    def get_posts_of_a_user(
+    def get_user_posts(
         self,
         db: Session,
         writer_id: int,
@@ -107,15 +106,14 @@ class PostDB:
             List[Post]: post 객체 정보들이 list 배열에 담겨져 반환
         """
 
-        query = (
+        return (
             db.query(Post)
             .filter(Post.writer_id == writer_id)
             .order_by(Post.created_at.desc())
+            .offset(skip)
+            .limit(limit)
+            .all()
         )
-        if skip != 0 or limit != 0:
-            query = query.offset(skip).limit(limit)
-
-        return query.all()
 
     def create(
         self,

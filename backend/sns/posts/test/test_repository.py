@@ -142,7 +142,7 @@ def test_get_post_of_a_user(
 ):
     writer = fake_user.get("user")
     for page in range(20):
-        posts = post_crud.get_posts_of_a_user(
+        posts = post_crud.get_user_posts(
             db_session,
             writer.id,
             skip=page * 5,
@@ -190,7 +190,7 @@ def test_update_multi_posts(
 ):
     # 생성한 post 목록들
     user = fake_user.get("user")
-    posts = post_crud.get_posts_of_a_user(
+    posts = post_crud.get_user_posts(
         db_session,
         user.id,
     )
@@ -234,7 +234,7 @@ def test_delete_multi_posts(
     user = fake_user.get("user")
 
     # fake_post로 생성한 수가 100개
-    posts = post_crud.get_posts_of_a_user(
+    posts = post_crud.get_user_posts(
         db_session,
         user.id,
         limit=100,
@@ -246,7 +246,7 @@ def test_delete_multi_posts(
             post,
         )
 
-    posts = post_crud.get_posts_of_a_user(
+    posts = post_crud.get_user_posts(
         db_session,
         user.id,
     )
@@ -265,7 +265,7 @@ def test_delete_user_having_multi_posts(
         db_session,
         user,
     )
-    posts = post_crud.get_posts_of_a_user(
+    posts = post_crud.get_user_posts(
         db_session,
         user.id,
     )
