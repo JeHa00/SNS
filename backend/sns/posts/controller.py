@@ -21,7 +21,7 @@ router = APIRouter()
     status_code=status.HTTP_200_OK,
 )
 def read_liked_posts(
-    post_service: PostService = Depends(PostService),
+    post_service: PostService = Depends(),
     current_user: UserBase = Depends(UserService.get_current_user_verified),
     db: Session = Depends(db.get_db),
 ) -> List[schema.Post]:
@@ -42,6 +42,35 @@ def read_liked_posts(
 
 
 @router.get(
+    "/posts/followers",
+    response_model=List[schema.Post],
+    status_code=status.HTTP_200_OK,
+)
+def read_posts_of_followers(
+    page: int,
+    post_service: PostService = Depends(),
+    current_user: UserBase = Depends(UserService.get_current_user_verified),
+    db: Session = Depends(db.get_db),
+) -> List[schema.Post]:
+    """현재 로그인한 유저의 팔로워 유저들이 작성한 글들을 조회한다.
+        작성된 글들은 생성 날짜를 기준으로 정렬되어 받는다.
+
+    Args:
+
+    - page (int): 조회할 page 번호.
+
+    Returns:
+
+    -  List[Post]: 조회된 글들의 목록
+    """
+    return post_service.read_posts_of_followers(
+        db,
+        current_user.id,
+        page,
+    )
+
+
+@router.get(
     "/posts/{post_id}/users_who_like",
     response_model=List[UserRead],
     status_code=status.HTTP_200_OK,
@@ -49,7 +78,7 @@ def read_liked_posts(
 def read_users_who_like(
     post_id: int,
     background_tasks: BackgroundTasks,
-    post_service: PostService = Depends(PostService),
+    post_service: PostService = Depends(),
     redis_db: Redis = Depends(redis_db.get_db),
     db: Session = Depends(db.get_db),
 ) -> List[UserRead]:
@@ -63,7 +92,7 @@ def read_users_who_like(
 
     - HTTPException(404 NOT FOUND): 다음 2가지 경우에 발생한다.
         - post_id에 해당하는 post를 조회하지 못한 경우 (code: POST_NOT_FOUND)
-        - 해당 글에 좋아요를 한 user들이 없는 경우 (code: LIKER_NOT_FOUND)
+        - 해당 글에 좋아요를 한 user들이 없는 경우 (code: USER_WHO_LIKE_NOT_FOUND)
 
     Returns:
 
@@ -85,7 +114,7 @@ def read_users_who_like(
 def like_post(
     post_id: int,
     background_tasks: BackgroundTasks,
-    post_service: PostService = Depends(PostService),
+    post_service: PostService = Depends(),
     current_user: UserBase = Depends(UserService.get_current_user_verified),
     redis_db: Redis = Depends(redis_db.get_db),
     db: Session = Depends(db.get_db),
@@ -124,7 +153,7 @@ def like_post(
 )
 def unlike_post(
     post_id: int,
-    post_service: PostService = Depends(PostService),
+    post_service: PostService = Depends(),
     current_user: UserBase = Depends(UserService.get_current_user_verified),
     db: Session = Depends(db.get_db),
 ) -> Message:
@@ -156,7 +185,7 @@ def unlike_post(
 )
 def read_a_post(
     post_id: int,
-    post_service: PostService = Depends(PostService),
+    post_service: PostService = Depends(),
     db: Session = Depends(db.get_db),
 ) -> schema.Post:
     """post_id와 일치하는 글 정보를 조회한다.
@@ -177,14 +206,37 @@ def read_a_post(
 
 
 @router.get(
-    "/users/{user_id}/posts",
+    "/posts",
     response_model=List[schema.Post],
     status_code=status.HTTP_200_OK,
 )
 def read_posts(
+    page: int,
+    post_service: PostService = Depends(),
+    db: Session = Depends(db.get_db),
+) -> List[schema.Post]:
+    """전체 글 목록을 조회한다. 하나도 없을 경우 404 에러를 일으킨다.
+
+    Args:
+
+    - page (int): page 번호
+
+    Returns:
+
+    - List[schema.Post]: 여러 개의 글 정보가 list 배열에 담겨져 반환
+    """
+    return post_service.read_posts(db, page)
+
+
+@router.get(
+    "/users/{user_id}/posts",
+    response_model=List[schema.Post],
+    status_code=status.HTTP_200_OK,
+)
+def read_user_posts(
     user_id: int,
     page: int,
-    post_service: PostService = Depends(PostService),
+    post_service: PostService = Depends(),
     db: Session = Depends(db.get_db),
 ) -> List[schema.Post]:
     """user_id에 일치하는 user가 작성한 글들을 조회한다.
@@ -197,16 +249,13 @@ def read_posts(
 
     Raises:
 
-    - HTTPException (404 NOT FOUND): 다음 경우에 대해서 발생한다.
-        - user_id에 해당되는 user를 찾지 못한 경우 (code: USER_NOT_FOUND)
-        - user_id에 해당되는 user가 작성한 글이 없는 경우 (code: POST_NOT_FOUND)
-        - 해당 page에 작성된 글이 없는 경우 (code: POST_NOT_FOUND)
+    - HTTPException (404 NOT FOUND): user_id에 해당되는 user를 찾지 못한 경우 (code: USER_NOT_FOUND)
 
     Returns:
 
      - List[Post]: 여러 글 정보가 list 배열에 담겨져 반환
     """
-    return post_service.read_posts(db, user_id, page)
+    return post_service.read_user_posts(db, user_id, page)
 
 
 @router.post(
@@ -217,7 +266,7 @@ def read_posts(
 def create_post(
     user_id: int,
     data_to_be_created: schema.PostCreate,
-    post_service: PostService = Depends(PostService),
+    post_service: PostService = Depends(),
     current_user: UserBase = Depends(UserService.get_current_user_verified),
     db: Session = Depends(db.get_db),
 ) -> schema.Post:
@@ -254,7 +303,7 @@ def create_post(
 def update_post(
     post_id: int,
     data_to_be_updated: schema.PostUpdate,
-    post_service: PostService = Depends(PostService),
+    post_service: PostService = Depends(),
     current_user: UserBase = Depends(UserService.get_current_user_verified),
     db: Session = Depends(db.get_db),
 ) -> schema.Post:
@@ -291,7 +340,7 @@ def update_post(
 )
 def delete_post(
     post_id: int,
-    post_service: PostService = Depends(PostService),
+    post_service: PostService = Depends(),
     current_user: UserBase = Depends(UserService.get_current_user_verified),
     db: Session = Depends(db.get_db),
 ) -> Message:

@@ -47,14 +47,43 @@ def test_read_post_not_existed(
 
 
 @pytest.mark.read_posts
-def test_read_posts_if_not_registered(
+def test_read_posts_if_posts_not_exist(client: TestClient):
+    # page number
+    page = 0
+
+    # 글 조회 및 결과
+    response = client.get(f"{settings.API_V1_PREFIX}/posts?page={page}")
+
+    # posts가 존재하지 않으면 빈 리스트를 반환
+    assert response.status_code == status.HTTP_200_OK
+    assert response.json() == []
+
+
+@pytest.mark.read_posts
+def test_read_posts_if_posts_exist(
+    client: TestClient,
+    fake_multi_posts: None,
+):
+    for page in range(20):
+        # 글 조회 및 결과
+        response = client.get(
+            f"{settings.API_V1_PREFIX}/posts?page={page}",
+        )
+        result = response.json()
+
+        assert response.status_code == status.HTTP_200_OK
+        assert len(result) == 5
+
+
+@pytest.mark.read_user_posts
+def test_read_posts_of_a_user_if_not_registered(
     client: TestClient,
 ):
     # 가짜 유저 id
     user_id = 1
 
     # page number
-    page = 1
+    page = 0
 
     # 글 조회 및 결과
     response = client.get(f"{settings.API_V1_PREFIX}/users/{user_id}/posts?page={page}")
@@ -66,8 +95,8 @@ def test_read_posts_if_not_registered(
     assert result_message == "해당되는 유저를 찾을 수 없습니다."
 
 
-@pytest.mark.read_posts
-def test_read_posts_if_post_not_exist(
+@pytest.mark.read_user_posts
+def test_read_posts_of_a_user_if_post_not_exist(
     client: TestClient,
     fake_user: Dict,
 ):
@@ -75,20 +104,17 @@ def test_read_posts_if_post_not_exist(
     user = fake_user["user"]
 
     # page number
-    page = 1
+    page = 0
 
     # 글 조회 및 결과
     response = client.get(f"{settings.API_V1_PREFIX}/users/{user.id}/posts?page={page}")
-    result_code = response.json()["detail"]["code"]
-    result_message = response.json()["detail"]["message"]
 
-    assert response.status_code == status.HTTP_404_NOT_FOUND
-    assert result_code == "POST_NOT_FOUND"
-    assert result_message == "해당되는 글을 찾을 수 없습니다."
+    assert response.status_code == status.HTTP_200_OK
+    assert response.json() == []
 
 
-@pytest.mark.read_posts
-def test_read_posts_if_post_exist(
+@pytest.mark.read_user_posts
+def test_read_posts_of_a_user_if_post_exist(
     client: TestClient,
     fake_user: Dict,
     fake_multi_posts: None,
@@ -105,6 +131,59 @@ def test_read_posts_if_post_exist(
 
         assert response.status_code == status.HTTP_200_OK
         assert len(result) == 5
+
+
+@pytest.mark.read_posts_of_followers
+def test_read_posts_of_followers_if_followers_not_exist(
+    client: TestClient,
+    get_user_token_headers_and_login_data: dict,
+):
+    # current_user 정보
+    headers = get_user_token_headers_and_login_data["headers"]
+
+    page = 0
+
+    # 팔로워들의 글 정보 요청
+    response = client.get(
+        f"{settings.API_V1_PREFIX}/posts/followers?page={page}",
+        headers=headers,
+    )
+
+    assert response.status_code == status.HTTP_200_OK
+    assert response.json() == []
+
+
+@pytest.mark.read_posts_of_followers
+def test_read_posts_of_followers_if_success_and_posts_not_exist(
+    client: TestClient,
+    get_user_token_headers_and_login_data: dict,
+    fake_user: dict,
+    fake_multi_posts,
+):
+    # current_user 정보
+    headers = get_user_token_headers_and_login_data["headers"]
+
+    follower_id = fake_user.get("user").id
+
+    # follow 요청
+    response = client.post(
+        f"{settings.API_V1_PREFIX}/users/{follower_id}/follow",
+        headers=headers,
+    )
+
+    for page in range(21):
+        # 팔로워들의 글 정보 요청
+        response = client.get(
+            f"{settings.API_V1_PREFIX}/posts/followers?page={page}",
+            headers=headers,
+        )
+
+        assert response.status_code == status.HTTP_200_OK
+
+        if page == 20:
+            assert response.json() == []
+        else:
+            assert len(response.json()) == 5
 
 
 @pytest.mark.create_post

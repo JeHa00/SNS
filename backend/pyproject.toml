@@ -38,6 +38,8 @@ markers = [
     "delete_user",
     "read_a_post",
     "read_posts",
+    "read_posts_of_followers",
+    "read_user_posts",
     "create_post",
     "update_post",
     "delete_post",

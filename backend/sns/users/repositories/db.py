@@ -169,7 +169,9 @@ class UserDB:
             List[User]: following_id로부터 follow 신청을 받은 user 목록
         """
         subquery = (
-            db.query(Follow).filter(Follow.following_id == following_id).subquery()
+            db.query(Follow.follower_id)
+            .filter(Follow.following_id == following_id)
+            .subquery()
         )
 
         return db.query(User).join(subquery, User.id == subquery.c.follower_id).all()
@@ -188,7 +190,11 @@ class UserDB:
         Returns:
             List[User]: follower_id를 따르는 user 목록
         """
-        subquery = db.query(Follow).filter(Follow.follower_id == follower_id).subquery()
+        subquery = (
+            db.query(Follow.following_id)
+            .filter(Follow.follower_id == follower_id)
+            .subquery()
+        )
 
         return db.query(User).join(subquery, User.id == subquery.c.following_id).all()
 

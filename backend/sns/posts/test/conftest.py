@@ -16,7 +16,11 @@ from sns.common.conftest import (
 )
 
 # flake8: noqa
-from sns.users.test.conftest import fake_user, get_user_token_headers_and_login_data
+from sns.users.test.conftest import (
+    fake_user,
+    get_user_token_headers_and_login_data,
+    fake_multi_user,
+)
 from sns.users.test.utils import random_lower_string, random_email
 from sns.users.repositories.db import user_crud
 from sns.users.service import user_service
