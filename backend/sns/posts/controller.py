@@ -21,15 +21,17 @@ router = APIRouter()
     status_code=status.HTTP_200_OK,
 )
 def read_liked_posts(
+    page: int,
     post_service: PostService = Depends(),
     current_user: UserBase = Depends(UserService.get_current_user_verified),
     db: Session = Depends(db.get_db),
 ) -> List[schema.Post]:
-    """현재 로그인한 유저가 좋아요한 글들을 조회한다.
+    """현재 로그인한 유저가 좋아요한 글들을 조회한다. 없으면 빈 목록을 반환한다.
 
-    Raises:
+    Args:
 
-    - HTTPException (404 NOT FOUND): 해당 유저가 좋아요를 한 글이 없는 경우
+    - page (int): 조회할 page 번호. 기본값은 0
+        - 한 페이지당 조회되는 최대 갯수는 5개
 
     Returns:
 
@@ -38,6 +40,7 @@ def read_liked_posts(
     return post_service.read_liked_posts(
         db,
         current_user.id,
+        page,
     )
 
 
@@ -53,11 +56,13 @@ def read_posts_of_followers(
     db: Session = Depends(db.get_db),
 ) -> List[schema.Post]:
     """현재 로그인한 유저의 팔로워 유저들이 작성한 글들을 조회한다.
-        작성된 글들은 생성 날짜를 기준으로 정렬되어 받는다.
+    없으면 빈 목록을 반환한다.
+    작성된 글들은 생성 날짜를 기준으로 정렬되어 받는다.
 
     Args:
 
-    - page (int): 조회할 page 번호.
+    - page (int): 조회할 page 번호. 기본값은 0
+        - 한 페이지당 조회되는 최대 갯수는 5개
 
     Returns:
 
@@ -76,6 +81,7 @@ def read_posts_of_followers(
     status_code=status.HTTP_200_OK,
 )
 def read_users_who_like(
+    page: int,
     post_id: int,
     background_tasks: BackgroundTasks,
     post_service: PostService = Depends(),
@@ -83,16 +89,13 @@ def read_users_who_like(
     db: Session = Depends(db.get_db),
 ) -> List[UserRead]:
     """post_id에 해당하는 글에 좋아요한 user들을 조회한다.
+    없으면 빈 목록을 반환한다.
 
     Args:
 
+    - page (int): 조회할 page 번호. 기본 값은 0
+        - 한 페이지당 조회되는 최대 갯수는 5개
     - post_id (int): 좋아요를 받은 글
-
-    Raises:
-
-    - HTTPException(404 NOT FOUND): 다음 2가지 경우에 발생한다.
-        - post_id에 해당하는 post를 조회하지 못한 경우 (code: POST_NOT_FOUND)
-        - 해당 글에 좋아요를 한 user들이 없는 경우 (code: USER_WHO_LIKE_NOT_FOUND)
 
     Returns:
 
@@ -101,6 +104,7 @@ def read_users_who_like(
     return post_service.read_users_who_like(
         db,
         redis_db,
+        page,
         post_id,
         background_tasks,
     )
@@ -215,11 +219,12 @@ def read_posts(
     post_service: PostService = Depends(),
     db: Session = Depends(db.get_db),
 ) -> List[schema.Post]:
-    """전체 글 목록을 조회한다. 하나도 없을 경우 404 에러를 일으킨다.
+    """전체 글 목록을 조회한다. 없으면 빈 목록을 반환한다.
 
     Args:
 
-    - page (int): page 번호
+    - page (int): 조회할 page 번호. 기본값은 0
+        - 한 페이지당 조회되는 최대 갯수는 5개
 
     Returns:
 
@@ -241,11 +246,13 @@ def read_user_posts(
 ) -> List[schema.Post]:
     """user_id에 일치하는 user가 작성한 글들을 조회한다.
         한 번 조회 시 가져올 글의 갯수는 5개다.
+        없으면 빈 목록을 반환한다.
 
     Args:
 
-     - user_id (int): user의 id
-     - page (int): page 번호
+    - user_id (int): user의 id
+    - page (int): 조회할 page 번호. 기본값은 0
+        - 한 페이지당 조회되는 최대 갯수는 5개
 
     Raises:
 
@@ -253,7 +260,7 @@ def read_user_posts(
 
     Returns:
 
-     - List[Post]: 여러 글 정보가 list 배열에 담겨져 반환
+     - List[Post]: 여러 글 정보가 list 배열에 담겨져 반환.
     """
     return post_service.read_user_posts(db, user_id, page)
 
