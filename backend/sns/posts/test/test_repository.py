@@ -376,7 +376,7 @@ def test_like_if_post_like_already_exist(
         assert len(user_who_like) == 2
 
 
-def test_find_posts(
+def test_get_posts_by_keyword(
     client: TestClient,
     db_session: Session,
     fake_multi_posts: None,
