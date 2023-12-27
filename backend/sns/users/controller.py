@@ -372,7 +372,7 @@ def read_followers(
 
     Returns:
 
-    - List[UserRead] or []: 팔로워 목록
+    - List[UserRead]: 팔로워 목록
     """
     return user_service.get_followers(
         db,
@@ -399,7 +399,7 @@ def read_followings(
 
     Returns:
 
-    - List[UserRead] or []: 팔로잉 목록
+    - List[UserRead]: 팔로잉 목록
     """
     return user_service.get_followings(
         db,
