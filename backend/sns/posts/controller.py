@@ -92,7 +92,8 @@ def find_posts(
     Args:
 
     - keyword (str): content에 포함하고 keyword
-    - page (int): page 번호
+    - page (int): 조회할 page 번호. 기본값은 0
+        - 한 페이지당 조회되는 최대 갯수는 5개
 
     Returns:
 

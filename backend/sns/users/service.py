@@ -887,8 +887,9 @@ class UserService:
         """해당 name을 가지고 있는 유저들을 조회한다.
 
         Args:
+            db (Session): db session
             name (str): 조회할 유저의 name
-            page (int): 조회할 page
+            page (int): 조회할 page 번호. 페이지당 조회되는 user 수는 10명
 
         Returns:
             List[User]: 조회된 유저 목록

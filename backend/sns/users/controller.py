@@ -258,7 +258,8 @@ def find_users(
     Args:
 
     - name (str): 조회할 유저의 name
-    - page (int): 조회할 page. 시작 page 번호는 0.
+    - page (int): 조회할 page 번호. 기본값은 0
+        - 한 페이지당 조회되는 최대 갯수는 10개
 
     Returns:
 
