@@ -284,9 +284,16 @@ def test_like_if_post_like_not_exist(
     for post_id in range(1, 101):
         post_crud.like(db_session, user.id, post_id)
 
-    posts = post_crud.get_liked_posts(db_session, user.id)
+    posts_per_a_page = 5
 
-    assert len(posts) == 100
+    for page in range(11):
+        posts = post_crud.get_liked_posts(
+            db_session,
+            user.id,
+            skip=page * posts_per_a_page,
+        )
+
+        assert len(posts) == 5
 
 
 def test_get_users_who_like(
@@ -308,13 +315,31 @@ def test_get_liked_posts(
     db_session: Session,
     fake_postlike: None,
 ):
-    posts_on_user_one = post_crud.get_liked_posts(db_session, 1)
-    posts_on_user_two = post_crud.get_liked_posts(db_session, 2)
+    posts_per_page = 5
 
-    assert posts_on_user_one is not None
-    assert len(posts_on_user_one) == 50
-    assert posts_on_user_two is not None
-    assert len(posts_on_user_two) == 100
+    for page in range(11):
+        posts_on_user_one = post_crud.get_liked_posts(
+            db_session,
+            1,
+            skip=page * posts_per_page,
+        )
+
+        if page == 10:
+            assert len(posts_on_user_one) == 0
+        else:
+            assert len(posts_on_user_one) == 5
+
+    for page in range(21):
+        posts_on_user_two = post_crud.get_liked_posts(
+            db_session,
+            2,
+            skip=page * posts_per_page,
+        )
+
+        if page == 20:
+            assert len(posts_on_user_two) == 0
+        else:
+            assert len(posts_on_user_two) == 5
 
 
 def test_unlike(
