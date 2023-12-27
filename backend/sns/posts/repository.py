@@ -77,7 +77,6 @@ class PostDB:
         )
 
         # follower 들이 작성한 Post 조회
-
         return (
             db.query(Post)
             .join(subquery, Post.writer_id == subquery.c.follower_id)
@@ -238,12 +237,16 @@ class PostDB:
         self,
         db: Session,
         liked_post_id: int,
+        skip: int = 0,
+        limit: int = 5,
     ) -> List[User]:
         """liked_post_id에 일치하는 글에 좋아요를 한 liker 유저들을 조회한다.
 
         Args:
             db (Session): db session
             liked_post_id (int): like를 받은 post의 id
+            skip (int, optional): 쿼리 조회 시 건너띌 갯수. 기본 값은 0
+            limit (int, optional): 조회해서 가져올 row의 갯수. 기본 값은 5
 
         Returns:
             List[User]: list 데이터 타입에 담겨진 User 객체
@@ -256,19 +259,27 @@ class PostDB:
         )
 
         return (
-            db.query(User).join(subquery, User.id == subquery.c.user_id_who_like).all()
+            db.query(User)
+            .join(subquery, User.id == subquery.c.user_id_who_like)
+            .offset(skip)
+            .limit(limit)
+            .all()
         )
 
     def get_liked_posts(
         self,
         db: Session,
         user_id_who_like: int,
+        skip: int = 0,
+        limit: int = 5,
     ) -> List[Post]:
         """user_id_who_like 해당하는 user가 좋아요를 한 글들을 조회한다.
 
         Args:
             db (Session): db session
             user_id_who_like (int): 좋아요를 한 유저의 id
+            skip (int, optional): 쿼리 조회 시 건너띌 갯수. 기본 값은 0
+            limit (int, optional): 조회해서 가져올 row의 갯수. 기본 값은 5
 
         Returns:
             List[Post]: list 데이터 타입에 담겨진 Post 객체 정보들
@@ -280,7 +291,14 @@ class PostDB:
             .subquery()
         )
 
-        return db.query(Post).join(subquery, Post.id == subquery.c.liked_post_id).all()
+        return (
+            db.query(Post)
+            .join(subquery, Post.id == subquery.c.liked_post_id)
+            .order_by(Post.created_at)
+            .offset(skip)
+            .limit(limit)
+            .all()
+        )
 
     def like(
         self,

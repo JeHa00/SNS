@@ -425,22 +425,20 @@ def test_read_users_who_like_if_user_and_post_exist(
     db_session: Session,
     fake_postlike: None,
 ):
-    for post_id in range(1, 101):
-        if post_id <= 50:
-            response = client.get(
-                f"{settings.API_V1_PREFIX}/posts/{post_id}/users_who_like",
-            )
-            result = response.json()
+    page = 0
 
-            assert response.status_code == status.HTTP_200_OK
+    for post_id in range(1, 101):
+        response = client.get(
+            f"{settings.API_V1_PREFIX}/posts/{post_id}/users_who_like?page={page}",
+        )
+
+        result = response.json()
+
+        assert response.status_code == status.HTTP_200_OK
+
+        if post_id <= 50:
             assert len(result) == 2
         else:
-            response = client.get(
-                f"{settings.API_V1_PREFIX}/posts/{post_id}/users_who_like",
-            )
-            result = response.json()
-
-            assert response.status_code == status.HTTP_200_OK
             assert len(result) == 1
 
 
@@ -452,7 +450,7 @@ def test_read_users_who_like_if_post_not_exist(
     not_exist_post_id = 1
 
     response = client.get(
-        f"{settings.API_V1_PREFIX}/posts/{not_exist_post_id}/users_who_like",
+        f"{settings.API_V1_PREFIX}/posts/{not_exist_post_id}/users_who_like?page={0}",
     )
     result_code = response.json()["detail"]["code"]
     result_message = response.json()["detail"]["message"]
@@ -469,14 +467,11 @@ def test_read_users_who_like_if_postlike_not_exist(
     fake_post: Post,
 ):
     response = client.get(
-        f"{settings.API_V1_PREFIX}/posts/{fake_post.id}/users_who_like",
+        f"{settings.API_V1_PREFIX}/posts/{fake_post.id}/users_who_like?page={0}",
     )
-    result = response.json()["detail"]
-    result_code = result.get("code")
-    result_message = result.get("message")
 
-    assert result_code == "USER_WHO_LIKE_NOT_FOUND"
-    assert result_message == "해당 글에 좋아요를 한 유저가 없습니다."
+    assert response.status_code == status.HTTP_200_OK
+    assert response.json() == []
 
 
 @pytest.mark.read_liked_posts
@@ -490,14 +485,12 @@ def test_read_liked_posts_if_likees_not_exist(
 
     # liked_posts 조회 및 결과
     response = client.get(
-        f"{settings.API_V1_PREFIX}/posts/liked_posts",
+        f"{settings.API_V1_PREFIX}/posts/liked_posts?page={0}",
         headers=headers,
     )
 
-    result_message = response.json()["detail"]
-
-    assert response.status_code == status.HTTP_404_NOT_FOUND
-    assert result_message == "해당 유저가 좋아요를 한 글이 없습니다."
+    assert response.status_code == status.HTTP_200_OK
+    assert response.json() == []
 
 
 @pytest.mark.read_liked_posts
@@ -527,13 +520,17 @@ def test_read_liked_posts_if_likees_exist(
     headers = {"Authorization": f"Bearer {token}"}
 
     # likees 조회 및 결과
-    response = client.get(
-        f"{settings.API_V1_PREFIX}/posts/liked_posts",
-        headers=headers,
-    )
-    result = response.json()
+    for page in range(11):
+        response = client.get(
+            f"{settings.API_V1_PREFIX}/posts/liked_posts?page={page}",
+            headers=headers,
+        )
+        result = response.json()
 
-    assert len(result) == 50
+        if page == 10:
+            assert result == []
+        else:
+            assert len(result) == 5
 
 
 @pytest.mark.like_post
