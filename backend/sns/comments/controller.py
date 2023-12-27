@@ -20,25 +20,26 @@ router = APIRouter()
 def get_comments_on_a_post(
     post_id: int,
     page: int,
-    comment_service: CommentService = Depends(CommentService),
+    comment_service: CommentService = Depends(),
     db: Session = Depends(db.get_db),
 ) -> List[schema.Comment]:
     """post_id에 해당하는 글에 작성된 댓글들을 조회한다.
         한 번 조회시 최대 30개를 조회한다. 다음 30개 댓글을 조회하고 싶다면 page 매개변수를 통해 조절한다.
+        해당 page에 댓글이 없으면 빈 리스트(배열)를 반환한다.
 
     Args:
 
     - post_id (int): 작성된 글의 id
-    - page (int): offset 하기 위한 page
+    - page (int): 조회할 page 번호. 기본값은 0
+        - 한 페이지당 조회되는 최대 갯수는 30개
 
     Raises:
 
     - HTTPException (404 NOT FOUND): 주어진 정보에 해당되는 글이 없을 경우 (code: POST_NOT_FOUND)
-    - HTTPException (404 NOT FOUND): 주어진 정보에 해당되는 댓글이 없을 경우 (code: COMMENT_NOT_FOUND)
 
     Returns:
 
-    - List[schema.Comment]: 댓글 정보들이 배열에 담겨진 형태로 반환
+    - List[schema.Comment]: 댓글 정보들이 배열에 담겨진 형태로 반환. 없으면 빈 리스트(배열)을 반환
     """
     return comment_service.get_comments_on_a_post(db, post_id, page)
 
@@ -51,7 +52,7 @@ def get_comments_on_a_post(
 def get_comments_of_a_user(
     user_id: int,
     page: int,
-    comment_service: CommentService = Depends(CommentService),
+    comment_service: CommentService = Depends(),
     db: Session = Depends(db.get_db),
 ) -> List[schema.Comment]:
     """user_id에 해당되는 유저가 작성한 댓글들을 조회한다.
@@ -60,12 +61,12 @@ def get_comments_of_a_user(
     Args:
 
     - user_id (int): 유저의 id
-    - page (int): 조회 시 offset 하기 위한 page
+    - page (int): 조회할 page 번호. 기본값은 0
+        - 한 페이지당 조회되는 최대 갯수는 30개
 
     Raises:
 
     - HTTPException (404 NOT FOUND): 주어진 정보에 해당되는 유저가 없을 경우 (code: USER_NOT_FOUND)
-    - HTTPException (404 NOT FOUND): 주어진 정보에 해당되는 댓글이 없을 경우 (code: COMMENT_NOT_FOUND)
 
     Returns:
 
@@ -84,7 +85,7 @@ def create_comment(
     post_id: int,
     data_to_be_created: schema.CommentCreate,
     current_user: UserBase = Depends(UserService.get_current_user_verified),
-    comment_service: CommentService = Depends(CommentService),
+    comment_service: CommentService = Depends(),
     db: Session = Depends(db.get_db),
 ) -> schema.Comment:
     """writer_id와 jwt로 받은 유저의 id가 같을 때 data_to_be_created에 담겨진 내용으로 댓글을 작성한다.
@@ -124,7 +125,7 @@ def update_comment(
     comment_id: int,
     data_to_be_updated: schema.CommentUpdate,
     current_user: UserBase = Depends(UserService.get_current_user_verified),
-    comment_service: CommentService = Depends(CommentService),
+    comment_service: CommentService = Depends(),
     db: Session = Depends(db.get_db),
 ) -> schema.Comment:
     """comment_id에 해당되는 댓글 작성자가 jwt로부터 얻은 유저의 id와 같을 경우
@@ -161,7 +162,7 @@ def update_comment(
 def delete_comment(
     comment_id: int,
     current_user: UserBase = Depends(UserService.get_current_user_verified),
-    comment_service: CommentService = Depends(CommentService),
+    comment_service: CommentService = Depends(),
     db: Session = Depends(db.get_db),
 ) -> Message:
     """comment_id에 해당되는 댓글 작성자가 jwt로부터 얻은 유저의 id와 같을 경우 댓글을 삭제한다.

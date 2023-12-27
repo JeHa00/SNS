@@ -200,6 +200,7 @@ class CommentService:
     ) -> List[Comment]:
         """post_id에 해당하는 글에 작성된 댓글들을 조회한다.
         한 번 조회시 최대 30개를 조회한다. 다음 30개 댓글을 조회하고 싶다면 page 매개변수를 통해 조절한다.
+        해당 page에 댓글이 없으면 빈 리스트(배열)를 반환한다.
 
         Args:
             - db (Session): db session
@@ -209,26 +210,19 @@ class CommentService:
         Raises:
             - HTTPException (404 NOT FOUND): 주어진 정보에 해당되는 글이 없을 경우
                 - code: POST_NOT_FOUND
-            - HTTPException (404 NOT FOUND): 주어진 정보에 해당되는 댓글이 없을 경우
-                - code: COMMENT_NOT_FOUND
 
         turns:
-            - List[Comment]: 여러 댓글 정보들이 리스트에 담겨진 형태로 반환
+            - List[Comment]: 여러 댓글 정보들이 리스트에 담겨진 형태로 반환. 없으면 빈 리스트(배열)을 반환
         """
         # 글 유무 확인
         self.get_a_post_and_handle_none(db, post_id)
 
         # 댓글 정보 조회
-        comments = comment_crud.get_comments_by_post_id(
+        return comment_crud.get_comments_by_post_id(
             db,
             post_id,
             skip=page * self.COMMENTS_PER_A_PAGE,
         )
-
-        if not comments:
-            raise CommonHTTPExceptions.COMMENT_NOT_FOUND_ERROR
-
-        return comments
 
     def get_comments_of_a_user(
         self,
@@ -247,8 +241,6 @@ class CommentService:
         Raises:
             - HTTPException (404 NOT FOUND): 주어진 정보에 해당되는 유저가 없을 경우
                 - code: USER_NOT_FOUND
-            - HTTPException (404 NOT FOUND): 주어진 정보에 해당되는 댓글이 없을 경우
-                - code: COMMENT_NOT_FOUND
 
         Returns:
             - List[Comment]: 여러 댓글 정보들이 리스트에 담겨진 형태로 반환
@@ -261,9 +253,6 @@ class CommentService:
             user_id,
             skip=page * self.COMMENTS_PER_A_PAGE,
         )
-
-        if not comments:
-            raise CommonHTTPExceptions.COMMENT_NOT_FOUND_ERROR
 
         return comments
 
