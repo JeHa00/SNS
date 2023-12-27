@@ -83,7 +83,7 @@ def read_posts_of_followers(
 def find_posts(
     keyword: str,
     page: int,
-    post_service: PostService = Depends(PostService),
+    post_service: PostService = Depends(),
     current_user: UserBase = Depends(UserService.get_current_user_verified),
     db: Session = Depends(db.get_db),
 ) -> List[schema.Post]:

@@ -249,7 +249,7 @@ def read_private_data(
 def find_users(
     name: str,
     page: int,
-    user_service: UserService = Depends(UserService),
+    user_service: UserService = Depends(),
     current_user: UserBase = Depends(UserService.get_current_user_verified),
     db: Session = Depends(db.get_db),
 ) -> List[UserRead]:
