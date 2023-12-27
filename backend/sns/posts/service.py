@@ -163,14 +163,14 @@ class PostService:
         db: Session,
         page: int,
     ) -> List[Post]:
-        """전체 글 목록을 조회한다.
+        """전체 글 목록을 조회한다. 페이지 기본값은 0이고, 한 페이지당 조회되는 글의 수는 최대 5개다.
 
         Args:
             - db (Session): db session
             - page (int): 페이지 번호
 
         Returns:
-            - List[Post]: post 객체 정보들이 list 배열에 담겨져 반환
+            - List[Post]: post 객체 정보들이 list 배열에 담겨져 반환. 없으면 빈 목록을 반환
         """
         return post_crud.get_posts(
             db,
@@ -225,7 +225,7 @@ class PostService:
                 - code: USER_NOT_FOUND
 
         Returns:
-            - List[Post]: post 객체 정보들이 list 배열에 담겨져 반환
+            - List[Post]: post 객체 정보들이 list 배열에 담겨져 반환하며, 없으면 빈 list를 반환한다.
         """
 
         # user 유무 확인
@@ -352,6 +352,7 @@ class PostService:
         self,
         db: Session,
         redis_db: Redis,
+        page: int,
         liked_post_id: int,
         background_tasks: BackgroundTasks,
     ) -> List[User]:
@@ -363,11 +364,6 @@ class PostService:
             - liked_post_id (int): 좋아요를 받은 post의 id
             - background_tasks (BackgroundTasks): background 작업 수행을 위해 필요
 
-        Raises:
-            - HTTPException(404 NOT FOUND): 다음 2가지 경우에 발생한다.
-                - liked_post_id에 해당하는 post를 조회하지 못한 경우 (code: POST_NOT_FOUND)
-                - 해당 post에 좋아요를 한 user들이 없으면 발생 (code: USER_WHO_LIKE_NOT_FOUND)
-
         Returns:
             - List[User]: 해당 post에 좋아요를 유저들을 반환
         """
@@ -376,16 +372,11 @@ class PostService:
         cache = post_redis_crud.get_cache(redis_db, f"post::{liked_post_id}")
 
         if cache is None:
-            users = post_crud.get_users_who_like(db, liked_post_id)
-
-            if len(users) == 0:
-                raise HTTPException(
-                    status_code=status.HTTP_404_NOT_FOUND,
-                    detail={
-                        "code": "USER_WHO_LIKE_NOT_FOUND",
-                        "message": "해당 글에 좋아요를 한 유저가 없습니다.",
-                    },
-                )
+            users = post_crud.get_users_who_like(
+                db,
+                liked_post_id,
+                skip=page * self.POSTS_PER_A_PAGE,
+            )
 
             data = {
                 "redis_db": redis_db,
@@ -406,28 +397,23 @@ class PostService:
         self,
         db: Session,
         current_user_id: int,
+        page: int,
     ) -> List[Post]:
         """current_user_id에 해당하는 user가 좋아요를 한 post들을 조회한다.
+        없으면 빈 리스트를 반환한다.
 
         Args:
             - db (Session): db session
             - current_user_id (int): user의 id
 
-        Raises:
-            - HTTPException(404 NOT FOUND): 해당 유저가 좋아요를 한 글이 없는 경우
-
         Returns:
             - List[Post]: 좋아요를 받은 post들을 반환
         """
-        posts = post_crud.get_liked_posts(db, current_user_id)
-
-        if len(posts) == 0:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="해당 유저가 좋아요를 한 글이 없습니다.",
-            )
-        else:
-            return posts
+        return post_crud.get_liked_posts(
+            db,
+            current_user_id,
+            skip=page * self.POSTS_PER_A_PAGE,
+        )
 
     def like_post(
         self,
