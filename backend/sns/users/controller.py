@@ -9,6 +9,7 @@ from sns.common.session import db, redis_db
 from sns.users.repositories.email_client import EmailClient
 from sns.users.service import UserService
 from sns.users.schema import (
+    UserReadWithFollowed,
     UserPasswordUpdate,
     UserPrivateRead,
     UserCreate,
@@ -31,7 +32,7 @@ router = APIRouter()
 def signup(
     data_for_signup: UserCreate,
     background_tasks: BackgroundTasks,
-    user_service: UserService = Depends(UserService),
+    user_service: UserService = Depends(),
     email_client: EmailClient = Depends(EmailClient),
     db: Session = Depends(db.get_db),
 ) -> Message:
@@ -72,7 +73,7 @@ def signup(
 )
 def verify_email(
     code: str,
-    user_service: UserService = Depends(UserService),
+    user_service: UserService = Depends(),
     db: Session = Depends(db.get_db),
 ) -> Message:
     """code 정보를 받아 user를 조회하여 해당 user의 인증 상태를 True로 바꾼다.
@@ -106,7 +107,7 @@ def verify_email(
 def login(
     email: str = Body(...),
     password: str = Body(...),
-    user_service: UserService = Depends(UserService),
+    user_service: UserService = Depends(),
     db: Session = Depends(db.get_db),
 ) -> Token:
     """login 정보를 입력하면 access token을 발행한다.
@@ -143,7 +144,7 @@ def login(
 def reset_password(
     background_tasks: BackgroundTasks,
     email: str = Body(...),
-    user_service: UserService = Depends(UserService),
+    user_service: UserService = Depends(),
     email_client: EmailClient = Depends(EmailClient),
     db: Session = Depends(db.get_db),
 ) -> Message:
@@ -181,7 +182,7 @@ def reset_password(
 )
 def change_password(
     password_data: UserPasswordUpdate,
-    user_service: UserService = Depends(UserService),
+    user_service: UserService = Depends(),
     current_user: UserBase = Depends(UserService.get_current_user_verified),
     db: Session = Depends(db.get_db),
 ) -> Message:
@@ -221,16 +222,11 @@ def change_password(
     response_model=UserPrivateRead,
 )
 def read_private_data(
-    user_service: UserService = Depends(UserService),
+    user_service: UserService = Depends(),
     current_user: UserBase = Depends(UserService.get_current_user_verified),
     db: Session = Depends(db.get_db),
 ) -> UserPrivateRead:
     """로그인한 유저의 상세 정보를 반환한다.
-
-    Raises:
-
-    - HTTPException (404 NOT FOUND): email에 해당하는 user를 찾지 못한 경우
-        - code: USER_NOT_FOUND
 
     Returns:
 
@@ -239,7 +235,7 @@ def read_private_data(
     - name: 현재 로그인된 user의 name
     - profile_text: 현재 로그인된 user의 profile text
     """
-    return user_service.read_user(
+    return user_service.read_private_data(
         db,
         current_user.id,
     )
@@ -248,15 +244,15 @@ def read_private_data(
 @router.get(
     "/users/{user_id}",
     status_code=status.HTTP_200_OK,
-    response_model=UserRead,
-    response_model_exclude_unset=True,
+    response_model=UserReadWithFollowed,
 )
 def read_user(
     user_id: int,
-    user_service: UserService = Depends(UserService),
+    user_service: UserService = Depends(),
+    current_user: UserBase = Depends(UserService.get_current_user_verified),
     db: Session = Depends(db.get_db),
-) -> UserRead:
-    """로그인한 유저 이외의 유저 정보를 조회한다.
+) -> UserReadWithFollowed:
+    """로그인한 유저 이외의 유저 정보를 조회한다. 그리고, 로그인한 유저와의 팔로우 관계를 확인한다.
 
     Args:
 
@@ -272,9 +268,11 @@ def read_user(
     - id: 조회하려는 프로필의 id
     - name: user_id에 해당되는 user의 name
     - profile_text: user_id에 해당되는 user의 profile text
+    - followed: user_id와 현재 로그인한 유저의 팔로우 유무
     """
     return user_service.read_user(
         db,
+        current_user.id,
         user_id,
     )
 
@@ -287,7 +285,7 @@ def read_user(
 def update_user(
     user_id: int,
     data_to_be_updated: UserUpdate,
-    user_service: UserService = Depends(UserService),
+    user_service: UserService = Depends(),
     current_user: UserBase = Depends(UserService.get_current_user_verified),
     db: Session = Depends(db.get_db),
 ) -> UserRead:
@@ -325,7 +323,7 @@ def update_user(
 )
 def delete_user(
     user_id: int,
-    user_service: UserService = Depends(UserService),
+    user_service: UserService = Depends(),
     current_user: UserBase = Depends(UserService.get_current_user_verified),
     db: Session = Depends(db.get_db),
 ) -> Message:
@@ -357,27 +355,24 @@ def delete_user(
 
 @router.get(
     "/users/{user_id}/followers",
-    response_model=List[UserBase],
+    response_model=List[UserRead],
     status_code=status.HTTP_200_OK,
 )
 def read_followers(
     user_id: int,
-    user_service: UserService = Depends(UserService),
+    user_service: UserService = Depends(),
     db: Session = Depends(db.get_db),
-) -> List[UserBase]:
+) -> List[UserRead]:
     """user_id에 해당하는 유저의 팔로워들을 조회한다.
+        팔로워가 없으면 빈 리스트(배열)을 반환한다.
 
     Args:
 
     - user_id (int): user의 id
 
-    Raises:
-
-    - HTTPException (404 NOT FOUND): 팔로워가 없을 때
-
     Returns:
 
-    - List[UserBase]: 팔로워 목록
+    - List[UserRead]: 팔로워 목록
     """
     return user_service.get_followers(
         db,
@@ -387,27 +382,24 @@ def read_followers(
 
 @router.get(
     "/users/{user_id}/followings",
-    response_model=List[UserBase],
+    response_model=List[UserRead],
     status_code=status.HTTP_200_OK,
 )
 def read_followings(
     user_id: int,
-    user_service: UserService = Depends(UserService),
+    user_service: UserService = Depends(),
     db: Session = Depends(db.get_db),
-) -> List[UserBase]:
+) -> List[UserRead]:
     """user_id에 해당하는 유저의 팔로잉들을 조회한다.
+        팔로잉이 존재하지 않으면 빈 리스트(배열)을 반환한다.
 
     Args:
 
     - user_id (int): user의 id
 
-    Raises:
-
-    - HTTPException (404 NOT FOUND): 팔로잉이 없을 때
-
     Returns:
 
-    - List[UserBase]: 팔로잉 목록
+    - List[UserRead]: 팔로잉 목록
     """
     return user_service.get_followings(
         db,
@@ -423,7 +415,7 @@ def read_followings(
 def follow_user(
     user_id: int,
     background_tasks: BackgroundTasks,
-    user_service: UserService = Depends(UserService),
+    user_service: UserService = Depends(),
     current_user: UserBase = Depends(UserService.get_current_user_verified),
     redis_db: Redis = Depends(redis_db.get_db),
     db: Session = Depends(db.get_db),
@@ -463,7 +455,7 @@ def follow_user(
 )
 def unfollow_user(
     user_id: int,
-    user_service: UserService = Depends(UserService),
+    user_service: UserService = Depends(),
     current_user: UserBase = Depends(UserService.get_current_user_verified),
     db: Session = Depends(db.get_db),
 ) -> Message:

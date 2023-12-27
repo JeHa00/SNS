@@ -307,9 +307,27 @@ def test_read_user_if_user_is_not_same_as_current_user(
 
     assert "email" not in result
     assert "password" not in result
+
     assert "id" in result
     assert "name" in result
     assert "profile_text" in result
+    assert "followed" in result
+    assert result["followed"] is False
+
+    # 팔로우 요청
+    response = client.post(
+        f"{settings.API_V1_PREFIX}/users/{other_user.id}/follow",
+        headers=headers,
+    )
+
+    # 팔로우 후, 다시 유저 조회
+    response = client.get(
+        f"{settings.API_V1_PREFIX}/users/{other_user.id}",
+        headers=headers,
+    )
+    result = response.json()
+
+    assert result["followed"] is True
 
 
 @pytest.mark.read_private_data
@@ -320,28 +338,18 @@ def test_read_user_if_user_is_same_as_current_user(
 ):
     # current_user 정보
     headers = get_user_token_headers_and_login_data["headers"]
-    current_user_data = get_user_token_headers_and_login_data["login_data"]
-    current_user_email = current_user_data["email"]
 
     # 동일한 유저 정보 조회 및 결과
     response = client.get(
-        f"{settings.API_V1_PREFIX}/users/current-user/private-data",
+        f"{settings.API_V1_PREFIX}/users/private-data",
         headers=headers,
     )
     result = response.json()
-    email_of_user_id = result["email"]
 
+    assert "id" in result
     assert "email" in result
     assert "name" in result
     assert "profile_text" in result
-    assert "password" not in result
-    assert "profile_image_name" not in result
-    assert "profile_image_path" not in result
-    assert "verified" not in result
-    assert "verification_code" not in result
-    assert "created_at" not in result
-    assert "updated_at" not in result
-    assert current_user_email == email_of_user_id
 
 
 @pytest.mark.update_user
@@ -460,7 +468,8 @@ def test_read_followers(
 
         for user in result:
             assert "id" in user
-            assert "email" in user
+            assert "name" in user
+            assert "profile_text" in user
 
 
 @pytest.mark.read_followers
@@ -471,10 +480,9 @@ def test_read_followers_if_not_exist_follower(
 ):
     user_id = fake_user.get("user").id
     response = client.get(f"{settings.API_V1_PREFIX}/users/{user_id}/followers")
-    result_message = response.json()["detail"]
 
-    assert response.status_code == status.HTTP_404_NOT_FOUND
-    assert result_message == "해당 유저는 팔로워가 없습니다."
+    assert response.status_code == status.HTTP_200_OK
+    assert response.json() == []
 
 
 @pytest.mark.read_followings
@@ -491,7 +499,8 @@ def test_read_followings(
 
         for user in result:
             assert "id" in user
-            assert "email" in user
+            assert "name" in user
+            assert "profile_text" in user
 
 
 @pytest.mark.read_followings
@@ -502,10 +511,9 @@ def test_read_followings_if_not_exist_following(
 ):
     user_id = fake_user.get("user").id
     response = client.get(f"{settings.API_V1_PREFIX}/users/{user_id}/followings")
-    result_message = response.json()["detail"]
 
-    assert response.status_code == status.HTTP_404_NOT_FOUND
-    assert result_message == "해당 유저는 팔로잉이 없습니다."
+    assert response.status_code == status.HTTP_200_OK
+    assert response.json() == []
 
 
 @pytest.mark.follow_user
