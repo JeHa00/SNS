@@ -154,6 +154,7 @@ async def test_send_events(
             contents.pop()  # 빈 문자열 제거
             for content in contents:
                 data = content.split(b"\n")
+                print(f"data: {data}")
 
                 # event
                 assert data[0] == b"event: follow"
@@ -173,8 +174,10 @@ async def test_send_events(
                 length_of_data_key = len(b"data:") + 1
                 notification_data = (
                     data[3][length_of_data_key:].decode("utf-8").replace("'", '"')
-                )
+                ).lower()
+
                 deserialized_data = orjson.loads(notification_data)
+
                 assert "type" in deserialized_data
                 assert deserialized_data["type"] == "follow"
                 assert "notification_id" in deserialized_data
