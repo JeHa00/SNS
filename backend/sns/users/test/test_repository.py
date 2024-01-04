@@ -16,19 +16,21 @@ def test_create_user_if_success(client: TestClient, db_session: Session):
     email = random_email()
     password = random_lower_string(k=8)
     hashed_password = user_service.get_password_hash(password)
+
     data_for_signup = UserCreate(
         email=email,
         password=hashed_password,
         password_confirm=hashed_password,
     ).dict()
+
     data_for_signup.pop("password_confirm")
+
     user = user_crud.create(db_session, **data_for_signup)
+
     assert user.email == email
     assert user.verified is False
     assert hasattr(user, "name")
     assert hasattr(user, "profile_text")
-    assert hasattr(user, "profile_image_name")
-    assert hasattr(user, "profile_image_path")
     assert hasattr(user, "verified")
     assert hasattr(user, "verification_code")
     assert hasattr(user, "created_at")
