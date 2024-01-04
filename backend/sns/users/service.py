@@ -253,15 +253,15 @@ class UserService:
                 settings.SECRET_KEY,
                 settings.SECRET_ALGORITHM,
             )
-            email: str = payload.get("sub")
-            if email is None:
+            name: str = payload.get("sub")
+            if name is None:
                 raise credentials_exception
         except JWTError:
             raise credentials_exception
 
         user = user_crud.get_user(
             db,
-            email=email,
+            name=name,
         )
 
         if user is None:
@@ -501,7 +501,7 @@ class UserService:
         self.verify_password(password, user.password)
 
         if self.is_verified(user):
-            return self.create_access_token({"sub": email})  # access token 반환
+            return self.create_access_token({"sub": user.name})  # access token 반환
 
     def reset_password(
         self,
