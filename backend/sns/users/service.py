@@ -878,6 +878,27 @@ class UserService:
                 detail="follow 관계 취소가 실패하였습니다.",
             )
 
+    def find_users(
+        self,
+        db: Session,
+        name: str,
+        page: int,
+    ) -> List[User]:
+        """해당 name을 가지고 있는 유저들을 조회한다.
+
+        Args:
+            db (Session): db session
+            name (str): 조회할 유저의 name
+            page (int): 조회할 page 번호. 페이지당 조회되는 user 수는 10명
+
+        Returns:
+            List[User]: 조회된 유저 목록
+        """
+
+        users_per_a_page = 10
+
+        return user_crud.get_users_by_name(db, name, skip=page * users_per_a_page)
+
     def create_and_add_notification(
         self,
         db: Session,

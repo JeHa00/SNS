@@ -35,8 +35,33 @@ class UserDB:
                 .filter(User.verification_code == verification_code)
                 .one_or_none()
             )
-
         return user
+
+    def get_users_by_name(
+        self,
+        db: Session,
+        name: str,
+        skip: int,
+        limit: int = 10,
+    ) -> List[User]:
+        """User의 name 속성에 변수로 받은 name 문자열을 포함하고 있는 유저를 조회한다.
+
+        Args:
+            db (Session): db session
+            name (str): 조회하려는 유저의 이름
+            skip (int): 쿼리 조회 시 건너띌 갯수. 기본 값은 0
+            limit (int, optional): 쿼리 조회 시 가져올 최대 갯수. 기본 값은 5
+
+        Returns:
+            List[User]: user 객체들이 list에 담겨져 반환
+        """
+        return (
+            db.query(User)
+            .filter(User.name.ilike(f"%{name}%"))
+            .offset(skip)
+            .limit(limit)
+            .all()
+        )
 
     def create(self, db: Session, **kwargs: dict) -> User:
         """받은 정보로 새 유저를 등록한다.

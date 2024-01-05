@@ -13,6 +13,7 @@ from sns.users.service import user_service
 from sns.users.repositories.db import user_crud
 from sns.posts.schema import PostCreate, PostUpdate
 from sns.posts.service import post_service
+from sns.posts.repository import post_crud
 from sns.posts.model import Post
 
 
@@ -649,3 +650,45 @@ def test_unlike_post_if_postlike_not_exist(
     assert response.status_code == status.HTTP_404_NOT_FOUND
     assert result_status_text == "POST_LIKE_NOT_FOUND"
     assert result_message == "해당 정보에 일치하는 좋아요 정보를 찾을 수 없습니다."
+
+
+@pytest.mark.find_posts
+def test_find_posts(
+    client: TestClient,
+    db_session: Session,
+    get_user_token_headers_and_login_data: dict,
+    fake_multi_posts: Post,
+):
+    headers = get_user_token_headers_and_login_data.get("headers")
+
+    keyword = "test"
+
+    page = 0
+
+    # 인증 정보가 없는 경우
+    response = client.get(
+        f"{settings.API_V1_PREFIX}/posts/list?keyword={keyword}&page={page}",
+    )
+
+    assert response.status_code == status.HTTP_401_UNAUTHORIZED
+
+    # content에 keyword가 있는 경우
+    # 각 글마다 인증 토큰이 필요하므로 repository layer를 통해 직접 수정
+    for id in range(1, 101):
+        post = post_crud.get_post(db_session, id)
+        if id < 50:
+            post_crud.update(db_session, post, content=f"test{id}_test")
+        else:
+            post_crud.update(db_session, post, content=f"TEST{id}_TEST")
+
+    for page in range(21):
+        response = client.get(
+            f"{settings.API_V1_PREFIX}/posts/list?keyword={keyword}&page={page}",
+            headers=headers,
+        )
+
+        if page == 20:
+            # content에 keyword가 있는 post가 더 없는 경우
+            assert len(response.json()) == 0
+        else:
+            assert len(response.json()) == 5

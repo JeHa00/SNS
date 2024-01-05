@@ -167,7 +167,7 @@ class PostService:
 
         Args:
             - db (Session): db session
-            - page (int): 페이지 번호
+            - page (int): 조회할 page 번호. 페이지당 조회되는 post 수는 5개
 
         Returns:
             - List[Post]: post 객체 정보들이 list 배열에 담겨져 반환. 없으면 빈 목록을 반환
@@ -190,7 +190,7 @@ class PostService:
         Args:
             - db (Session): db session
             - current_user_id (int): 현재 로그인한 유저의 id
-            - page (int): 조회할 page 번호.
+            - page (int): 조회할 page 번호. 페이지당 조회되는 post 수는 5개
 
         Returns:
             -  List[Post]: 조회된 글들의 목록
@@ -218,14 +218,14 @@ class PostService:
         Args:
             - db (Session): db session
             - writer_id (int): writer user의 id
-            - page (int): 조회할 page 번호.
+            - page (int): 조회할 page 번호. 페이지당 조회되는 post 수는 5개
 
         Raises:
             - HTTPException(404 NOT FOUND): writer_id에 해당되는 user를 찾지 못한 경우
                 - code: USER_NOT_FOUND
 
         Returns:
-            - List[Post]: post 객체 정보들이 list 배열에 담겨져 반환하며, 없으면 빈 list를 반환한다.
+            - List[Post]: post 객체 정보들이 list 배열에 담겨져 반환
         """
 
         # user 유무 확인
@@ -361,12 +361,15 @@ class PostService:
         Args:
             - db (Session): db session
             - redis_db (Redis): Redis db
+            - page (int): 조회할 page 번호. 페이지당 조회되는 user 수는 10개
             - liked_post_id (int): 좋아요를 받은 post의 id
             - background_tasks (BackgroundTasks): background 작업 수행을 위해 필요
 
         Returns:
             - List[User]: 해당 post에 좋아요를 유저들을 반환
         """
+        users_per_a_page = 10
+
         self.get_post_and_handle_none(db, liked_post_id)
 
         cache = post_redis_crud.get_cache(redis_db, f"post::{liked_post_id}")
@@ -375,7 +378,7 @@ class PostService:
             users = post_crud.get_users_who_like(
                 db,
                 liked_post_id,
-                skip=page * self.POSTS_PER_A_PAGE,
+                skip=page * users_per_a_page,
             )
 
             data = {
@@ -405,6 +408,7 @@ class PostService:
         Args:
             - db (Session): db session
             - current_user_id (int): user의 id
+            - page (int): 조회할 page 번호. 페이지당 조회되는 post 수는 5개
 
         Returns:
             - List[Post]: 좋아요를 받은 post들을 반환
@@ -528,6 +532,23 @@ class PostService:
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 detail="post 좋아요 취소에 실패했습니다.",
             )
+
+    def find_posts(
+        self,
+        db: Session,
+        keyword: str,
+        page: int,
+    ) -> List[Post]:
+        """글의 내용에 keyword가 포함된 글을 조회한다.
+
+        Args:
+            keyword (str): content에 포함하고 keyword
+            page (int): 조회할 page 번호. 페이지당 조회되는 post 수는 5개
+
+        Returns:
+            List[Post]: Post 목록
+        """
+        return post_crud.get_posts_by_keyword(db, keyword, page * self.POSTS_PER_A_PAGE)
 
     def create_and_add_notification(
         self,
