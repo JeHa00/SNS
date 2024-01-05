@@ -11,16 +11,19 @@ class UserDB:
         db: Session,
         email: str = None,
         user_id: int = None,
+        name: str = None,
         verification_code: str = None,
     ) -> User:
         """이메일이 이미 등록되어있는지 또는 해당 이메일을 가진 유저의 비밀번호가 인자로 받은 비밀번호와 일치하는지 판단한다.
 
         Args:
-            - db (Session): db session
+            db (Session): db session
 
         Kwargs:
-            - email: 등록 유무를 확인하려는 이메일
-            - password: 등록된 이메일을 가진 유저의 패스워드인지 확인하려는 패스워드
+            email: 유저의 email
+            user_id: 유저의 id
+            name: 유저의 이름
+            verification_code: 유저의 인증 코드
 
         Returns:
             User: 입력된 값들과 일치하는 유저 객체를 반환한다. 없으면 None을 반환
@@ -29,6 +32,8 @@ class UserDB:
             user = db.query(User).filter(User.email == email).one_or_none()
         elif user_id:
             user = db.query(User).get(user_id)
+        elif name:
+            user = db.query(User).filter(User.name == name).one_or_none()
         else:
             user = (
                 db.query(User)
@@ -92,7 +97,7 @@ class UserDB:
         Args:
             db (Session): db session
             user (User): user 정보
-            data_to_be_updated (BaseModel | dict): 변경할 유저 정보
+            kwargs (BaseModel | dict): 변경할 유저 정보
 
         Returns:
             User: 수정된 user 객체

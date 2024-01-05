@@ -140,7 +140,7 @@ def test_login_if_user_registered(
     login_data = fake_user.get("login_data")
 
     # token 생성
-    access_token_01 = user_service.create_access_token(data={"sub": user.email})
+    access_token_01 = user_service.create_access_token(data={"sub": user.name})
     email_01 = user_service.get_current_user(db_session, access_token_01)
 
     # verified 업데이트
