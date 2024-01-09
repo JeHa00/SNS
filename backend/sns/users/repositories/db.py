@@ -11,16 +11,19 @@ class UserDB:
         db: Session,
         email: str = None,
         user_id: int = None,
+        name: str = None,
         verification_code: str = None,
     ) -> User:
         """이메일이 이미 등록되어있는지 또는 해당 이메일을 가진 유저의 비밀번호가 인자로 받은 비밀번호와 일치하는지 판단한다.
 
         Args:
-            - db (Session): db session
+            db (Session): db session
 
         Kwargs:
-            - email: 등록 유무를 확인하려는 이메일
-            - password: 등록된 이메일을 가진 유저의 패스워드인지 확인하려는 패스워드
+            email: 유저의 email
+            user_id: 유저의 id
+            name: 유저의 이름
+            verification_code: 유저의 인증 코드
 
         Returns:
             User: 입력된 값들과 일치하는 유저 객체를 반환한다. 없으면 None을 반환
@@ -29,14 +32,41 @@ class UserDB:
             user = db.query(User).filter(User.email == email).one_or_none()
         elif user_id:
             user = db.query(User).get(user_id)
+        elif name:
+            user = db.query(User).filter(User.name == name).one_or_none()
         else:
             user = (
                 db.query(User)
                 .filter(User.verification_code == verification_code)
                 .one_or_none()
             )
-
         return user
+
+    def get_users_by_name(
+        self,
+        db: Session,
+        name: str,
+        skip: int,
+        limit: int = 10,
+    ) -> List[User]:
+        """User의 name 속성에 변수로 받은 name 문자열을 포함하고 있는 유저를 조회한다.
+
+        Args:
+            db (Session): db session
+            name (str): 조회하려는 유저의 이름
+            skip (int): 쿼리 조회 시 건너띌 갯수. 기본 값은 0
+            limit (int, optional): 쿼리 조회 시 가져올 최대 갯수. 기본 값은 5
+
+        Returns:
+            List[User]: user 객체들이 list에 담겨져 반환
+        """
+        return (
+            db.query(User)
+            .filter(User.name.ilike(f"%{name}%"))
+            .offset(skip)
+            .limit(limit)
+            .all()
+        )
 
     def create(self, db: Session, **kwargs: dict) -> User:
         """받은 정보로 새 유저를 등록한다.
@@ -67,7 +97,7 @@ class UserDB:
         Args:
             db (Session): db session
             user (User): user 정보
-            data_to_be_updated (BaseModel | dict): 변경할 유저 정보
+            kwargs (BaseModel | dict): 변경할 유저 정보
 
         Returns:
             User: 수정된 user 객체
@@ -169,7 +199,9 @@ class UserDB:
             List[User]: following_id로부터 follow 신청을 받은 user 목록
         """
         subquery = (
-            db.query(Follow).filter(Follow.following_id == following_id).subquery()
+            db.query(Follow.follower_id)
+            .filter(Follow.following_id == following_id)
+            .subquery()
         )
 
         return db.query(User).join(subquery, User.id == subquery.c.follower_id).all()
@@ -188,7 +220,11 @@ class UserDB:
         Returns:
             List[User]: follower_id를 따르는 user 목록
         """
-        subquery = db.query(Follow).filter(Follow.follower_id == follower_id).subquery()
+        subquery = (
+            db.query(Follow.following_id)
+            .filter(Follow.follower_id == follower_id)
+            .subquery()
+        )
 
         return db.query(User).join(subquery, User.id == subquery.c.following_id).all()
 

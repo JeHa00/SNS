@@ -5,6 +5,7 @@ from sqlalchemy.orm import Session
 
 from sns.users.test.utils import random_lower_string
 from sns.users.service import user_service
+from sns.users.repositories.db import user_crud
 from sns.posts.repository import post_crud
 from sns.posts.model import Post, PostLike
 from sns.posts import schema
@@ -59,7 +60,81 @@ def test_get_post(
     assert hasattr(post, "updated_at")
 
 
-def test_get_multi_posts(
+def test_get_posts(
+    client: TestClient,
+    db_session: Session,
+    fake_multi_posts: List[Post],
+):
+    for page in range(20):
+        posts = post_crud.get_posts(
+            db_session,
+            skip=page * 5,
+        )
+
+        assert len(posts) == 5
+
+        for post in posts:
+            assert hasattr(post, "id")
+            assert hasattr(post, "content")
+            assert hasattr(post, "writer_id")
+            assert hasattr(post, "writer")
+            assert hasattr(post, "created_at")
+            assert hasattr(post, "updated_at")
+
+
+def test_get_posts_of_followers(
+    client: TestClient,
+    db_session: Session,
+    get_user_token_headers_and_login_data: dict,
+    fake_user: dict,
+    fake_multi_posts: None,
+    fake_multi_user: None,
+):
+    following_user_id = 1  # 로그인한 유저
+
+    # follow 맺기
+    for follower_id in range(2, 12):
+        new_follow = user_crud.follow(
+            db_session,
+            following_id=following_user_id,
+            follower_id=follower_id,
+        )
+
+        assert hasattr(new_follow, "id")
+        assert hasattr(new_follow, "following_id")
+        assert hasattr(new_follow, "follower_id")
+        assert hasattr(new_follow, "created_at")
+        assert hasattr(new_follow, "updated_at")
+
+    for _ in range(5):
+        content = random_lower_string(k=1000)
+        writer_id = 3
+        post_crud.create(db_session, writer_id, content=content)
+
+    # follower 의 post 조회하기
+    PAGES_PER_A_PAGE = 5
+
+    for page in range(21):
+        posts = post_crud.get_posts_of_followers(
+            db_session,
+            following_user_id,
+            PAGES_PER_A_PAGE * page,
+        )
+        assert len(posts) == PAGES_PER_A_PAGE
+
+        for post in posts:
+            assert hasattr(post, "id")
+            assert hasattr(post, "content")
+            assert hasattr(post, "writer_id")
+            assert hasattr(post, "created_at")
+            assert hasattr(post, "updated_at")
+            if page != 20:
+                assert post.writer_id == 2
+            else:
+                assert post.writer_id == 3
+
+
+def test_get_post_of_a_user(
     client: TestClient,
     db_session: Session,
     fake_multi_posts: List[Post],
@@ -67,7 +142,7 @@ def test_get_multi_posts(
 ):
     writer = fake_user.get("user")
     for page in range(20):
-        posts = post_crud.get_multi_posts(
+        posts = post_crud.get_user_posts(
             db_session,
             writer.id,
             skip=page * 5,
@@ -87,7 +162,7 @@ def test_get_multi_posts(
             assert hasattr(post, "updated_at")
 
 
-def test_update_only_one_by_model_object(
+def test_update_only_one(
     client: TestClient,
     db_session: Session,
     fake_post: Post,
@@ -107,7 +182,7 @@ def test_update_only_one_by_model_object(
     assert content_before_update != content_after_update
 
 
-def test_update_multi_posts_by_model_object(
+def test_update_multi_posts(
     client: TestClient,
     db_session: Session,
     fake_user: dict,
@@ -115,7 +190,7 @@ def test_update_multi_posts_by_model_object(
 ):
     # 생성한 post 목록들
     user = fake_user.get("user")
-    posts = post_crud.get_multi_posts(
+    posts = post_crud.get_user_posts(
         db_session,
         user.id,
     )
@@ -131,7 +206,7 @@ def test_update_multi_posts_by_model_object(
         assert post.content == "Hello World!"
 
 
-def test_delete_only_one_by_model_object(
+def test_delete_only_one(
     client: TestClient,
     db_session: Session,
     fake_post: Post,
@@ -149,7 +224,7 @@ def test_delete_only_one_by_model_object(
     assert post is None
 
 
-def test_delete_multi_posts_by_model_object(
+def test_delete_multi_posts(
     client: TestClient,
     db_session: Session,
     fake_user: dict,
@@ -159,7 +234,7 @@ def test_delete_multi_posts_by_model_object(
     user = fake_user.get("user")
 
     # fake_post로 생성한 수가 100개
-    posts = post_crud.get_multi_posts(
+    posts = post_crud.get_user_posts(
         db_session,
         user.id,
         limit=100,
@@ -171,7 +246,7 @@ def test_delete_multi_posts_by_model_object(
             post,
         )
 
-    posts = post_crud.get_multi_posts(
+    posts = post_crud.get_user_posts(
         db_session,
         user.id,
     )
@@ -190,7 +265,7 @@ def test_delete_user_having_multi_posts(
         db_session,
         user,
     )
-    posts = post_crud.get_multi_posts(
+    posts = post_crud.get_user_posts(
         db_session,
         user.id,
     )
@@ -209,9 +284,16 @@ def test_like_if_post_like_not_exist(
     for post_id in range(1, 101):
         post_crud.like(db_session, user.id, post_id)
 
-    posts = post_crud.get_liked_posts(db_session, user.id)
+    posts_per_a_page = 5
 
-    assert len(posts) == 100
+    for page in range(11):
+        posts = post_crud.get_liked_posts(
+            db_session,
+            user.id,
+            skip=page * posts_per_a_page,
+        )
+
+        assert len(posts) == 5
 
 
 def test_get_users_who_like(
@@ -233,13 +315,31 @@ def test_get_liked_posts(
     db_session: Session,
     fake_postlike: None,
 ):
-    posts_on_user_one = post_crud.get_liked_posts(db_session, 1)
-    posts_on_user_two = post_crud.get_liked_posts(db_session, 2)
+    posts_per_page = 5
 
-    assert posts_on_user_one is not None
-    assert len(posts_on_user_one) == 50
-    assert posts_on_user_two is not None
-    assert len(posts_on_user_two) == 100
+    for page in range(11):
+        posts_on_user_one = post_crud.get_liked_posts(
+            db_session,
+            1,
+            skip=page * posts_per_page,
+        )
+
+        if page == 10:
+            assert len(posts_on_user_one) == 0
+        else:
+            assert len(posts_on_user_one) == 5
+
+    for page in range(21):
+        posts_on_user_two = post_crud.get_liked_posts(
+            db_session,
+            2,
+            skip=page * posts_per_page,
+        )
+
+        if page == 20:
+            assert len(posts_on_user_two) == 0
+        else:
+            assert len(posts_on_user_two) == 5
 
 
 def test_unlike(
@@ -299,3 +399,34 @@ def test_like_if_post_like_already_exist(
         user_who_like = post_crud.get_users_who_like(db_session, post_id)
 
         assert len(user_who_like) == 2
+
+
+def test_get_posts_by_keyword(
+    client: TestClient,
+    db_session: Session,
+    fake_multi_posts: None,
+):
+    # content 내용 변경
+    for id in range(1, 101):
+        post = post_crud.get_post(db_session, id)
+
+        assert f"test{id}" not in post.content
+
+        post_crud.update(db_session, post, content=f"test{id}")
+
+        assert f"test{id}" in post.content
+
+    posts_per_a_page = 5
+
+    # test 문자열이 있는 post 조회
+    for page in range(21):
+        posts = post_crud.get_posts_by_keyword(
+            db_session,
+            "test",
+            skip=page * posts_per_a_page,
+        )
+
+        if page == 20:
+            assert len(posts) == 0
+        else:
+            assert len(posts) == 5

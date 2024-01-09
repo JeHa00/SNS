@@ -16,7 +16,11 @@ from sns.common.conftest import (
 )
 
 # flake8: noqa
-from sns.users.test.conftest import fake_user, get_user_token_headers_and_login_data
+from sns.users.test.conftest import (
+    fake_user,
+    get_user_token_headers_and_login_data,
+    fake_multi_user,
+)
 from sns.users.test.utils import random_lower_string, random_email
 from sns.users.repositories.db import user_crud
 from sns.users.service import user_service
@@ -69,7 +73,7 @@ def fake_multi_posts(
     db_session: Session,
     fake_user: Dict,
 ) -> None:
-    """fake_user가 생성한 여러 개의 Post model를 만든다.
+    """fake_user가 생성한 100개의 Post 객체를 만든다.
 
     Args:
         client (TestClient): test용 db url에 연결된 client를 생성

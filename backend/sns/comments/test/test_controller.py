@@ -15,7 +15,7 @@ from sns.comments.schema import CommentCreate, CommentUpdate
 
 
 @pytest.mark.get_comments_on_a_post
-def test_comments_on_a_post_if_post_not_exist(
+def test_get_comments_on_a_post_if_post_not_exist(
     client: TestClient,
     db_session: Session,
 ):
@@ -33,7 +33,7 @@ def test_comments_on_a_post_if_post_not_exist(
 
 
 @pytest.mark.get_comments_of_a_user
-def test_comments_of_a_post_if_post_exist_but_comments_not_exist(
+def test_get_comments_of_a_post_if_post_exist_but_comments_not_exist(
     client: TestClient,
     db_session: Session,
     fake_post: Post,
@@ -42,16 +42,13 @@ def test_comments_of_a_post_if_post_exist_but_comments_not_exist(
     response = client.get(
         f"{settings.API_V1_PREFIX}/posts/{fake_post.id}/comments?page={page}",
     )
-    result_code = response.json()["detail"]["code"]
-    result_message = response.json()["detail"]["message"]
 
-    assert response.status_code == status.HTTP_404_NOT_FOUND
-    assert result_code == "COMMENT_NOT_FOUND"
-    assert result_message == "해당되는 댓글을 찾을 수 없습니다."
+    assert response.status_code == status.HTTP_200_OK
+    assert response.json() == []
 
 
 @pytest.mark.get_comments_on_a_post
-def test_comments_on_a_post_if_post_and_comments_exist(
+def test_get_comments_on_a_post_if_post_and_comments_exist(
     client: TestClient,
     db_session: Session,
     fake_post: Post,
@@ -69,7 +66,7 @@ def test_comments_on_a_post_if_post_and_comments_exist(
 
 
 @pytest.mark.get_comments_of_a_user
-def test_comments_of_a_user_if_not_registered(
+def test_get_comments_of_a_user_if_not_registered(
     client: TestClient,
     db_session: Session,
 ):
@@ -87,7 +84,7 @@ def test_comments_of_a_user_if_not_registered(
 
 
 @pytest.mark.get_comments_of_a_user
-def test_comments_of_a_user_if_comment_not_exist(
+def test_get_comments_of_a_user_if_comment_not_exist(
     client: TestClient,
     db_session: Session,
     fake_user: dict,
@@ -97,16 +94,12 @@ def test_comments_of_a_user_if_comment_not_exist(
     response = client.get(
         f"{settings.API_V1_PREFIX}/users/{user.id}/comments?page={page}",
     )
-    result_code = response.json()["detail"]["code"]
-    result_message = response.json()["detail"]["message"]
-
-    assert response.status_code == status.HTTP_404_NOT_FOUND
-    assert result_code == "COMMENT_NOT_FOUND"
-    assert result_message == "해당되는 댓글을 찾을 수 없습니다."
+    assert response.status_code == status.HTTP_200_OK
+    assert response.json() == []
 
 
 @pytest.mark.get_comments_of_a_user
-def test_comments_of_a_user_if_comments_exist(
+def test_get_comments_of_a_user_if_comments_exist(
     client: TestClient,
     db_session: Session,
     fake_user: dict,

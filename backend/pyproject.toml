@@ -33,11 +33,15 @@ markers = [
     "reset_password",
     "change_password",
     "read_user",
+    "find_users",
     "read_private_data",
     "update_user",
     "delete_user",
-    "read_post",
+    "read_a_post",
     "read_posts",
+    "read_posts_of_followers",
+    "read_user_posts",
+    "find_posts",
     "create_post",
     "update_post",
     "delete_post",
@@ -55,6 +59,8 @@ markers = [
     "update_comment",
     "delete_comment",
     "mark_as_read",
+    "send_events",
+    "read_notifications",
 ]
 
 

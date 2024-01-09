@@ -1,4 +1,5 @@
 from pydantic import BaseModel, Field
+from datetime import datetime
 
 from sns.common.config import settings
 from sns.notifications.enums import NotificationType
@@ -9,26 +10,31 @@ class NotificationBase(BaseModel):
         orm_mode = True
 
 
-class Notification(NotificationBase):
-    type: NotificationType = Field(title="알림 유형")
-    follow_id: int | None
-    post_like_id: int | None
-
-
 class NotificationBaseData(NotificationBase):
     type: NotificationType
-    notification_id: int
     notified_user_id: int
-    created_at: str
+    read: bool
+    created_at: datetime
 
 
 class FollowNotificationData(NotificationBaseData):
+    notification_id: int
     following_id: int
+    read: bool = Field(default=False)
 
 
 class PostLikeNotificationData(NotificationBaseData):
+    notification_id: int
     user_id_who_like: int
     liked_post_id: int
+    read: bool = Field(default=False)
+
+
+class NotificationData(NotificationBaseData):
+    id: int
+    user_id_who_like: int | None
+    liked_post_id: int | None
+    following_id: int | None
 
 
 class NotificationEventData(NotificationBase):

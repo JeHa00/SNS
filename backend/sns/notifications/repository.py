@@ -1,14 +1,58 @@
-from typing import Dict, Any
+from typing import Dict, Any, List
 import orjson
 
 from sqlalchemy.orm import Session
 from redis.client import Redis
 
+from sns.users.model import Follow
+from sns.posts.model import PostLike
 from sns.notifications.model import Notification
 from sns.notifications.enums import NotificationType
 
 
 class NotificationDB:
+    def get_notifications_by_notified_user_id(
+        self,
+        db: Session,
+        notified_user_id: int,
+        skip: int = 0,
+        limit: int = 10,
+    ) -> List[Notification]:
+        """알림 수신자가 notified_user_id인 알림 정보를 10개씩 조회한다.
+
+        Args:
+            db (Session): db session
+            notified_user_id (int): 알림 수신자의 id
+            skip (int, optional): 조회 시 시작할 데이터 id 값. Defaults to 0.
+            limit (int, optional): 조회 시 얻을 데이터의 갯수. Defaults to 10.
+
+        Returns:
+            List[Notification]: Notification 데이터가 List 형태로 반환
+        """
+        subquery = (
+            db.query(Notification)
+            .filter(Notification.notified_user_id == notified_user_id)
+            .order_by(Notification.created_at.desc())
+            .offset(skip)
+            .limit(limit)
+            .subquery()
+        )
+
+        return (
+            db.query(
+                subquery.c.id,
+                subquery.c.type,
+                subquery.c.read,
+                subquery.c.notified_user_id,
+                subquery.c.created_at,
+                PostLike.liked_post_id,
+                PostLike.user_id_who_like,
+                Follow.following_id,
+            )
+            .outerjoin(Follow, subquery.c.follow_id == Follow.id)
+            .outerjoin(PostLike, subquery.c.post_like_id == PostLike.id)
+        ).all()
+
     def get_notification_by_id(
         self,
         db: Session,

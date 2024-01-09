@@ -253,15 +253,15 @@ class UserService:
                 settings.SECRET_KEY,
                 settings.SECRET_ALGORITHM,
             )
-            email: str = payload.get("sub")
-            if email is None:
+            name: str = payload.get("sub")
+            if name is None:
                 raise credentials_exception
         except JWTError:
             raise credentials_exception
 
         user = user_crud.get_user(
             db,
-            email=email,
+            name=name,
         )
 
         if user is None:
@@ -501,7 +501,7 @@ class UserService:
         self.verify_password(password, user.password)
 
         if self.is_verified(user):
-            return self.create_access_token({"sub": email})  # access token 반환
+            return self.create_access_token({"sub": user.name})  # access token 반환
 
     def reset_password(
         self,
@@ -584,11 +584,37 @@ class UserService:
                 {"password": hashed_password},
             )
 
+    def read_private_data(
+        self,
+        db: Session,
+        current_user_id: int,
+    ) -> User:
+        """로그인한 유저 이외의 유저 프로필 정보를 조회한다.
+
+        Args:
+
+        - current_user_id (int): 현재 로그인한 유저의 id
+
+        Returns:
+
+        - User: 조회된 유저 정보
+        """
+        selected_user = user_crud.get_user(
+            db,
+            user_id=current_user_id,
+        )
+
+        if not selected_user:
+            raise CommonHTTPExceptions.USER_NOT_FOUND_ERROR
+
+        return selected_user
+
     def read_user(
         self,
         db: Session,
+        current_user_id: int,
         user_id: int,
-    ) -> schema.UserRead:
+    ) -> schema.UserReadWithFollowed:
         """로그인한 유저 이외의 유저 프로필 정보를 조회한다.
 
         Args:
@@ -602,62 +628,31 @@ class UserService:
 
         Returns:
 
-        - UserRead:
+        - schema.UserReadWithFollowed
             - id: 조회하려는 프로필의 id
             - name: user_id에 해당되는 user의 name
             - profile_text: user_id에 해당되는 user의 profile text
+            - followed: user_id와 현재 로그인한 유저의 팔로우 유무
         """
         selected_user = user_crud.get_user(
             db,
             user_id=user_id,
         )
 
-        if not selected_user:
-            raise CommonHTTPExceptions.USER_NOT_FOUND_ERROR
-
-        return schema.UserRead(
-            id=selected_user.id,
-            name=selected_user.name,
-            profile_text=selected_user.profile_text,
-        )
-
-    def read_private_data(
-        self,
-        db: Session,
-        email: str,
-    ) -> schema.UserRead:
-        """로그인한 유저의 프로필 정보를 반환한다.
-
-        Args:
-
-         - email (str): 로그인 상태인 유저의 email 정보
-
-        Raises:
-
-         - HTTPException (404 NOT FOUND): email에 해당하는 user를 찾지 못할 때 발생
-            - code: USER_NOT_FOUND
-
-        Returns:
-
-        - UserRead:
-            - id: 위 email 정보를 가지고 있는 유저의 id
-            - email: 로그인한 유저의 email
-            - name: 위 email 정보를 가지고 있는 유저의 name
-            - profile_text: 위 email 정보를 가지고 있는 유저의 profile_text
-        """
-        selected_user = user_crud.get_user(
+        selected_follow = user_crud.get_follow(
             db,
-            email=email,
+            following_id=current_user_id,
+            follower_id=user_id,
         )
 
         if not selected_user:
             raise CommonHTTPExceptions.USER_NOT_FOUND_ERROR
 
-        return schema.UserRead(
+        return schema.UserReadWithFollowed(
             id=selected_user.id,
-            email=selected_user.email,
             name=selected_user.name,
             profile_text=selected_user.profile_text,
+            followed=selected_follow.is_followed if selected_follow else False,
         )
 
     def update_user(
@@ -695,12 +690,11 @@ class UserService:
             raise CommonHTTPExceptions.USER_NOT_FOUND_ERROR
 
         if selected_user.email == email:
-            updated_user = self.update(
+            return self.update(
                 db,
                 selected_user,
                 data_to_be_updated,
             )
-            return updated_user
         else:
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
@@ -752,27 +746,17 @@ class UserService:
         following_id: int,
     ) -> List[User]:
         """following_id에 해당하는 유저의 팔로워들을 조회한다.
+        팔로워가 없으면 빈 리스트를 반환한다.
 
         Args:
 
         - following_id (int): user의 id
 
-        Raises:
-
-        - HTTPException (404 NOT FOUND): 팔로워가 없을 때
-
         Returns:
 
         - List[User]: 팔로워 목록
         """
-        followers = user_crud.get_followers(db, following_id)
-
-        if not followers:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="해당 유저는 팔로워가 없습니다.",
-            )
-        return followers
+        return user_crud.get_followers(db, following_id)
 
     def get_followings(
         self,
@@ -780,27 +764,17 @@ class UserService:
         follower_id: int,
     ) -> List[User]:
         """follower_id에 해당하는 유저를 따르는 팔로잉들을 조회한다.
+        팔로잉이 존재하지 않으면 빈 리스트를 반환한다.
 
         Args:
 
         - follower_id (int): 유저의 id
 
-        Raises:
-
-        - HTTPException (404 NOT FOUND): 팔로잉이 없을 때
-
         Returns:
-            List[User]: 팔로잉 목록
+
+        - List[User]: 팔로잉 목록
         """
-        followings = user_crud.get_followings(db, follower_id)
-
-        if not followings:
-            raise HTTPException(
-                status_code=404,
-                detail="해당 유저는 팔로잉이 없습니다.",
-            )
-
-        return followings
+        return user_crud.get_followings(db, follower_id)
 
     def follow_user(
         self,
@@ -903,6 +877,27 @@ class UserService:
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 detail="follow 관계 취소가 실패하였습니다.",
             )
+
+    def find_users(
+        self,
+        db: Session,
+        name: str,
+        page: int,
+    ) -> List[User]:
+        """해당 name을 가지고 있는 유저들을 조회한다.
+
+        Args:
+            db (Session): db session
+            name (str): 조회할 유저의 name
+            page (int): 조회할 page 번호. 페이지당 조회되는 user 수는 10명
+
+        Returns:
+            List[User]: 조회된 유저 목록
+        """
+
+        users_per_a_page = 10
+
+        return user_crud.get_users_by_name(db, name, skip=page * users_per_a_page)
 
     def create_and_add_notification(
         self,

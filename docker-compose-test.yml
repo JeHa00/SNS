@@ -1,0 +1,31 @@
+version: "3"
+services:
+  test.mysql:
+    container_name: test.mysql
+    image: mysql:8.0.32
+    command: --authentication_policy=mysql_native_password
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: a1s2d3f4
+      MYSQL_PASSWORD: a1s2d3f4
+      MYSQL_DATABASE: test
+      TZ: Asia/Seoul
+    volumes:
+      - test_mysql_db:/var/lib/mysql
+    ports:
+      - 3310:3306
+    expose:
+      - 3310
+
+  test.redis:
+    container_name: test.redis
+    image: redis:7.0.12-alpine
+    restart: always
+    volumes:
+      - test_redis_db:/var/lib/redis
+    ports:
+      - 6380:6379
+
+volumes:
+  test_mysql_db:
+  test_redis_db:

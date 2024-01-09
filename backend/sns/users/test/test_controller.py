@@ -140,7 +140,7 @@ def test_login_if_user_registered(
     login_data = fake_user.get("login_data")
 
     # token 생성
-    access_token_01 = user_service.create_access_token(data={"sub": user.email})
+    access_token_01 = user_service.create_access_token(data={"sub": user.name})
     email_01 = user_service.get_current_user(db_session, access_token_01)
 
     # verified 업데이트
@@ -307,9 +307,27 @@ def test_read_user_if_user_is_not_same_as_current_user(
 
     assert "email" not in result
     assert "password" not in result
+
     assert "id" in result
     assert "name" in result
     assert "profile_text" in result
+    assert "followed" in result
+    assert result["followed"] is False
+
+    # 팔로우 요청
+    response = client.post(
+        f"{settings.API_V1_PREFIX}/users/{other_user.id}/follow",
+        headers=headers,
+    )
+
+    # 팔로우 후, 다시 유저 조회
+    response = client.get(
+        f"{settings.API_V1_PREFIX}/users/{other_user.id}",
+        headers=headers,
+    )
+    result = response.json()
+
+    assert result["followed"] is True
 
 
 @pytest.mark.read_private_data
@@ -320,28 +338,18 @@ def test_read_user_if_user_is_same_as_current_user(
 ):
     # current_user 정보
     headers = get_user_token_headers_and_login_data["headers"]
-    current_user_data = get_user_token_headers_and_login_data["login_data"]
-    current_user_email = current_user_data["email"]
 
     # 동일한 유저 정보 조회 및 결과
     response = client.get(
-        f"{settings.API_V1_PREFIX}/users/current-user/private-data",
+        f"{settings.API_V1_PREFIX}/users/private-data",
         headers=headers,
     )
     result = response.json()
-    email_of_user_id = result["email"]
 
+    assert "id" in result
     assert "email" in result
     assert "name" in result
     assert "profile_text" in result
-    assert "password" not in result
-    assert "profile_image_name" not in result
-    assert "profile_image_path" not in result
-    assert "verified" not in result
-    assert "verification_code" not in result
-    assert "created_at" not in result
-    assert "updated_at" not in result
-    assert current_user_email == email_of_user_id
 
 
 @pytest.mark.update_user
@@ -460,7 +468,8 @@ def test_read_followers(
 
         for user in result:
             assert "id" in user
-            assert "email" in user
+            assert "name" in user
+            assert "profile_text" in user
 
 
 @pytest.mark.read_followers
@@ -471,10 +480,9 @@ def test_read_followers_if_not_exist_follower(
 ):
     user_id = fake_user.get("user").id
     response = client.get(f"{settings.API_V1_PREFIX}/users/{user_id}/followers")
-    result_message = response.json()["detail"]
 
-    assert response.status_code == status.HTTP_404_NOT_FOUND
-    assert result_message == "해당 유저는 팔로워가 없습니다."
+    assert response.status_code == status.HTTP_200_OK
+    assert response.json() == []
 
 
 @pytest.mark.read_followings
@@ -491,7 +499,8 @@ def test_read_followings(
 
         for user in result:
             assert "id" in user
-            assert "email" in user
+            assert "name" in user
+            assert "profile_text" in user
 
 
 @pytest.mark.read_followings
@@ -502,10 +511,9 @@ def test_read_followings_if_not_exist_following(
 ):
     user_id = fake_user.get("user").id
     response = client.get(f"{settings.API_V1_PREFIX}/users/{user_id}/followings")
-    result_message = response.json()["detail"]
 
-    assert response.status_code == status.HTTP_404_NOT_FOUND
-    assert result_message == "해당 유저는 팔로잉이 없습니다."
+    assert response.status_code == status.HTTP_200_OK
+    assert response.json() == []
 
 
 @pytest.mark.follow_user
@@ -582,3 +590,59 @@ def test_unfollow_user_if_not_found_follow(
 
         assert response.status_code == status.HTTP_404_NOT_FOUND
         assert result_message == "해당 정보에 일치하는 Follow 관계를 찾을 수 없습니다."
+
+
+@pytest.mark.find_users
+def test_find_users(
+    client: TestClient,
+    db_session: Session,
+    fake_multi_user: None,
+    get_user_token_headers_and_login_data: dict,
+):
+    # current_user 정보
+    headers = get_user_token_headers_and_login_data.get("headers")
+
+    name = "test"
+
+    page = 0
+
+    # 인증 정보가 없는 경우
+    response = client.get(
+        f"{settings.API_V1_PREFIX}/users/list?name={name}&page={page}",
+    )
+
+    assert response.status_code == status.HTTP_401_UNAUTHORIZED
+
+    # name에 해당되는 유저가 없는 경우
+    response = client.get(
+        f"{settings.API_V1_PREFIX}/users/list?name={name}&page={page}",
+        headers=headers,
+    )
+
+    assert len(response.json()) == 0
+
+    # name에 해당하는 유저가 있는 경우
+    # 각 유저마다 인증 토큰이 필요하므로 repository layer를 통해 직접 수정
+    for id in range(1, 11):
+        user = user_crud.get_user(db_session, user_id=id)
+        if id < 6:
+            user_crud.update(db_session, user, name=f"test{id}")
+        else:
+            user_crud.update(db_session, user, name=f"TEST{id}")
+
+    response = client.get(
+        f"{settings.API_V1_PREFIX}/users/list?name={name}&page={0}",
+        headers=headers,
+    )
+
+    assert len(response.json()) == 10
+
+    # 다음 page를 조회 + 해당되는 유저가 더 없는 경우
+    next_page = 1
+
+    response = client.get(
+        f"{settings.API_V1_PREFIX}/users/list?name={name}&page={next_page}",
+        headers=headers,
+    )
+
+    assert len(response.json()) == 0

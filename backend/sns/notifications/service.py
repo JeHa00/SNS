@@ -1,3 +1,5 @@
+from typing import List
+
 from fastapi import status, HTTPException, Request
 from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session
@@ -5,11 +7,14 @@ from redis.client import Redis
 import asyncio
 
 from sns.notifications.repository import notification_crud, RedisQueue
+from sns.notifications.model import Notification
 from sns.notifications.schema import NotificationEventData
 from sns.notifications.enums import NotificationType
 
 
 class NotificationService:
+    NOTIFICATION_COUNT_PER_PAGE = 10
+
     def mark_as_read(
         self,
         db: Session,
@@ -119,6 +124,30 @@ class NotificationService:
             status_code=status.HTTP_200_OK,
             headers=headers,
         )
+
+    def read_notifications(
+        self,
+        db: Session,
+        current_user_id: int,
+        page: int,
+    ) -> List[Notification]:
+        """current_user_id가 수신자인 알림 데이터를 10개씩 조회한다.
+
+        Args:
+            db (Session): db session
+            current_user_id (int): 현재 로그인한 유저의 id
+            page (int): 조회할 페이지 번호
+
+        Returns:
+            List[Notification]: 조회된 알림 데이터들
+        """
+        result = notification_crud.get_notifications_by_notified_user_id(
+            db,
+            current_user_id,
+            skip=(page - 1) * self.NOTIFICATION_COUNT_PER_PAGE,
+        )
+
+        return result
 
 
 notification_service = NotificationService()

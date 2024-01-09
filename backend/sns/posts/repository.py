@@ -1,11 +1,11 @@
 from typing import List, Any
-import json
+import orjson
 
 from fastapi.encoders import jsonable_encoder
 from sqlalchemy.orm import Session
 from redis.client import Redis
 
-from sns.users.model import User
+from sns.users.model import User, Follow
 from sns.posts.model import Post, PostLike
 
 
@@ -26,7 +26,67 @@ class PostDB:
         """
         return db.query(Post).get(post_id)
 
-    def get_multi_posts(
+    def get_posts(
+        self,
+        db: Session,
+        skip: int = 0,
+        limit: int = 5,
+    ) -> List[Post]:
+        """전체 post들을 조회하여 생성날짜를 기준으로 최신순으로 정렬하여 반환한다.
+
+        Args:
+            db (Session): db session
+            skip (int, optional): 쿼리 조회 시 건너띌 갯수. 기본 값은 0
+            limit (int, optional): 조회해서 가져올 row의 갯수. 기본 값은 5
+
+        Returns:
+            List[Post]: post 객체 정보들이 list 배열에 담겨져 반환
+        """
+        return (
+            db.query(Post)
+            .order_by(Post.created_at.desc())
+            .offset(skip)
+            .limit(limit)
+            .all()
+        )
+
+    def get_posts_of_followers(
+        self,
+        db: Session,
+        following_id: int,
+        skip: int = 0,
+        limit: int = 5,
+    ) -> List[Post]:
+        """팔로잉 유저의 팔로워들이 작성한 글들을 조회한다.
+
+        Args:
+            db (Session): db session
+            following_id (int): 팔로잉 유저의 id
+            skip (int, optional): 건너뛸 row의 갯수. Defaults to 0.
+            limit (int, optional): 조회해서 가져올 row의 갯수. Defaults to 5.
+
+        Returns:
+            List[Post]: Post 객체의 목록
+        """
+
+        # following_id에 해당하는 follower 유저 id 조회
+        subquery = (
+            db.query(Follow.follower_id)
+            .filter(Follow.following_id == following_id)
+            .subquery()
+        )
+
+        # follower 들이 작성한 Post 조회
+        return (
+            db.query(Post)
+            .join(subquery, Post.writer_id == subquery.c.follower_id)
+            .order_by(Post.created_at)
+            .offset(skip)
+            .limit(limit)
+            .all()
+        )
+
+    def get_user_posts(
         self,
         db: Session,
         writer_id: int,
@@ -39,21 +99,46 @@ class PostDB:
             db (Session): db session
             writer_id (int): writer user의 id
             skip (int, optional): 쿼리 조회 시 건너띌 갯수. 기본 값은 0
-            limit (int, optional): 쿼리 조회 시 가져올 최대 갯수. 기본 값은 100
+            limit (int, optional): 조회해서 가져올 row의 갯수. 기본 값은 5
 
         Returns:
             List[Post]: post 객체 정보들이 list 배열에 담겨져 반환
         """
 
-        query = (
+        return (
             db.query(Post)
             .filter(Post.writer_id == writer_id)
             .order_by(Post.created_at.desc())
+            .offset(skip)
+            .limit(limit)
+            .all()
         )
-        if skip != 0 or limit != 0:
-            query = query.offset(skip).limit(limit)
 
-        return query.all()
+    def get_posts_by_keyword(
+        self,
+        db: Session,
+        keyword: str,
+        skip: int = 0,
+        limit: int = 5,
+    ) -> List[Post]:
+        """내용에 주어진 keyword를 포함하고 있는 Post들을 조회한다. 한 번에 조회하는 기본 갯수는 5개다.
+
+        Args:
+            db (Session): db session
+            keyword (str): 검색하려는 keyword
+            skip (int, optional): 쿼리 조회 시 건너띌 갯수. 기본 값은 0
+            limit (int, optional): 쿼리 조회 시 가져올 최대 갯수. 기본 값은 5
+
+        Returns:
+            List[Post]: post 객체 정보들이 list에 담겨져 반환
+        """
+        return (
+            db.query(Post)
+            .filter(Post.content.ilike(f"%{keyword}%"))
+            .offset(skip)
+            .limit(limit)
+            .all()
+        )
 
     def create(
         self,
@@ -65,8 +150,8 @@ class PostDB:
 
         Args:
             db (Session): db session
-            post_data (PostCreate): 생성될 post의 content 정보
             writer_id (int): post를 생성하는 user id
+            post_data (PostCreate): 생성될 post의 content 정보
 
         Returns:
             Post: 생성된 post 정보를 반환
@@ -92,8 +177,8 @@ class PostDB:
 
         Args:
             db (Session): db session
-            post_data (Post): 수정할 post 객체 정보로, Post model 또는 id 값으로 전달된다.
-            data_to_be_updated (PostUpdate): 수정 시 반영할 내용
+            post (Post): 수정할 post 객체 정보로, Post model 또는 id 값으로 전달된다.
+            kwargs: 수정 시 반영할 내용
 
         Returns:
             Post: 수정된 post 객체를 반환
@@ -178,49 +263,68 @@ class PostDB:
         self,
         db: Session,
         liked_post_id: int,
+        skip: int = 0,
+        limit: int = 5,
     ) -> List[User]:
         """liked_post_id에 일치하는 글에 좋아요를 한 liker 유저들을 조회한다.
 
         Args:
             db (Session): db session
             liked_post_id (int): like를 받은 post의 id
+            skip (int, optional): 쿼리 조회 시 건너띌 갯수. 기본 값은 0
+            limit (int, optional): 조회해서 가져올 row의 갯수. 기본 값은 5
 
         Returns:
             List[User]: list 데이터 타입에 담겨진 User 객체
         """
         subquery = (
-            db.query(PostLike)
+            db.query(PostLike.user_id_who_like)
             .filter(PostLike.liked_post_id == liked_post_id, PostLike.is_liked)
             .order_by(PostLike.updated_at.desc())
             .subquery()
         )
 
         return (
-            db.query(User).join(subquery, User.id == subquery.c.user_id_who_like).all()
+            db.query(User)
+            .join(subquery, User.id == subquery.c.user_id_who_like)
+            .offset(skip)
+            .limit(limit)
+            .all()
         )
 
     def get_liked_posts(
         self,
         db: Session,
         user_id_who_like: int,
+        skip: int = 0,
+        limit: int = 5,
     ) -> List[Post]:
         """user_id_who_like 해당하는 user가 좋아요를 한 글들을 조회한다.
 
         Args:
             db (Session): db session
             user_id_who_like (int): 좋아요를 한 유저의 id
+            skip (int, optional): 쿼리 조회 시 건너띌 갯수. 기본 값은 0
+            limit (int, optional): 조회해서 가져올 row의 갯수. 기본 값은 5
 
         Returns:
             List[Post]: list 데이터 타입에 담겨진 Post 객체 정보들
         """
         subquery = (
-            db.query(PostLike)
+            db.query(PostLike.liked_post_id)
             .filter(PostLike.user_id_who_like == user_id_who_like, PostLike.is_liked)
             .order_by(PostLike.updated_at.desc())
             .subquery()
         )
 
-        return db.query(Post).join(subquery, Post.id == subquery.c.liked_post_id).all()
+        return (
+            db.query(Post)
+            .join(subquery, Post.id == subquery.c.liked_post_id)
+            .order_by(Post.created_at)
+            .offset(skip)
+            .limit(limit)
+            .all()
+        )
 
     def like(
         self,
@@ -301,7 +405,7 @@ class PostRedisDB:
         cache = redis_db.get(key)
         if not cache:
             return cache
-        return json.loads(cache)
+        return orjson.loads(cache)
 
     def set_cache(
         self,
@@ -319,7 +423,7 @@ class PostRedisDB:
         Returns:
             bool: cache에 저장되면 True
         """
-        serialized_value = json.dumps(jsonable_encoder(value))
+        serialized_value = orjson.dumps(jsonable_encoder(value))
         redis_db.set(key, serialized_value)
         redis_db.expire(key, 300)
 
