@@ -1,5 +1,6 @@
 import styled from "styled-components/macro";
 import { Link } from "react-router-dom";
+import Header from "../components/Header";
 
 const SignupForm = styled.form`
   display: flex;
@@ -9,6 +10,7 @@ const SignupForm = styled.form`
 function Login() {
   return (
     <div>
+      <Header />
       <SignupForm>
         <div>
           <label for='email'>이메일</label>
